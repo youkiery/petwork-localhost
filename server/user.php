@@ -158,7 +158,7 @@ function login() {
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 
-  $sql = 'select userid, password from `pet_phc_users` where LOWER(username) = "'. $username .'"';
+  $sql = 'select userid, password from `pet_phc_users` where active = 1 and LOWER(username) = "'. $username .'"';
   if (empty($user = $db->fetch($sql))) $result['messenger'] = 'Người dùng không tồn tại';
   else if (!$crypt->validate_password($password, $user['password'])) $result['messenger'] = 'Sai mật khẩu';
   else {

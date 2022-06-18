@@ -22,7 +22,7 @@ function expire() {
 function outstocks() {
   global $data, $db, $result;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $time = time();
   foreach ($data->data as $item) {
     $sql = "update pet_phc_item set outstock = $item->number, recuserid = $userid, rectime = $time where id = $item->id";
@@ -186,7 +186,7 @@ function recommend() {
   global $data, $db, $result;
 
   $data->number = intval($data->number);
-  $userid = checkUserid();
+  $userid = checkuserid();
   $image = implode(',', $data->image);
   $time = time();
 
@@ -234,7 +234,7 @@ function purchased() {
 function init() {
   global $data, $db, $result;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $result['status'] = 1;
   $result['purchase'] = getPurchase();
   $result['purchased'] = getPurchasedCount();
@@ -600,7 +600,7 @@ function getList() {
    * kết quả xtra phải trừ bỏ không có trong config
    */
   
-  $userid = checkUserid();
+  $userid = checkuserid();
   // $check = true;
   // if (isset($data->cat) && !empty($data->cat)) {
   //   // lọc danh loại hàng từ config
@@ -656,7 +656,7 @@ function removerecommend() {
 function outstock() {
   global $db, $data, $result;
  
-  $userid = checkUserid();
+  $userid = checkuserid();
   $time = time();
   $sql = "update pet_phc_item set outstock = $data->number, recuserid = $userid, rectime = $time where id = $data->id";
   $db->query($sql);
@@ -691,7 +691,7 @@ function removestock() {
 function changeover() {
   global $db, $data, $result;
   
-  $userid = checkUserid();
+  $userid = checkuserid();
   $time = time();
   $sql = "update pet_phc_item set outstock = 0, recuserid = 0, rectime = 0 where id = $data->id";
   $db->query($sql);
@@ -741,7 +741,7 @@ function getExpire() {
 function getCatList() {
   global $data, $db;
   
-  $userid = checkUserid();
+  $userid = checkuserid();
   $sql = "select * from pet_phc_item_cat order by id asc";
   return $db->all($sql);
 }

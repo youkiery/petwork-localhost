@@ -242,10 +242,16 @@ function update() {
 function remove() {
   global $db, $data, $result;
   
-  $sql = "delete from pet_phc_users where userid = $data->userid";
+  $sql = "update pet_phc_users set active = 0 where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete pet_phc_user_per userid = $data->userid";
+  $sql = "delete from pet_phc_user_per userid = $data->userid";
+  $db->query($sql);
+
+  $sql = "delete from pet_phc_session userid = $data->userid";
+  $db->query($sql);
+
+  $sql = "delete from pet_phc_row where user_id = $data->userid";
   $db->query($sql);
     
   $result['status'] = 1;
@@ -268,8 +274,10 @@ function getList() {
     'profile' => 0,
     'physical' => 0,
     'his' => 0,
-    'cart' => 0,
+    'sieuam' => 0,
+    'xquang' => 0,
     'transport' => 0,
+    'excel' => 0,
   );
 
   $sql = 'select name, username, fullname, userid from pet_phc_users where active = 1';
@@ -327,11 +335,29 @@ function signup() {
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_phc_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '$data->name', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
+    $sql = "insert into pet_phc_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
     $result['list'] = getList();
   }
+  return $result;
+}
+
+function updateuser() {
+  global $data, $db, $result;
+  
+  $password = $data->password;
+
+  include_once('Encryption.php');
+  $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
+  $crypt = new NukeViet\Core\Encryption($sitekey);
+  
+  $sql = "update pet_phc_users set username = '$data->username', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
+  $userid = $db->insertid($sql);
+    
+  $result['status'] = 1;
+  $result['list'] = getList();
+  
   return $result;
 }

@@ -211,8 +211,29 @@ function init() {
   $result['type'] = typelist();
   $result['species'] = specieslist();
   $result['target'] = targetlist();
+  $result['need'] = getneed();
 
   return $result;
+}
+
+function getneed() {
+  global $data, $db, $result;
+    
+  $sql = "select id, xrayid, image from pet_phc_xray_row where sinhhoa < 0";
+  $list = $db->all($sql);
+
+  foreach ($list as $key => $row) {
+    $sql = "select b.name as petname, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where a.id = $row[xrayid]";
+    $info = $db->fetch($sql);
+    $list[$key]['petname'] = $info['petname'];
+    $list[$key]['name'] = $info['name'];
+    $list[$key]['phone'] = $info['phone'];
+    $list[$key]['address'] = $info['address'];
+    $list[$key]['image'] = explode(',', $row['image']);
+    if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
+  }
+
+  return $list;
 }
 
 function auto() {
@@ -257,6 +278,10 @@ function insert() {
   $sql = "insert into pet_phc_profile (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', $data->species, '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time)";
   $id = $db->insertid($sql);
   // $id = 18;
+  if (isset($data->xrayid)) {
+    $sql = "update pet_phc_xray_row set sinhhoa = $id where id = $data->xrayid";
+    $db->query($sql);
+  }
 
   foreach ($list as $target) {
     $sql = "insert into pet_phc_profile_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";

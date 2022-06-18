@@ -8,6 +8,16 @@ foreach ($xr as $key => $value) {
   $x[$value] = $key;
 }
 
+function note() {
+  global $db, $data, $result;
+
+  $sql = "update pet_phc_account set note = '$data->note' where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  return $result;
+} 
+
 function init() {
   global $db, $data, $result;
 
@@ -118,9 +128,10 @@ function excel() {
     'data' => $res,
     'total' => $total
   ), JSON_UNESCAPED_UNICODE));
-  $sql = "insert into pet_phc_account (time, content) values ($time, '$content')";
-  $db->query($sql);
+  $sql = "insert into pet_phc_account (time, content, note) values ($time, '$content', '')";
+  $id = $db->insertid($sql);
 
+  $result['id'] = $id;
   $result['data'] = $res;
   $result['total'] = $total;
   $result['messenger'] = 'Đã tải file Excel lên';

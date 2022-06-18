@@ -87,7 +87,7 @@ function manager() {
 function getManager() {
   global $data, $db;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his'";
   $role = $db->fetch($sql);
   if ($role['type'] > 1) $sql = "select a.*, b.name as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid";
@@ -104,7 +104,19 @@ function update() {
   $sql = "update pet_phc_xray set pos = $data->pos where id = $data->id";
   $db->query($sql);
 
-  $sql = "update pet_phc_xray_row set xquang = '$data->xquang', sinhly = '$data->sinhly', sinhhoa = '$sinhhoa', sieuam = '$data->sieuam', nuoctieu = '$data->nuoctieu', eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '". implode(', ', $data->image) ."', time = $data->time where id = $data->detailid";
+  $arr = array('xquang','sinhly','sinhhoa','sieuam','nuoctieu');
+  $sql = "select * from pet_phc_xray_row where id = $data->detailid";
+  $detail = $db->fetch($sql);
+  $list = array();
+  // kiểm tra arr, nếu = 0, cập nhật = 0, nếu != 0, kiểm tra detail > 0 ? bỏ qua : = -1
+  foreach ($arr as $name) {
+    if ($data->{$name} == 0) $list []= $name . " = 0";
+    else if ($data->{$name} > 0 && $detail[$name] <= 0) $list []= $name . " = -1";
+  }
+  $xtra = '';
+  if (count($list)) $xtra = implode(', ', $list) . ', ';
+
+  $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '". implode(', ', $data->image) ."', time = $data->time where id = $data->detailid";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -228,6 +240,12 @@ function insert() {
   $data->time = isodatetotime($data->time);
   $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, pos) values($petid, $userid, 0, $data->time, $data->pos)";
   $id = $db->insertid($sql);
+  $arr = array('0' => '0', '1' => '-1');
+  $data->xquang = $arr[$data->xquang];
+  $data->sinhly = $arr[$data->sinhly];
+  $data->sinhhoa = $arr[$data->sinhhoa];
+  $data->sieuam = $arr[$data->sieuam];
+  $data->nuoctieu = $arr[$data->nuoctieu];
   
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $db->query($sql);
@@ -257,8 +275,14 @@ function detail() {
   
   $sql = "update pet_phc_xray set pos = $data->pos where id = $data->id";
   $db->query($sql);
+  $arr = array('0' => '0', '1' => '-1');
+  $data->xquang = $arr[$data->xquang];
+  $data->sinhly = $arr[$data->sinhly];
+  $data->sinhhoa = $arr[$data->sinhhoa];
+  $data->sieuam = $arr[$data->sieuam];
+  $data->nuoctieu = $arr[$data->nuoctieu];
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, status, time, image) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '$data->status', $data->time, '". implode(', ', $data->image) ."')";
+  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $id = $db->insertid($sql);
   
   $sql = "select a.*, b.name as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
@@ -335,7 +359,7 @@ function getlist($id = 0) {
 
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
-  $userid = checkUserid();
+  $userid = checkuserid();
   $xtra = array();
 
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his'";
@@ -359,7 +383,7 @@ function getlist($id = 0) {
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
-    $sql = "select a.*, b.name as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
+    $sql = "select a.*, b.name as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time desc";
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);

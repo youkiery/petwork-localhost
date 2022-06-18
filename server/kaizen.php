@@ -65,7 +65,7 @@ function initList() {
     'undone' => array(),
   );
   $xtra = array();
-  $userid = checkUserid();
+  $userid = checkuserid();
   $role = checkRole();
 
   if (!empty($filter->keyword)) $xtra []= '((result like "%'. $filter->keyword .'%") or (solution like "%'. $filter->keyword .'%") or (problem like "%'. $filter->keyword .'%"))';
@@ -122,7 +122,7 @@ function getKaizenById($id) {
 function insertData() {
   global $db, $data;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $dat = $data->data;
   $time = time();
   $image = implode(', ', $dat->image);
@@ -157,7 +157,7 @@ function checkData() {
 function checkRole() {
   global $db;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where module = 'kaizen' and userid = $userid";
   if (!empty($p = $db->fetch($sql))) return $p['type'];
   return 0;

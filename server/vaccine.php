@@ -646,7 +646,7 @@ function vaccined() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end);
-  $userid = checkUserid();
+  $userid = checkuserid();
 
   $sql = "select * from pet_phc_user_per where module = 'vaccine' and userid = $userid and type = 2";
   $p = $db->fetch($sql);
@@ -674,7 +674,7 @@ function resetvaccine() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end);
-  $userid = checkUserid();
+  $userid = checkuserid();
 
   $sql = "select * from pet_phc_user_per where module = 'vaccine' and userid = $userid and type = 2";
   $p = $db->fetch($sql);

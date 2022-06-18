@@ -23,7 +23,7 @@ function remove() {
 function cole() {
   global $data, $db, $result;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
   $sql = "insert into pet_phc_ride (userid, clockf, clocke, money, destination, note, time) values($userid, $data->clockf, $data->clocke, $money, '$data->destination', '$data->note', $time)";
@@ -40,7 +40,7 @@ function cole() {
 function pay() {
   global $data, $db, $result;
 
-  $userid = checkUserid();
+  $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
   $sql = "insert into pet_phc_import (userid, price, module, note, time) values($userid, $money, 'ride', '$data->note', $time)";
