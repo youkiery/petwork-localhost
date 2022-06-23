@@ -88,12 +88,12 @@ function getinitdata($userid) {
   $type = $db->all($sql);
 
   $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
-  $sql = "select * from pet_phc_usg where status < 7 and recall < $lim and userid = $userid";
+  $sql = "select * from pet_phc_usg where status < 7 and recall < $lim and userid = $userid and utemp = 0";
   $uc = $db->count($sql);
   $sql = "select * from pet_phc_usg where status = 9 and userid = $userid";
   $ut = $db->count($sql);
 
-  $sql = "select * from pet_phc_vaccine where status < 2 and recall < $lim and userid = $userid";
+  $sql = "select * from pet_phc_vaccine where status < 2 and recall < $lim and userid = $userid and utemp = 0";
   $vc = $db->count($sql);
   $sql = "select * from pet_phc_vaccine where status = 5 and userid = $userid";
   $vt = $db->count($sql);
@@ -246,6 +246,31 @@ function password() {
       $result['messenger'] = 'Đã đổi mật khẩu';
     }
   }
+  return $result;
+}
+
+function badge() {
+  global $data, $db, $result;
+
+  $result['data'] = array(
+    'his' => 0, 'kaizen' => 0, 'profile' => 0, 'physical' => 0, 'xquang' => 0, 'sieuam' => 0, 'other' => 0, 'init' => true
+  );
+  $sql = "select * from pet_phc_xray where insult = 0";
+  $result['data']['his'] = $db->count($sql);
+  $sql = "select * from pet_phc_kaizen where done = 0";
+  $result['data']['kaizen'] = $db->count($sql);
+  $sql = "select * from pet_phc_xray_row where sinhhoa < 0";
+  $result['data']['profile'] = $db->count($sql);
+  $sql = "select * from pet_phc_xray_row where sinhly < 0";
+  $result['data']['physical'] = $db->count($sql);
+  $sql = "select * from pet_phc_xray_row where xquang < 0";
+  $result['data']['xquang'] = $db->count($sql);
+  $sql = "select * from pet_phc_xray_row where sieuam < 0";
+  $result['data']['sieuam'] = $db->count($sql);
+  $sql = "select * from pet_phc_exam where status = 0";
+  $result['data']['other'] = $db->count($sql);
+  $result['status'] = 1;
+
   return $result;
 }
 

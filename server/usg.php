@@ -297,7 +297,7 @@ function birth() {
 
   // nếu có ngày nhắc ngày salơ chó mẹ
   if (!empty($data->repregnant)) {
-    $recall = isodatetotime($data->repregnant) + 60 * 60 * 24 * 7 * 5;
+    $recall = isodatetotime($data->repregnant) - 60 * 60 * 24 * 7 * 5;
 
     $userid = checkuserid();
     $time = time();
@@ -309,7 +309,8 @@ function birth() {
   }
 
   $data->calltime = isodatetotime($data->calltime);
-  $recall = $data->calltime + 60 * 60 * 24 * 7 * 5;
+  if (!empty($data->deworm)) $recall = isodatetotime($data->deworm);
+  else $recall = $data->calltime + 60 * 60 * 24 * 7 * 5;
   $status = 4;
 
   $sql = "update pet_phc_usg set status = $status, note = '". $data->note ."', number = $data->number, calltime = $data->calltime, recall = $recall where id = $data->id";
@@ -332,6 +333,28 @@ function called() {
   $status = $cover[$u['status']]['s'];
 
   $sql = "update pet_phc_usg set status = $status, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['messenger'] = "Đã thay đổi trạng thái";
+  $result['list'] = getlist();
+
+  return $result;
+}
+
+function deworm() {
+  global $data, $db, $result, $cover;
+
+  $sql = "select * from pet_phc_usg where id = $data->id";
+  $u = $db->fetch($sql);
+  $time = time();
+  // neu co deworm thi cap nhat, neu khong + 5 tuan
+  if (isset($data->deworm)) {
+    $t = str_replace('-', '/', $data->deworm);
+    $recall = strtotime($t);
+  } 
+  else $recall = $u['calltime'] + 60 * 60 * 24 * 7 * 6;
+
+  $sql = "update pet_phc_usg set status = 5, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = "Đã thay đổi trạng thái";

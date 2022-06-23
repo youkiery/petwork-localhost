@@ -108,21 +108,34 @@ function update() {
   $sql = "select * from pet_phc_xray_row where id = $data->detailid";
   $detail = $db->fetch($sql);
   $list = array();
-  // kiểm tra arr, nếu = 0, cập nhật = 0, nếu != 0, kiểm tra detail > 0 ? bỏ qua : = -1
+  $time = time();
+  $userid = checkuserid();
+  $customerid = checkcustomer();
+  // kiểm tra arr, nếu detailid > 0, bỏ qua, nếu = 0, cập nhật = 0, nếu != 0, kiểm tra detail > 0 ? bỏ qua : = -1
   foreach ($arr as $name) {
-    if ($data->{$name} == 0) $list []= $name . " = 0";
-    else if ($data->{$name} > 0 && $detail[$name] <= 0) $list []= $name . " = -1";
+    if ($detail[$name] <= 0) {
+      if ($data->{$name} == 0) $list []= $name . " = 0";
+      else if ($data->{$name} > 0) $list []= $name . " = -1";
+    }
   }
   $xtra = '';
   if (count($list)) $xtra = implode(', ', $list) . ', ';
 
   $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '". implode(', ', $data->image) ."', time = $data->time where id = $data->detailid";
   $db->query($sql);
+
+  foreach ($data->exam as $exam) {
+    // kiểm tra xem có hay chưa, chưa thì insert
+    $sql = "select * from pet_phc_exam where treatid = $data->detailid and typeid = $exam->id";
+    if (empty($row = $db->fetch($sql))) {
+      $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $data->detailid, $exam->id, '', '', $time)";
+      $db->query($sql);
+    }
+  }
   
   $result['status'] = 1;
-  $result['data'] = getlist($data->id);
-  $result['count'] = getChatTotalCount($result['data']);
-  
+  $result['list'] = getlist();
+  $result['count'] = getChatTotalCount($result['list']);
   return $result;
 }
 
@@ -237,7 +250,9 @@ function insert() {
 
   $petid = checkpet();
   $userid = checkuserid();
+  $customerid = checkcustomer();
   $data->time = isodatetotime($data->time);
+  $time = time();
   $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, pos) values($petid, $userid, 0, $data->time, $data->pos)";
   $id = $db->insertid($sql);
   $arr = array('0' => '0', '1' => '-1');
@@ -248,14 +263,35 @@ function insert() {
   $data->nuoctieu = $arr[$data->nuoctieu];
   
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
-  $db->query($sql);
+  $id = $db->query($sql);
+
+  foreach ($data->exam as $exam) {
+    $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
+    $db->query($sql);
+  }
   
   $result['status'] = 1;
   $result['list'] = getlist();
   $result['count'] = getChatTotalCount($result['list']);
-  
   return $result;
 }
+
+function checkcustomer() {
+  global $db, $data;
+
+  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  if (!empty($customer = $db->fetch($sql))) {
+    $sql = "update pet_phc_customer set name = '$data->name' where id = $customer[id]";
+    $db->query($sql);
+  }
+  else {
+    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
+    $customer['id'] = $db->insertid($sql);
+  }
+
+  return $customer['id'];
+}
+
 
 function filter() {
   global $data, $db, $result;
@@ -263,8 +299,16 @@ function filter() {
   $result['status'] = 1;
   $result['list'] = getlist();
   $result['count'] = getChatTotalCount($result['list']);
-
+  $result['type'] = gettypelist();
   return $result;
+}
+
+function gettypelist() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_phc_exam_type where active = 1 order by name desc";
+  $list = $db->all($sql);
+  return $list;
 }
 
 function detail() {
@@ -290,9 +334,8 @@ function detail() {
   $row['time'] = date('d/m/Y', $row['time']);
   
   $result['status'] = 1;
-  $result['data'] = getlist($data->id);
-  $result['count'] = getChatTotalCount($result['data']);
-
+  $result['list'] = getlist();
+  $result['count'] = getChatTotalCount($result['list']);
   return $result;
 }
 
@@ -378,7 +421,7 @@ function getlist($id = 0) {
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
 
-  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." order by id desc";
+  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$data->keyword%') order by a.insult asc, id desc";
   $list = $db->all($sql);
   
   foreach ($list as $key => $value) {
@@ -390,7 +433,15 @@ function getlist($id = 0) {
       $image = explode(', ', $detail['image']);
       if (count($image) == 1 && $image[0] == '') $row[$index]['image'] = array();
       else $row[$index]['image'] = $image;
+      $sql = "select a.image, a.note, a.id, a.status, b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where treatid = $detail[id]";
+      $row[$index]['exam'] = $db->all($sql);
+      foreach ($row[$index]['exam'] as $examindex => $exam) {
+        $image = explode(', ', $exam['image']);
+        if (count($image) == 1 && $image[0] == '') $row[$index]['exam'][$examindex]['image'] = array();
+        else $row[$index]['exam'][$examindex]['image'] = $image;
+      }
     }
+
   
     $sql = "select * from pet_phc_xray_his where petid = $value[petid]";
     $his = $db->obj($sql, 'id', 'his');

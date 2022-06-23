@@ -278,6 +278,7 @@ function getList() {
     'xquang' => 0,
     'transport' => 0,
     'excel' => 0,
+    'other' => 0,
   );
 
   $sql = 'select name, username, fullname, userid from pet_phc_users where active = 1';
