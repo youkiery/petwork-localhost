@@ -123,20 +123,18 @@ function insertData() {
   global $db, $data;
 
   $userid = checkuserid();
-  $dat = $data->data;
   $time = time();
-  $image = implode(', ', $dat->image);
+  $image = implode(', ', $data->image);
 
-  $sql = "insert into pet_phc_kaizen (userid, problem, solution, result, post_time, edit_time, image) values($userid, '$dat->problem', '$dat->solution', '$dat->result', $time, $time, '$image')";
+  $sql = "insert into pet_phc_kaizen (userid, problem, solution, result, post_time, edit_time, image) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image')";
   $db->query($sql);
 }
 
 function updateData() {
   global $db, $data;
 
-  $data = $data->data;
   $time = time();
-  $image = implode(', ', $dat->image);
+  $image = implode(', ', $data->image);
 
   $sql = "update pet_phc_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image' where id = $data->id";
   $db->query($sql);

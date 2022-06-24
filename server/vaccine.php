@@ -408,6 +408,8 @@ function excel() {
   $his = array();
   $sql = "select * from pet_phc_config where name = 'vaccine-comma'";
   $com = $db->fetch($sql);
+  $day21 = 60 * 60 * 24 *21;
+  $time = strtotime(date('Y/m/d'));
 
   $l = array();
   foreach ($exdata as $row) {

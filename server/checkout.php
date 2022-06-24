@@ -139,6 +139,86 @@ function excel() {
   return $result;
 }
 
+// function excel() {
+//   global $data, $db, $result, $dir, $x, $xr, $_FILES;
+
+//   // lấy dữ liệu từ file bank và các file kiot
+//   $kiotkey = parseAllKey($data->kiot);
+//   $vietkey = parseAllKey($data->vietcom);
+//   $kiottemp = array();
+  
+//   $vietcomtemp = getData($_FILES['bank']['tmp_name'], $vietkey);
+//   foreach ($_FILES['kiot']['tmp_name'] as $file) {
+//     $kiottemp []= getData($file, $kiotkey);
+//   }
+
+//   // lưu dữ liệu name
+//   $list = array();
+//   foreach ($data->input as $key => $input) {
+//     $sql = "select * from pet_phc_accountname where id = $key";
+//     if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values($key, '$input')";
+//     else $sql = "update pet_phc_accountname set name = '$input' where id = $key";
+//     $db->query($sql);
+    
+//     // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
+//     // chạy data->input, tìm kiếm trong content của bank có nội dung của input, đẩy vào list[input], xóa trong bank
+//     $list[$key] = array();
+//     foreach ($vietcomtemp as $i => $item) {
+//       if (strpos($item['content'], $input) !== false) {
+//         $list[$key] []= $item;
+//         unset($vietcomtemp[$i]);
+//       }
+//     }
+//   }
+//   // xóa những name không có trong danh sách
+//   $sql = "delete from pet_phc_accountname where id > ". count($data->input);
+//   $db->query($sql);
+
+//   // so sánh từ trong list bank với các list kiot, list khác
+//   // chạy danh sách list bank
+//   $content = array();
+//   foreach ($list as $index => $row) {
+//     // khởi tạo total bank, total kiot
+//     $content[$index] array(
+//       'kiot' => 0, 'bank' => 0, 'note' => '', 'list' => array()
+//     );
+    
+//     // chạy $row, tìm kiếm tìm kiếm trong kiot tương ứng nếu có thì set status = 0
+//     // nếu không có status = 1
+//     foreach ($row as $key => $item) {
+//       foreach ($kiottemp[$index] as $k => $kiot) {
+//         if ($kiot['money'] == $item['money']) {
+//           $content[$index]['list'] []= array(
+//             'time' => $kiot['time'],
+//             'kiot' => $kiot['content'],
+//             'bank' => $item['content'],
+//             'money' => $item['money'],
+//             'status' => 0,
+//           );
+//           $content[$index]['money'] += $item['content'] ;
+//           $content[$index]['kiot'] += $item['content'] ;
+//           unset($row[$key]);
+//           unset($kiottemp[$index][$k]);
+//         }
+//       }
+//     }
+
+    
+//   }
+//   // kiot không có trong list push kiot với status = -1
+  
+//   // đóng gói dữ liệu trả về
+//   $content = addslashes(json_encode($content, JSON_UNESCAPED_UNICODE));
+//   $sql = "insert into pet_phc_account (time, content) values ($time, '$content')";
+//   $id = $db->insertid($sql);
+
+//   $result['id'] = $id;
+//   $result['data'] = $content;
+//   $result['messenger'] = 'Đã tải file Excel lên';
+//   $result['status'] = 1;
+//   return $result;
+// }
+
 function remove() {
   global $db, $data, $result;
 
@@ -215,3 +295,38 @@ function getData($file, $tar, $key) {
 
   return $excel;
 }
+
+// function getData($file, $key) {
+//   global $x, $xr, $dir;
+
+//   $inputFileType = PHPExcel_IOFactory::identify($file);
+//   $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+//   $objReader->setReadDataOnly(true);
+//   $objPHPExcel = $objReader->load($file);
+  
+//   $sheet = $objPHPExcel->getSheet(0); 
+
+//   $highestRow = $sheet->getHighestRow(); 
+//   $highestColumn = $sheet->getHighestColumn();
+
+//   $excel = array();
+//   for ($j = intval($key['content']['b']); $j <= $highestRow; $j ++) {
+//     $temp = array();
+//     $check = false;
+//     foreach ($key as $name => $data) {
+//       if ($name == 'money') {
+//         $val = str_replace(',', '', $sheet->getCell($data['a'] . $j)->getValue());
+//         $temp[$name] = $val;
+//       }
+//       else {
+//         $val = $sheet->getCell($data['a'] . $j)->getValue();
+//         if ($name == 'time' && (empty($val) || $val == 'Tổng số')) $check = true;
+//         $temp[$name] = $val;
+//       }
+//     }
+//     if ($check) break;
+//     if (!empty($temp['money'])) $excel []= $temp;
+//   }
+
+//   return $excel;
+// }

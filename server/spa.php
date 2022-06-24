@@ -328,8 +328,9 @@ function statrate() {
   $db->query($sql);
 
   $data->start = totime($data->start);
-  $data->end = totime($data->end);
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (a.time between $data->start and $data->end) order by time desc";
+  $data->end = totime($data->end) + 60 * 60 * 24 - 1;
+  
+  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
