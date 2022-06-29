@@ -245,10 +245,10 @@ function remove() {
   $sql = "update pet_phc_users set active = 0 where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_user_per userid = $data->userid";
+  $sql = "delete from pet_phc_user_per where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_session userid = $data->userid";
+  $sql = "delete from pet_phc_session where userid = $data->userid";
   $db->query($sql);
 
   $sql = "delete from pet_phc_row where user_id = $data->userid";

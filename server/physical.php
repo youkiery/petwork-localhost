@@ -124,7 +124,7 @@ function download() {
     $return = $zip->close();
     If ($return==TRUE){
       $result['status'] = 1;
-      $result['link'] = 'http://'. $_SERVER['HTTP_HOST']. '/include/export/'. $name;
+      $result['link'] = 'https://'. $_SERVER['HTTP_HOST']. '/include/export/'. $name;
     }
   } else {
     $result['messenger'] = 'Không thể xuất file';
@@ -297,7 +297,7 @@ function auto() {
   global $data, $db, $result;
 
   $result['status'] = 1;
-  $result['list'] = getlist();
+  $result['list'] = getmore();
   return $result;
 }
 
@@ -361,7 +361,7 @@ function insert() {
   );
 
   $result['status'] = 1;
-  $result['data'] = $data;
+  $result['list'] = getlist();
   $result['need'] = getneed();
   $result['serial'] = $serial;
 
@@ -439,7 +439,7 @@ function printword() {
   $html = str_replace('{samplesymbol}', $prof['samplesymbol'], $html);
   $html = str_replace('{samplestatus}', ($prof['samplestatus'] ? 'Đạt yêu cầu' : 'Không đạt yêu cầu'), $html);
   $html = str_replace('{doctor}', $prof['doctor'], $html);
-  $time = $prof['time'] / 1000;
+  $time = $prof['time'];
   $html = str_replace('{time}', date('d/m/Y', $time), $html);
   $html = str_replace('{DD}', date('d', $time), $html);
   $html = str_replace('{MM}', date('m', $time), $html);
@@ -489,22 +489,15 @@ function printword() {
 function remove() {
   global $data, $db, $result;
 
-  $sql = 'delete from pet_phc_physical where id = '. $id;
+  $sql = 'delete from pet_phc_physical where id = '. $data->id;
   $query = $db->query($sql);
-  $sql = 'delete from pet_phc_physical_data where pid = '. $id;
+  $sql = 'delete from pet_phc_physical_data where pid = '. $data->id;
   $query = $db->query($sql);
-
-  $sql = 'select id, name, customer, time from pet_phc_physical where name like "%'. $filter['keyword'] .'%" or customer like "%'. $filter['keyword'] .'%" order by id desc limit '. $filter['page'] * 10;
+  $sql = 'update pet_phc_xray_row set sinhly = 0 where sinhly = '. $data->id;
   $query = $db->query($sql);
-  $list = array();
-
-  while ($row = $query->fetch_assoc()) {
-    $list []= $row;
-  }
 
   $result['status'] = 1;
   $result['list'] = getlist();
-
   return $result;
 }
 
@@ -585,7 +578,23 @@ function getImport() {
 function getlist() {
   global $db, $data;
 
-  $sql = "select a.*, c.name as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset 0";
+  $sql = "select a.*, c.name as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
+  $query = $db->query($sql);
+  $list = array();
+  
+  while ($row = $query->fetch_assoc()) {
+    $sql = "select tid, value from pet_phc_physical_data where pid = $row[id]";
+    $row['target'] = $db->obj($sql, 'tid', 'value');
+    $row['time'] = date('d/m/Y', $row['time']);
+    $list []= $row;
+  }
+  return $list;
+}
+
+function getmore() {
+  global $db, $data;
+
+  $sql = "select a.*, c.name as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
   $query = $db->query($sql);
   $list = array();
   

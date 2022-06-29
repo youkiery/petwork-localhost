@@ -81,7 +81,7 @@ function getinitdata($userid) {
   $sql = "select username, name, fullname from pet_phc_users where userid = $userid";
   $userinfo = $db->fetch($sql);
 
-  $sql = "select userid, name, fullname, username from pet_phc_users where userid in (select userid from pet_phc_user_per where module = 'doctor' and type = 1)";
+  $sql = "select userid, fullname as name, fullname, username from pet_phc_users where userid in (select userid from pet_phc_user_per where module = 'doctor' and type = 1)";
   $doctor = $db->all($sql);
 
   $sql = "select * from pet_phc_type where active = 1";

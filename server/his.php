@@ -120,8 +120,9 @@ function update() {
   }
   $xtra = '';
   if (count($list)) $xtra = implode(', ', $list) . ', ';
+  $image = implode(', ', $data->image);
 
-  $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '". implode(', ', $data->image) ."', time = $data->time where id = $data->detailid";
+  $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', time = $data->time where id = $data->detailid";
   $db->query($sql);
 
   foreach ($data->exam as $exam) {
@@ -132,10 +133,22 @@ function update() {
       $db->query($sql);
     }
   }
+
+  if (!empty($data->near)) {
+    $time = isodatetotime($data->near);
+    $ctime = time();
+    // tìm kiếm xem sau đó có lịch tái khám ngày này không, nếu có thì cập nhật, nếu không thì thêm
+    $sql = "select * from pet_phc_his_schedule where customerid = $customerid and time > $ctime and status = 0";
+    if (!empty($r = $db->fetch($sql))) $sql = "update pet_phc_his_schedule set time = $time where id = $r[id]";
+    else $sql = "insert into pet_phc_his_schedule (customerid, note, image, time, ctime) values($customerid, '', '$image', $time, $ctime)";
+    $db->query($sql);
+  }
   
   $result['status'] = 1;
   $result['list'] = getlist();
   $result['count'] = getChatTotalCount($result['list']);
+  $result['near'] = nearlist();
+  $result['c'] = nearcount();
   return $result;
 }
 
@@ -219,6 +232,20 @@ function remove() {
   return $result;
 }
 
+function removesc() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_phc_his_schedule where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã xóa hồ sơ';
+  $result['list'] = nearlist();
+  $result['c'] = nearcount();
+  
+  return $result;
+}
+
 function pet() {
   global $data, $db, $result;
 
@@ -245,6 +272,100 @@ function pet() {
   return $result;
 }
 
+function nearchange() {
+  global $data, $db, $result;
+
+  $status = intval(!$data->status);
+  $sql = "update pet_phc_his_schedule set status = $status where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = nearlist();
+  $result['count'] = nearcount();
+  return $result;
+}
+
+function near() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['list'] = nearlist();
+  return $result;
+}
+
+function nearcount() {
+  global $data, $db, $result;
+
+  // Nhắc hôm nay ngày mai
+  $start = strtotime(date('Y/m/d'));
+  $end = $start + 60 * 60 * 24 * 2 - 1;
+
+  $sql = "select id from pet_phc_his_schedule where ((time between $start and $end) and status = 0) or status = 0";
+  return $db->count($sql);
+}
+
+function nearlist() {
+  global $data, $db, $result;
+
+  // Nhắc hôm nay ngày mai
+  $start = strtotime(date('Y/m/d'));
+  $end = $start + 60 * 60 * 24 * 2 - 1;
+
+  $sql = "select a.*, b.name, b.phone from pet_phc_his_schedule a inner join pet_phc_customer b on a.customerid = b.id where (time between $start and $end) or status = 0 order by time asc, ctime asc";
+  $list = $db->all($sql);
+
+  foreach ($list as $key => $row) {
+    $list[$key]['image'] = parseimage($row['image']);
+    $list[$key]['time'] = date('d/m/Y', $row['time']);
+    $list[$key]['ctime'] = date('d/m/Y', $row['ctime']);
+  }
+
+  return $list;
+}
+
+function parseimage($image) {
+  $image = explode(', ', $image);
+  $l = array();
+  foreach ($image as $key => $value) {
+    if (!empty($value)) $l []= $value;
+  }
+  return $l;
+}
+
+function schedule() {
+  global $data, $db, $result;
+
+  $customerid = checkcustomer($data->phone, $data->name);
+  $image = implode(', ', $data->image);
+  $time = isodatetotime($data->time);
+  $ctime = time();
+  
+  $sql = "insert into pet_phc_his_schedule (customerid, note, image, time, ctime) values($customerid, '$data->note', '$image', $time, $ctime)";
+  $db->query($sql);
+
+  $result['near'] = nearlist();
+  $result['count'] = nearcount();
+  $result['status'] = 1;
+  return $result;
+}
+
+function updatesc() {
+  global $data, $db, $result;
+
+  $customerid = checkcustomer($data->phone, $data->name);
+  $image = implode(', ', $data->image);
+  $time = isodatetotime($data->time);
+  $ctime = time();
+  
+  $sql = "update pet_phc_his_schedule set customerid = $customerid, note = '$data->note', image = '$image', time = $time where id = $data->id";
+  $db->query($sql);
+
+  $result['near'] = nearlist();
+  $result['count'] = nearcount();
+  $result['status'] = 1;
+  return $result;
+}
+
 function insert() {
   global $data, $db, $result;
 
@@ -261,18 +382,26 @@ function insert() {
   $data->sinhhoa = $arr[$data->sinhhoa];
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
+  $image = implode(', ', $data->image);
   
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
+  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $id = $db->query($sql);
 
   foreach ($data->exam as $exam) {
     $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
     $db->query($sql);
   }
+
+  if (!$data->near) {
+    $sql = "insert into pet_phc_his_schedule (customerid, note, image, time) values($customerid, '', '$image', $time)";
+    $db->query($sql);
+  }
   
   $result['status'] = 1;
   $result['list'] = getlist();
   $result['count'] = getChatTotalCount($result['list']);
+  $result['near'] = nearlist();
+  $result['c'] = nearcount();
   return $result;
 }
 
@@ -300,6 +429,8 @@ function filter() {
   $result['list'] = getlist();
   $result['count'] = getChatTotalCount($result['list']);
   $result['type'] = gettypelist();
+  $result['near'] = nearlist();
+  $result['c'] = nearcount();
   return $result;
 }
 
@@ -421,8 +552,9 @@ function getlist($id = 0) {
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
 
-  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$data->keyword%') order by a.insult asc, id desc";
+  $sql = "select a.*, b.id as petid, b.name as pet, b.customerid, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$data->keyword%') order by a.insult asc, id desc";
   $list = $db->all($sql);
+  $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
@@ -442,6 +574,11 @@ function getlist($id = 0) {
       }
     }
 
+    $sql = "select * from pet_phc_his_schedule where customerid = $value[customerid] and status = 0 and time > $time";
+    $sc = $db->fetch($sql);
+    if (empty($sc)) $sc = '';
+    else $sc = date('d/m/Y', $sc['time']);
+    $list[$key]['near'] = $sc;
   
     $sql = "select * from pet_phc_xray_his where petid = $value[petid]";
     $his = $db->obj($sql, 'id', 'his');

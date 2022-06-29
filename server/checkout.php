@@ -11,7 +11,8 @@ foreach ($xr as $key => $value) {
 function note() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_account set note = '$data->note' where id = $data->id";
+  $json = addslashes(json_encode($data->content, JSON_UNESCAPED_UNICODE));
+  $sql = "update pet_phc_account set content = '$json' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -20,6 +21,9 @@ function note() {
 
 function init() {
   global $db, $data, $result;
+
+  $sql = "select * from pet_phc_accountname order by id asc";
+  $result['input'] = $db->all($sql);
 
   $result['data'] = array('kiot' => array(), 'vietcom' => array());
   $sql = "select * from pet_phc_config where module = 'kiot'";
@@ -67,157 +71,209 @@ function save() {
   return $result;
 }
 
-function excel() {
-  global $data, $db, $result, $dir, $x, $xr, $_FILES;
-
-  // $des = $dir ."export/DanhSachChiTietHoaDon_KV09102021-222822-523-1633793524.xlsx";
-  $name1 = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME) ."-". time() .".". pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-  $name2 = pathinfo($_FILES['file2']['name'], PATHINFO_FILENAME) ."-". time() .".". pathinfo($_FILES['file2']['name'], PATHINFO_EXTENSION);
-  $kiotkey = parseAllKey($data->kiot);
-  $vietkey = parseAllKey($data->vietcom);
-  $vietcomtemp = getData($_FILES['file2'], $name2, $vietkey);
-  $kiottemp = getData($_FILES['file'], $name1, $kiotkey);
-
-  // kiểm tra thời gian
-  $res = array(
-    'on' => 1,
-    'pair' => array(),
-    'kiot' => array(),
-    'vietcom' => array()
-  );
-
-  // echo json_encode($kiottemp);die();
-  // echo "<br>";
-//   echo json_encode($vietcomtemp);die();
-  $kiot = array();
-  $total = array('vietcom' => 0, 'kiot' => 0, 'subtract');
-  foreach ($kiottemp as $row) {
-    $check = false;
-
-    foreach ($vietcomtemp as $key => $value) {
-      if ($value['money'] == $row['money']) {
-        $check = true;
-        $total['kiot'] += intval($row['money']);
-        $total['vietcom'] += intval($row['money']);
-        $res['pair'] []= array('money' => $row['money'], 'kiot' => $row['content'], 'vietcom' => $value['content']);
-        unset($vietcomtemp[$key]);
-        break;
-      }
-    }
-    if (!$check) {
-      $total['kiot'] += intval($row['money']);
-      $res['kiot'] []= array('money' => $row['money'], 'kiot' => $row['content'], 'vietcom' => '');
-    }
-  }
-
-  foreach ($vietcomtemp as $row) {
-    $total['vietcom'] += intval($row['money']);
-    $res['vietcom'] []= array('money' => $row['money'], 'vietcom' => $row['content'], 'kiot' => '');
-  }
-
-  if (file_exists("$dir/include/export/$name1")) {
-    unlink("$dir/include/export/$name1");
-  }
-  if (file_exists("$dir/include/export/$name2")) {
-    unlink("$dir/include/export/$name2");
-  }
-
-  $time = time();
-  $total['subtract'] = $total['kiot'] - $total['vietcom'];
-  $content = addslashes(json_encode(array(
-    'data' => $res,
-    'total' => $total
-  ), JSON_UNESCAPED_UNICODE));
-  $sql = "insert into pet_phc_account (time, content, note) values ($time, '$content', '')";
-  $id = $db->insertid($sql);
-
-  $result['id'] = $id;
-  $result['data'] = $res;
-  $result['total'] = $total;
-  $result['messenger'] = 'Đã tải file Excel lên';
-  $result['status'] = 1;
-  return $result;
-}
-
 // function excel() {
 //   global $data, $db, $result, $dir, $x, $xr, $_FILES;
 
-//   // lấy dữ liệu từ file bank và các file kiot
+//   // $des = $dir ."export/DanhSachChiTietHoaDon_KV09102021-222822-523-1633793524.xlsx";
+//   $name1 = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME) ."-". time() .".". pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+//   $name2 = pathinfo($_FILES['file2']['name'], PATHINFO_FILENAME) ."-". time() .".". pathinfo($_FILES['file2']['name'], PATHINFO_EXTENSION);
 //   $kiotkey = parseAllKey($data->kiot);
 //   $vietkey = parseAllKey($data->vietcom);
-//   $kiottemp = array();
-  
-//   $vietcomtemp = getData($_FILES['bank']['tmp_name'], $vietkey);
-//   foreach ($_FILES['kiot']['tmp_name'] as $file) {
-//     $kiottemp []= getData($file, $kiotkey);
-//   }
+//   $vietcomtemp = getData($_FILES['file2'], $name2, $vietkey);
+//   $kiottemp = getData($_FILES['file'], $name1, $kiotkey);
 
-//   // lưu dữ liệu name
-//   $list = array();
-//   foreach ($data->input as $key => $input) {
-//     $sql = "select * from pet_phc_accountname where id = $key";
-//     if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values($key, '$input')";
-//     else $sql = "update pet_phc_accountname set name = '$input' where id = $key";
-//     $db->query($sql);
-    
-//     // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
-//     // chạy data->input, tìm kiếm trong content của bank có nội dung của input, đẩy vào list[input], xóa trong bank
-//     $list[$key] = array();
-//     foreach ($vietcomtemp as $i => $item) {
-//       if (strpos($item['content'], $input) !== false) {
-//         $list[$key] []= $item;
-//         unset($vietcomtemp[$i]);
+//   // kiểm tra thời gian
+//   $res = array(
+//     'on' => 1,
+//     'pair' => array(),
+//     'kiot' => array(),
+//     'vietcom' => array()
+//   );
+
+//   // echo json_encode($kiottemp);die();
+//   // echo "<br>";
+// //   echo json_encode($vietcomtemp);die();
+//   $kiot = array();
+//   $total = array('vietcom' => 0, 'kiot' => 0, 'subtract');
+//   foreach ($kiottemp as $row) {
+//     $check = false;
+
+//     foreach ($vietcomtemp as $key => $value) {
+//       if ($value['money'] == $row['money']) {
+//         $check = true;
+//         $total['kiot'] += intval($row['money']);
+//         $total['vietcom'] += intval($row['money']);
+//         $res['pair'] []= array('money' => $row['money'], 'kiot' => $row['content'], 'vietcom' => $value['content']);
+//         unset($vietcomtemp[$key]);
+//         break;
 //       }
 //     }
-//   }
-//   // xóa những name không có trong danh sách
-//   $sql = "delete from pet_phc_accountname where id > ". count($data->input);
-//   $db->query($sql);
-
-//   // so sánh từ trong list bank với các list kiot, list khác
-//   // chạy danh sách list bank
-//   $content = array();
-//   foreach ($list as $index => $row) {
-//     // khởi tạo total bank, total kiot
-//     $content[$index] array(
-//       'kiot' => 0, 'bank' => 0, 'note' => '', 'list' => array()
-//     );
-    
-//     // chạy $row, tìm kiếm tìm kiếm trong kiot tương ứng nếu có thì set status = 0
-//     // nếu không có status = 1
-//     foreach ($row as $key => $item) {
-//       foreach ($kiottemp[$index] as $k => $kiot) {
-//         if ($kiot['money'] == $item['money']) {
-//           $content[$index]['list'] []= array(
-//             'time' => $kiot['time'],
-//             'kiot' => $kiot['content'],
-//             'bank' => $item['content'],
-//             'money' => $item['money'],
-//             'status' => 0,
-//           );
-//           $content[$index]['money'] += $item['content'] ;
-//           $content[$index]['kiot'] += $item['content'] ;
-//           unset($row[$key]);
-//           unset($kiottemp[$index][$k]);
-//         }
-//       }
+//     if (!$check) {
+//       $total['kiot'] += intval($row['money']);
+//       $res['kiot'] []= array('money' => $row['money'], 'kiot' => $row['content'], 'vietcom' => '');
 //     }
-
-    
 //   }
-//   // kiot không có trong list push kiot với status = -1
-  
-//   // đóng gói dữ liệu trả về
-//   $content = addslashes(json_encode($content, JSON_UNESCAPED_UNICODE));
-//   $sql = "insert into pet_phc_account (time, content) values ($time, '$content')";
+
+//   foreach ($vietcomtemp as $row) {
+//     $total['vietcom'] += intval($row['money']);
+//     $res['vietcom'] []= array('money' => $row['money'], 'vietcom' => $row['content'], 'kiot' => '');
+//   }
+
+//   if (file_exists("$dir/include/export/$name1")) {
+//     unlink("$dir/include/export/$name1");
+//   }
+//   if (file_exists("$dir/include/export/$name2")) {
+//     unlink("$dir/include/export/$name2");
+//   }
+
+//   $time = time();
+//   $total['subtract'] = $total['kiot'] - $total['vietcom'];
+//   $content = addslashes(json_encode(array(
+//     'data' => $res,
+//     'total' => $total
+//   ), JSON_UNESCAPED_UNICODE));
+//   $sql = "insert into pet_phc_account (time, content, note) values ($time, '$content', '')";
 //   $id = $db->insertid($sql);
 
 //   $result['id'] = $id;
-//   $result['data'] = $content;
+//   $result['data'] = $res;
+//   $result['total'] = $total;
 //   $result['messenger'] = 'Đã tải file Excel lên';
 //   $result['status'] = 1;
 //   return $result;
 // }
+
+function excel() {
+  global $data, $db, $result, $dir, $x, $xr, $_FILES;
+
+  // lấy dữ liệu từ file bank và các file kiot
+  $kiotkey = parseAllKey($data->kiot);
+  $vietkey = parseAllKey($data->vietcom);
+  $kiottemp = array();
+  
+  $vietcomtemp = getData($_FILES['bank']['tmp_name'], $vietkey);
+  foreach ($_FILES['kiot']['tmp_name'] as $file) {
+    $kiottemp []= getData($file, $kiotkey);
+  }
+
+
+  // lưu dữ liệu name
+  $list = array();
+  foreach ($data->input as $key => $input) {
+    $sql = "select * from pet_phc_accountname where id = ". ($key+1);
+    if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values(". ($key+1) .", '$input')";
+    else $sql = "update pet_phc_accountname set name = '$input' where id = ". ($key+1);
+    $db->query($sql);
+    
+    // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
+    // chạy data->input, tìm kiếm trong content của bank có nội dung của input, đẩy vào list[input], xóa trong bank
+    $list[$input] = array();
+    foreach ($vietcomtemp as $i => $item) {
+      if (strpos($item['content'], $input) !== false) {
+        $list[$input] []= $item;
+        unset($vietcomtemp[$i]);
+      }
+    }
+  }
+  // còn lại thêm vào name khác
+  if (count($vietcomtemp)) {
+    $list['khác'] = $vietcomtemp;
+    $data->input []= 'khác';
+  }
+  // xóa những name không có trong danh sách
+  $sql = "delete from pet_phc_accountname where id > ". count($data->input);
+  $db->query($sql);
+
+  // so sánh từ trong list bank với các list kiot, list khác
+  // chạy danh sách list bank
+
+  $content = array();
+  $index = 0;
+  foreach ($list as $key => $bank) {
+    // khởi tạo ô dữ liệu
+    $content[$index] = array(
+      'name' => $key, 'kiot' => 0, 'bank' => 0, 'sub' => 0, 'note' => '', 'list' => array()
+    );
+    // trường hợp dữ liệu khác => đưa vào ngân hàng
+    if (empty($kiottemp[$index])) {
+      foreach ($bank as $bkey => $bankitem) {
+        $content[$index]['list'] []= array(
+          'time' => $bankitem['time'],
+          'bank' => $bankitem['content'],
+          'kiot' => '',
+          'money' => $bankitem['money'],
+          'status' => 1,
+        );
+        $content[$index]['bank'] += $bankitem['money'];
+      }
+    }
+    else {
+      $kiot = $kiottemp[$index]; // lấy dữ liệu chi nhánh tương ứng
+      // chạy dữ liệu ngân hàng
+      foreach ($bank as $bkey => $bankitem) {
+        $check = 1;
+        // chạy dữ liệu kiot
+        foreach ($kiot as $kkey => $kiotitem) {
+          // nếu chưa trùng và tiền 2 bên bằng nhau thì thêm vào ô khớp
+          if ($check && $bankitem['money'] == $kiotitem['money']) {
+            $content[$index]['list'] []= array(
+              'time' => $kiotitem['time'],
+              'kiot' => $kiotitem['content'],
+              'bank' => $bankitem['content'],
+              'money' => $kiotitem['money'],
+              'status' => 0,
+            );
+            // thay đổi tiền tổng
+            $content[$index]['kiot'] += $kiotitem['money'];
+            $content[$index]['bank'] += $bankitem['money'];
+            unset($kiot[$kkey]);
+            unset($bank[$bkey]);
+            $check = 0;
+          }
+        }
+        if ($check) {
+          // không khớp ngân hàng, thêm vào ô ngân hàng
+          $content[$index]['list'] []= array(
+            'time' => $bankitem['time'],
+            'bank' => $bankitem['content'],
+            'kiot' => '',
+            'money' => $bankitem['money'],
+            'status' => 1,
+          );
+          $content[$index]['bank'] += $bankitem['money'];
+        } 
+      }
+  
+      // chạy hết, những chi nhánh kiot chưa trùng thêm vào ô ngân hàng
+      foreach ($kiot as $kkey => $kiotitem) {
+        $content[$index]['list'] []= array(
+          'time' => $kiotitem['time'],
+          'kiot' => $kiotitem['content'],
+          'bank' => '',
+          'money' => $kiotitem['money'],
+          'status' => -1,
+        );
+        $content[$index]['kiot'] += $kiotitem['money'];
+      }
+    }
+    $index ++;
+  }
+
+  // tính chênh lệch
+  foreach ($content as $key => $row) {
+    $content[$key]['sub'] = $row['kiot'] - $row['bank'];
+  }
+
+  // đóng gói dữ liệu trả về
+  $time = time();
+  $json = addslashes(json_encode($content, JSON_UNESCAPED_UNICODE));
+  $sql = "insert into pet_phc_account (content, time) values ('$json', $time)";
+  $result['id'] = $db->insertid($sql);
+  $result['data'] = $content;
+  $result['messenger'] = 'Đã tải file Excel lên';
+  $result['status'] = 1;
+  return $result;
+}
 
 function remove() {
   global $db, $data, $result;
@@ -255,54 +311,19 @@ function getOld() {
   return $list;
 }
 
-function getData($file, $tar, $key) {
-  global $x, $xr, $dir;
-  $raw = $file['tmp_name'];
-  $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-  $name = pathinfo($file['name'], PATHINFO_FILENAME);
-  $des = "$dir/include/export/$tar";
-
-  move_uploaded_file($raw, $des);
-
-  $inputFileType = PHPExcel_IOFactory::identify($des);
-  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
-  $objReader->setReadDataOnly(true);
-  $objPHPExcel = $objReader->load($des);
-  
-  $sheet = $objPHPExcel->getSheet(0); 
-
-  $highestRow = $sheet->getHighestRow(); 
-  $highestColumn = $sheet->getHighestColumn();
-
-  $excel = array();
-  for ($j = intval($key['content']['b']); $j <= $highestRow; $j ++) {
-    $temp = array();
-    $check = false;
-    foreach ($key as $name => $data) {
-      if ($name == 'money') {
-        $val = str_replace(',', '', $sheet->getCell($data['a'] . $j)->getValue());
-        $temp[$name] = $val;
-      }
-      else {
-        $val = $sheet->getCell($data['a'] . $j)->getValue();
-        if ($name == 'time' && (empty($val) || $val == 'Tổng số')) $check = true;
-        $temp[$name] = $val;
-      }
-    }
-    if ($check) break;
-    if (!empty($temp['money'])) $excel []= $temp;
-  }
-
-  return $excel;
-}
-
-// function getData($file, $key) {
+// function getData($file, $tar, $key) {
 //   global $x, $xr, $dir;
+//   $raw = $file['tmp_name'];
+//   $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+//   $name = pathinfo($file['name'], PATHINFO_FILENAME);
+//   $des = "$dir/include/export/$tar";
 
-//   $inputFileType = PHPExcel_IOFactory::identify($file);
+//   move_uploaded_file($raw, $des);
+
+//   $inputFileType = PHPExcel_IOFactory::identify($des);
 //   $objReader = PHPExcel_IOFactory::createReader($inputFileType);
 //   $objReader->setReadDataOnly(true);
-//   $objPHPExcel = $objReader->load($file);
+//   $objPHPExcel = $objReader->load($des);
   
 //   $sheet = $objPHPExcel->getSheet(0); 
 
@@ -330,3 +351,38 @@ function getData($file, $tar, $key) {
 
 //   return $excel;
 // }
+
+function getData($file, $key) {
+  global $x, $xr, $dir;
+
+  $inputFileType = PHPExcel_IOFactory::identify($file);
+  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+  $objReader->setReadDataOnly(true);
+  $objPHPExcel = $objReader->load($file);
+  
+  $sheet = $objPHPExcel->getSheet(0); 
+
+  $highestRow = $sheet->getHighestRow(); 
+  $highestColumn = $sheet->getHighestColumn();
+
+  $excel = array();
+  for ($j = intval($key['content']['b']); $j <= $highestRow; $j ++) {
+    $temp = array();
+    $check = false;
+    foreach ($key as $name => $data) {
+      if ($name == 'money') {
+        $val = str_replace(',', '', $sheet->getCell($data['a'] . $j)->getValue());
+        $temp[$name] = $val;
+      }
+      else {
+        $val = $sheet->getCell($data['a'] . $j)->getValue();
+        if ($name == 'time' && (empty($val) || $val == 'Tổng số')) $check = true;
+        $temp[$name] = $val;
+      }
+    }
+    if ($check) break;
+    if (!empty($temp['money'])) $excel []= $temp;
+  }
+
+  return $excel;
+}

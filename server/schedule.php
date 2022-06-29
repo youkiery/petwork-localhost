@@ -98,7 +98,7 @@ function userData() {
     );
     for ($j = 0; $j < 4; $j++) {
       // lấy danh sách nhân viên đăng ký
-      $sql = "select b.name from pet_phc_row a inner join pet_phc_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
+      $sql = "select b.fullname as name from pet_phc_row a inner join pet_phc_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
       $l = $db->arr($sql, 'name');
       $temp['list'] []= array(
         'name' =>  implode(', ', $l),
@@ -130,7 +130,7 @@ function managerData() {
   $endtime = $starttime + 60 * 60 * 24 * 7 - 1;
   $time = time();
 
-  $sql = "select b.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0";
+  $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0";
   $ul = $db->all($sql);
 
   for ($i = 0; $i < 7; $i++) { 
