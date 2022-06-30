@@ -278,6 +278,7 @@ function getList() {
     'xquang' => 0,
     'transport' => 0,
     'excel' => 0,
+    'hotel' => 0,
     'other' => 0,
   );
 

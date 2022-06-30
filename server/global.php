@@ -7,6 +7,15 @@ function checkuserid() {
   return $user['userid'];
 }
 
+function parseimage($image) {
+  $image = explode(', ', $image);
+  $l = array();
+  foreach ($image as $key => $value) {
+    if (!empty($value)) $l []= $value;
+  }
+  return $l;
+}
+
 function checkUserById($userid) {
   global $db;
 

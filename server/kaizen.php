@@ -148,7 +148,8 @@ function removeData() {
 
 function checkData() {
   global $db, $data;
-  $sql = 'update pet_phc_kaizen set done = 1 where id = '. $data->id;
+  $time = time();
+  $sql = "update pet_phc_kaizen set done = 1, edit_time = $time where id = $data->id";
   $db->query($sql);
 }
 

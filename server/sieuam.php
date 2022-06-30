@@ -73,7 +73,7 @@ function update() {
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
   $sql = "update pet_phc_sieuam set customerid = $customerid, image = '$image', note = '$data->note' where id = $data->id";
-  $id = $db->insertid($sql);
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['list'] = getlist();

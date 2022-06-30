@@ -34,6 +34,7 @@ function session() {
       $db->query($sql);
       $result['data'] = getinitdata($user['userid']);
       $result['config'] = permission($user['userid']);
+      $result['site'] = getsiteconfig();
     }
     else {
       $sql = "delete from pet_phc_session where id = $user[id]";
@@ -170,6 +171,7 @@ function login() {
     $result['session'] = $session;
     $result['data'] = getinitdata($user['userid']);
     $result['config'] = permission($user['userid']);
+    $result['site'] = getsiteconfig();
   }
   return $result;
 }
@@ -209,6 +211,7 @@ function signin() {
     $result['session'] = $session;
     $result['data'] = getinitdata($userid);
     $result['config'] = permission($userid);
+    $result['site'] = getsiteconfig();
   }
   return $result;
 }
@@ -287,4 +290,11 @@ function permission($userid) {
     $c[$row['module']] = intval($row['type']);
   }
   return $c;
+}
+
+function getsiteconfig() {
+  global $data, $db;
+
+  $sql = "select * from pet_phc_config where module = 'site'";
+  return $db->obj($sql, 'name', 'value');
 }

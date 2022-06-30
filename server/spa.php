@@ -450,15 +450,6 @@ function nearlist() {
   return $list;
 }
 
-function parseimage($image) {
-  $image = explode(', ', $image);
-  $l = array();
-  foreach ($image as $key => $value) {
-    if (!empty($value)) $l []= $value;
-  }
-  return $l;
-}
-
 function schedule() {
   global $data, $db, $result;
 
