@@ -47,7 +47,7 @@ function confirm() {
 function temp() {
   global $data, $db, $result;
 
-  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where a.insult = 0 order by id desc";
+  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where a.insult = 0 order by id desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -90,8 +90,8 @@ function getManager() {
   $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his'";
   $role = $db->fetch($sql);
-  if ($role['type'] > 1) $sql = "select a.*, b.name as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid";
-  else $sql = "select a.*, b.name as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid where a.userid = $userid";
+  if ($role['type'] > 1) $sql = "select a.*, b.fullname as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid";
+  else $sql = "select a.*, b.fullname as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid where a.userid = $userid";
 
   return $db->all($sql);
 }
@@ -171,7 +171,7 @@ function statistic() {
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.doctorid = $userid and";
 
-  $sql = "select a.*, b.name as pet, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
+  $sql = "select a.*, b.name as pet, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
   $list = $db->all($sql);
   $data = array();
   
@@ -451,7 +451,7 @@ function detail() {
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $id = $db->insertid($sql);
   
-  $sql = "select a.*, b.name as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
+  $sql = "select a.*, b.fullname as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
   $row = $db->fetch($sql);
   $row['time'] = date('d/m/Y', $row['time']);
   
@@ -543,13 +543,13 @@ function getlist($id = 0) {
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
 
-  $sql = "select a.*, b.id as petid, b.name as pet, b.customerid, c.name as customer, c.phone, d.name as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$data->keyword%') order by a.insult asc, id desc";
+  $sql = "select a.*, b.id as petid, b.name as pet, b.customerid, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $data->start and $data->end) or (a.time < $data->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$data->keyword%') order by a.insult asc, id desc";
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
-    $sql = "select a.*, b.name as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time desc";
+    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time desc";
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);

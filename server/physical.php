@@ -566,7 +566,7 @@ function checkcustomer() {
 function getImport() {
   global $db, $data;
 
-  $sql = "select a.id, a.price, a.time, a.note, b.name from pet_phc_import a inner join pet_phc_users b on a.userid = b.userid where a.module = 'physical' order by id desc limit 20";
+  $sql = "select a.id, a.price, a.time, a.note, b.fullname as name from pet_phc_import a inner join pet_phc_users b on a.userid = b.userid where a.module = 'physical' order by id desc limit 20";
   $l = $db->all($sql);
 
   foreach ($l as $i => $row) {
@@ -578,7 +578,7 @@ function getImport() {
 function getlist() {
   global $db, $data;
 
-  $sql = "select a.*, c.name as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
+  $sql = "select a.*, c.fullname as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
   $query = $db->query($sql);
   $list = array();
   
@@ -594,7 +594,7 @@ function getlist() {
 function getmore() {
   global $db, $data;
 
-  $sql = "select a.*, c.name as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
+  $sql = "select a.*, c.fullname as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
   $query = $db->query($sql);
   $list = array();
   

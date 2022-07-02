@@ -15,7 +15,7 @@ function init() {
 
   $sql = "select * from pet_phc_user_per where module = 'spa' and type = 2 and userid = $userid";
   if (!empty($db->fetch($sql))) {
-    $sql = "select a.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
+    $sql = "select a.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
     $result['doctor'] = $db->all($sql);
   }
   else $result['doctor'] = array();
@@ -306,7 +306,7 @@ function coverData($data) {
     $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
     $service = $db->arr($sql, 'name');
   
-    $sql = "select name as name from pet_phc_users where userid = $row[duser]";
+    $sql = "select fullname as name from pet_phc_users where userid = $row[duser]";
     $d = $db->fetch($sql);
   
     $image = explode(', ', $row['image']);
@@ -332,7 +332,7 @@ function coverData($data) {
 function search() {
   global $data, $db, $result;
 
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -346,7 +346,7 @@ function rate() {
   $sql = "update pet_phc_spa set rate = $data->rate where id = $data->id";
   $db->query($sql);
 
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -363,7 +363,7 @@ function statrate() {
   $data->start = totime($data->start);
   $data->end = totime($data->end) + 60 * 60 * 24 - 1;
   
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -376,7 +376,7 @@ function statistic() {
 
   $data->start = totime($data->start);
   $data->end = totime($data->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -548,10 +548,10 @@ function getList() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
   $spa = $db->all($sql);
   
-  $sql = "select a.*, b.name, b.phone, c.name as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
   $spa = array_merge($spa, $db->all($sql));
 
   $sql = "select * from pet_phc_config where module = 'spa'";
@@ -570,10 +570,10 @@ function getList() {
     $sql = "select name, phone from pet_phc_customer where id = $row[customerid2]";
     $c = $db->fetch($sql);
 
-    $sql = "select name as name from pet_phc_users where userid = $row[luser]";
+    $sql = "select fullname as name from pet_phc_users where userid = $row[luser]";
     $u = $db->fetch($sql);
 
-    $sql = "select name as name from pet_phc_users where userid = $row[duser]";
+    $sql = "select fullname as name from pet_phc_users where userid = $row[duser]";
     $d = $db->fetch($sql);
 
     $sql = "select * from pet_phc_spa_schedule where customerid = $row[customerid] and time > $time";

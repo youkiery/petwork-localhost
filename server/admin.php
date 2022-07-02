@@ -31,7 +31,7 @@ function recycle() {
   $target = $db->arr($sql, 'userid');
 
   if (in_array('vaccine', $data->option) !== false) {
-    $sql = "select a.id, b.name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(', ', $doctor) .")";
+    $sql = "select a.id, b.fullname as name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(', ', $doctor) .")";
     $list = $db->all($sql);
 
     $l = count($list);
@@ -47,7 +47,7 @@ function recycle() {
   }
 
   if (in_array('vaccine', $data->option) !== false) {
-    $sql = "select a.id, b.name from pet_phc_usg a inner join pet_phc_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(', ', $doctor) .")";
+    $sql = "select a.id, b.fullname as name from pet_phc_usg a inner join pet_phc_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(', ', $doctor) .")";
     $list = $db->all($sql);
 
     $l = count($list);

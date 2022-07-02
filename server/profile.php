@@ -508,7 +508,7 @@ function checkcustomer() {
 function getlist() {
   global $db, $data;
 
-  $sql = "select a.*, c.name as doctor from pet_phc_profile a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
+  $sql = "select a.*, c.fullname as doctor from pet_phc_profile a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
   $query = $db->query($sql);
   $list = array();
   
@@ -524,7 +524,7 @@ function getlist() {
 function getmore() {
   global $db, $data;
 
-  $sql = "select a.*, c.name as doctor from pet_phc_profile a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
+  $sql = "select a.*, c.fullname as doctor from pet_phc_profile a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
   $query = $db->query($sql);
   $list = array();
   

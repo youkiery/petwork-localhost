@@ -3,20 +3,37 @@ function init() {
   global $data, $db, $result;
     
   $result['status'] = 1;
+  $result['cat'] = getcatlist();
   $result['list'] = getlist();
-  $result['need'] = getneed();
   return $result;
+}
+
+function getcatobj() {
+  global $data, $db;
+
+  $sql = "select * from pet_phc_hotel_cat";
+  return $db->obj($sql, 'id', 'price');
 }
 
 function getlist() {
   global $data, $db, $result;
 
+  $catobj = getcatobj();
   $list = array(0 => array(), array());
   foreach ($list as $key => $row) {
-    $sql = "select a.*, b.name, b.phone, b.address, c.fullname from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.returnuserid = c.userid where status = $key";
+    $sql = "select a.*, b.name, b.phone, b.address from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id where status = $key";
     $list[$key] = $db->all($sql);
 
     foreach ($list[$key] as $k => $r) {
+      if ($r['status']) {
+        $sql = "select fullname from pet_phc_users where userid = $r[returnuserid]";
+        $u = $db->fetch($sql);
+        $list[$key][$k]['fullname'] = $u['fullname'];
+      }
+      else $list[$key][$k]['fullname'] = '';
+
+      $list[$key][$k]['price'] = number_format($catobj[$r['catid']]);
+      if ($r['status']) $list[$key][$k]['total'] = number_format($catobj[$r['catid']] * round(($r['returntime'] - $r['cometime']) / 60 / 60 / 24));
       $list[$key][$k]['cometime'] = date('d/m/Y', $r['cometime']);
       $list[$key][$k]['calltime'] = date('d/m/Y', $r['calltime']);
       $list[$key][$k]['returntime'] = date('d/m/Y', $r['returntime']);
@@ -33,12 +50,10 @@ function insert() {
   
   $cometime = isodatetotime($data->cometime);
   $calltime = isodatetotime($data->calltime);
-  $returntime = isodatetotime($data->returntime);
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
-  $returnimage = implode(',', $data->returnimage);
   $time = time();
-  $sql = "insert into pet_phc_hotel (customerid, health, cometime, calltime, returntime, image, returnimage, returnuserid, status) values($customerid, '$data->health', $cometime, $calltime, 0, '$image', '', $userid)";
+  $sql = "insert into pet_phc_hotel (customerid, health, cometime, calltime, returntime, image, returnimage, returnuserid, status) values($customerid, '$data->health', $cometime, $calltime, 0, '$image', '', 0, 0)";
   $id = $db->insertid($sql);
 
   $result['status'] = 1;
@@ -51,11 +66,34 @@ function update() {
   
   $cometime = isodatetotime($data->cometime);
   $calltime = isodatetotime($data->calltime);
-  $returntime = isodatetotime($data->returntime);
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
-  $returnimage = implode(',', $data->returnimage);
   $sql = "update pet_phc_hotel set customerid = $customerid, health = '$data->health', cometime = '$cometime', calltime = '$calltime', image = '$image' where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = getlist();
+  return $result;
+}
+
+function returning() {
+  global $data, $db, $result, $userid;
+  
+  $returntime = isodatetotime($data->returntime) + 60 * 60 * 24 - 1;
+  $customerid = checkcustomer();
+  $returnimage = implode(',', $data->image);
+  $sql = "update pet_phc_hotel set customerid = $customerid, health = '$data->health', returntime = $returntime, returnimage = '$returnimage', returnuserid = '$data->returnuserid', status = 1 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = getlist();
+  return $result;
+}
+
+function hopital() {
+  global $data, $db, $result, $userid;
+  
+  $sql = "update pet_phc_hotel set status = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -69,26 +107,64 @@ function remove() {
   $sql = "delete from pet_phc_hotel where id = $data->id";
   $db->query($sql);
 
-  $sql = "update pet_phc_xray_row set xquang = -1 where xquang = $data->id";
-  $db->query($sql);
-
   $result['status'] = 1;
   $result['list'] = getlist();
   return $result;
 }
 
-function getinfo() {
+function savecatlist() {
   global $data, $db, $result, $userid;
   
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.id = $data->id";
-  $data = $db->fetch($sql);
-  $data['time'] = date('d/m/Y', $data['time']);
-  $data['image'] = explode(',', $data['image']);
-  if (count($data['image']) == 1 && $data['image'][0] == '') $data['image'] = array();
+  $index = 1;
+  foreach ($data->list as $row) {
+    $sql = "select * from pet_phc_hotel_cat where id = $index";
+    $row->price = str_replace(',', '', $row->price);
+    if (empty($r = $db->fetch($sql))) $sql = "insert into pet_phc_hotel_cat (name, price) values('$row->name', '$row->price')";
+    else $sql = "update pet_phc_hotel_cat set name = '$row->name', price = '$row->price' where id = $index";
+    $db->query($sql);
+    $index ++;
+  }
+  $sql = "delete fron pet_phc_hotel_cat where id >= $index";
+  $db->query($sql);
 
   $result['status'] = 1;
-  $result['data'] = $data;
+  $result['messenger'] = 'Đã lưu';
+  $result['list'] = getcatlist();
   return $result;
+}
+
+// function getinfo() {
+//   global $data, $db, $result, $userid;
+  
+//   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.id = $data->id";
+//   $data = $db->fetch($sql);
+//   $data['time'] = date('d/m/Y', $data['time']);
+//   $data['image'] = explode(',', $data['image']);
+//   if (count($data['image']) == 1 && $data['image'][0] == '') $data['image'] = array();
+
+//   $result['status'] = 1;
+//   $result['data'] = $data;
+//   return $result;
+// }
+
+function catlist() {
+  global $data, $db, $result, $userid;
+  
+  $result['status'] = 1;
+  $result['list'] = getcatlist();
+  return $result;
+}
+
+function getcatlist() {
+  global $db;
+
+  $sql = "select * from pet_phc_hotel_cat order by id asc";
+  $list = $db->all($sql);
+
+  foreach ($list as $key => $row) {
+    $list[$key]['price'] = number_format($row['price']);
+  }
+  return $list;
 }
 
 function checkcustomer() {

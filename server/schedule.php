@@ -195,14 +195,14 @@ function insert($userid, $time, $type, $action) {
 function getScheduleUser() {
   global $db;
 
-  $sql = "select b.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'doctor' and type = 1";
+  $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'doctor' and type = 1";
   return $db->arr($sql, 'name');
 }
 
 function getExcept() {
   global $db;
 
-  $sql = "select b.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'except' and type = 1";
+  $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'except' and type = 1";
   return $db->arr($sql, 'name');
 }
 

@@ -68,8 +68,8 @@ function getlist($today = false) {
 
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end);
-  $ride = "select a.*, b.name as user from pet_phc_ride a inner join pet_phc_users b on a.userid = b.userid where (a.time between $data->start and $data->end)";
-  $pay = "select a.*, b.name as user from pet_phc_import a inner join pet_phc_users b on a.userid = b.userid where a.module = 'ride' and (a.time between $data->start and $data->end)";
+  $ride = "select a.*, b.fullname as user from pet_phc_ride a inner join pet_phc_users b on a.userid = b.userid where (a.time between $data->start and $data->end)";
+  $pay = "select a.*, b.fullname as user from pet_phc_import a inner join pet_phc_users b on a.userid = b.userid where a.module = 'ride' and (a.time between $data->start and $data->end)";
 
   return array(
     0 => $db->all($ride),
@@ -101,7 +101,7 @@ function statistic() {
     $data['cole'] += $row['money'];
     $data['count'] ++;
     if (empty($temp[$row['userid']])) {
-      $sql = "select name from pet_phc_users where userid = $row[userid]";
+      $sql = "select fullname from pet_phc_users where userid = $row[userid]";
       $u = $db->fetch($sql);
       $temp[$row['userid']] = array('name' => $u['name'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
@@ -113,7 +113,7 @@ function statistic() {
   foreach ($pay as $row) {
     $data['pay'] += $row['price'];
     if (empty($temp[$row['userid']])) {
-      $sql = "select name from pet_phc_users where userid = $row[userid]";
+      $sql = "select fullname from pet_phc_users where userid = $row[userid]";
       $u = $db->fetch($sql);
       $temp[$row['userid']] = array('name' => $u['name'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }

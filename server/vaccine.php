@@ -129,7 +129,7 @@ function doneall() {
 function history() {
   global $data, $db, $result;
 
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
   $result['status'] = 1;
   $result['old'] = dataCover($db->all($sql));
   return $result;
@@ -220,7 +220,7 @@ function transfer() {
     $sql = "update pet_phc_vaccine set userid = $data->uid where id = $id";
     $db->query($sql);
   }
-  $sql = "select a.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
+  $sql = "select a.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
   $d = $db->fetch($sql);
   $result['status'] = 1;
   $result['messenger'] = "Đã chuyển phiếu nhắc sang cho nhân viên: $d[name]";
@@ -232,7 +232,7 @@ function transfer() {
 function confirm() {
   global $data, $db, $result;
 
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.id = $data->id";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.id = $data->id";
   $c = $db->fetch($sql);
   $c['cometime'] = date('d/m/Y', $c['cometime']);
   $c['calltime'] = date('d/m/Y', $c['calltime']);
@@ -281,7 +281,7 @@ function done() {
 function statis() {
   global $data, $db, $result;
 
-  $sql = "select b.userid, b.name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor'";
+  $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor'";
   $doctor = $db->all($sql);
   $list = array();
 
@@ -695,7 +695,7 @@ function vaccined() {
     $xtra = "and a.userid = $userid;";
   }
   
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
   $list = dataCover($db->all($sql));
   $result['status'] = 1;
   $result['list'] = $list;
@@ -723,7 +723,7 @@ function resetvaccine() {
     $xtra = "and a.userid = $userid;";
   }
 
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
   $list = dataCover($db->all($sql));
   $result['status'] = 1;
   $result['list'] = $list;
@@ -767,7 +767,7 @@ function getlist($today = false) {
   $start = strtotime(date('Y/m/d'));
 
   if ($today) {
-    $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 order by a.id desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 order by a.id desc limit 50";
     $list = dataCover($db->all($sql));
   }
   else if (empty($data->keyword)) {
@@ -787,7 +787,7 @@ function getlist($today = false) {
   }
   else {
     $key = trim($data->keyword);
-    $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 order by a.calltime desc, a.recall desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 order by a.calltime desc, a.recall desc limit 50";
     $list = dataCover($db->all($sql));
   }
 
@@ -800,7 +800,7 @@ function getCurrent($status, $xtra) {
   $time = time();
   $limf = $time;
   $lime = $time + 60 * 60 * 24 * 3;
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
   return dataCover($db->all($sql));
 }
 
@@ -809,7 +809,7 @@ function getOver($status, $xtra) {
 
   $time = time();
   $lim = $time;
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
   return dataCover($db->all($sql), 1);
 }
 
@@ -817,7 +817,7 @@ function getOverList() {
   global $db, $data;
 
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, c.name as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.status < 3 and calltime < $time order by a.calltime asc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_type d on a.typeid = d.id where a.status < 3 and calltime < $time order by a.calltime asc limit 50";
   return dataCover($db->all($sql));
 }
 
@@ -877,7 +877,7 @@ function gettemplist() {
   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
   else $xtra = "";
 
-  $sql = "select a.*, c.name as doctor, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_type d on a.typeid = d.id where a.status = 5 $xtra order by a.id desc";
+  $sql = "select a.*, c.fullname as doctor, d.name as type from pet_phc_vaccine a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_type d on a.typeid = d.id where a.status = 5 $xtra order by a.id desc";
   $v = $db->all($sql);
   $e = array();
   $l = array();
@@ -925,7 +925,7 @@ function gettemplist() {
   $list[0] = array_merge($l, $e);
   $start = strtotime(date('Y/m/d'));
   $end = $start + 60 * 60 * 24 - 1;
-  $sql = "select a.*, g.name as petname, g.customerid, b.name, b.phone, b.address, c.name as doctor, d.name as type from pet_phc_vaccine a inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_type d on a.typeid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc limit 50";
+  $sql = "select a.*, g.name as petname, g.customerid, b.name, b.phone, b.address, c.fullname as doctor, d.name as type from pet_phc_vaccine a inner join pet_phc_pet g on a.petid = g.id inner join pet_phc_customer b on g.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_type d on a.typeid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc limit 50";
   $v = $db->all($sql);
   foreach ($v as $row) {
     $list[1] []= array(
@@ -963,7 +963,7 @@ function gettypeobj() {
 function getDoctor() {
   global $db;
 
-  $sql = "select a.userid, b.name, b.username from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
+  $sql = "select a.userid, b.fullname as name, b.username from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
   return $db->all($sql);
 }
 
@@ -1016,28 +1016,28 @@ function getusglist($today = false) {
 
   if ($today) {
     // danh sách đã thêm hôm nay
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.time between $start and ". time() . ") $xtra and a.status < 6 order by a.id desc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.time between $start and ". time() . ") $xtra and a.status < 6 order by a.id desc";
     $list = usgdataCover($db->all($sql));
   }
   else if (empty($data->keyword)) {
     // danh sách nhắc hôm nay
     $list = array(0 => array(), array(), array());
     $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.status > 1 and a.status < 4) $xtra order by a.recall asc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.status > 1 and a.status < 4) $xtra order by a.recall asc";
     $list[0] = usgdataCover($db->all($sql));
     
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.status > 3 and a.status < 6) $xtra order by a.recall asc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (a.status > 3 and a.status < 6) $xtra order by a.recall asc";
     $list[1] = usgdataCover($db->all($sql));
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where a.status = 6 $xtra order by a.recall asc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where a.status = 6 $xtra order by a.recall asc";
   	$list[1] = array_merge($list[1], usgdataCover($db->all($sql)));
     
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where a.status < 2 $xtra order by a.recall asc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where a.status < 2 $xtra order by a.recall asc";
     $list[2] = usgdataCover($db->all($sql));
   }
   else {
     // danh sách tìm kiếm khách hàng
     $key = trim($data->keyword);
-    $sql = "select a.*, c.name as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 8 order by a.recall desc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer b on a.customerid = b.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 8 order by a.recall desc";
     $list = usgdataCover($db->all($sql));
   }
 
@@ -1103,7 +1103,7 @@ function getusgtemplist() {
   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
   else $xtra = "";
 
-  $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.name as doctor from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer d on a.customerid = d.id where a.status = 9 $xtra order by a.id desc";
+  $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.fullname as doctor from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer d on a.customerid = d.id where a.status = 9 $xtra order by a.id desc";
   $v = $db->all($sql);
   $e = array();
   $l = array();
@@ -1120,7 +1120,7 @@ function getusgtemplist() {
   $list[0] = array_merge($l, $e);
   $start = strtotime(date('Y/m/d'));
   $end = $start + 60 * 60 * 24 - 1;
-  $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.name as doctor from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer d on a.customerid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc";
+  $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.fullname as doctor from pet_phc_usg a inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_customer d on a.customerid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc";
   $l = $db->all($sql);
 
   foreach ($l as $row) {

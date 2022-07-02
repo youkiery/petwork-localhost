@@ -70,7 +70,7 @@ function removerecommended() {
 
 function getPurchasedList() {
   global $db, $data;
-  $sql = "select a.*, b.name as user from pet_phc_item_recommend a inner join pet_phc_users b on a.userid = b.userid where a.status = 1";
+  $sql = "select a.*, b.fullname as user from pet_phc_item_recommend a inner join pet_phc_users b on a.userid = b.userid where a.status = 1";
   
   $res = $db->all($sql);
   foreach ($res as $key => $row) {
@@ -134,7 +134,7 @@ function incat() {
 
 function getPurchaseList() {
   global $db, $data;
-  $sql1 = "select a.image, a.id, a.name, a.outstock, a.shop + a.storage as remain, a.recuserid as userid, a.rectime as time, b.name as user from pet_phc_item a inner join pet_phc_users b on a.recuserid = b.userid where a.outstock > 0";
+  $sql1 = "select a.image, a.id, a.name, a.outstock, a.shop + a.storage as remain, a.recuserid as userid, a.rectime as time, b.fullname as user from pet_phc_item a inner join pet_phc_users b on a.recuserid = b.userid where a.outstock > 0";
   $sql2 = "select a.*, b.name as user from pet_phc_item_recommend a inner join pet_phc_users b on a.userid = b.userid where a.status = 0";
   
   $res = array('item' => array(), 'recommend' => $db->all($sql2));
@@ -318,7 +318,7 @@ function getUserCatlist($userid) {
 function getUserList() {
   global $db;
 
-  $sql = "select a.userid, b.name, b.username, b.fullname from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'item' and a.type > 0";
+  $sql = "select a.userid, b.fullname as name, b.username, b.fullname from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'item' and a.type > 0";
   $list = $db->all($sql);
   foreach ($list as $key => $row) {
     $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
