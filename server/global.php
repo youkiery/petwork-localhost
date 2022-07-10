@@ -16,6 +16,13 @@ function parseimage($image) {
   return $l;
 }
 
+function getcustomer($id) {
+  global $db;
+
+  $sql = "select id, name, phone from pet_phc_customer where id = $id";
+  return $db->fetch($sql);
+}
+
 function checkUserById($userid) {
   global $db;
 

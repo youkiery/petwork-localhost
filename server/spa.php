@@ -244,6 +244,30 @@ function done() {
   return $result;
 }
 
+function pick() {
+  global $data, $db, $result;
+
+  $userid = checkuserid();
+  $sql = "update pet_phc_spa set duser = $userid where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getList();
+  return $result;
+}
+
+function picktrans() {
+  global $data, $db, $result;
+
+  $userid = checkuserid();
+  $sql = "update pet_phc_spa set duser = $data->uid where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getList();
+  return $result;
+}
+
 function called() {
   global $data, $db, $result;
 
@@ -291,7 +315,9 @@ function returned() {
 function report() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_spa set duser = $data->uid, dimage = '". implode(', ', $data->image) ."' where id = $data->id";
+  $xtra = '';
+  if ($data->status == 0) $xtra = 'status = 1,';
+  $sql = "update pet_phc_spa set $xtra duser = $data->uid, dimage = '". implode(', ', $data->image) ."' where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -472,12 +498,14 @@ function insert() {
   global $data, $db, $result;
 
   $customerid = checkcustomer($data->phone, $data->name);
-  $customer2id = checkcustomer($data->phone, $data->name);
+  $customer2id = checkcustomer($data->phone2, $data->name2);
   
   $userid = checkuserid();
   $data->treat = intval($data->treat);
+  if ($data->did) $duser = $userid;
+  else $duser = 0;
   
-  $sql = "insert into pet_phc_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(', ', $data->image)."', $data->treat)";
+  $sql = "insert into pet_phc_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(', ', $data->image)."', 0, $duser, $data->number)";
   $id = $db->insertid($sql);
 
   if (!$data->treat) {
@@ -523,31 +551,89 @@ function update() {
   $userid = checkuserid();
   $data->treat = intval($data->treat);
 
-  $sql = "update pet_phc_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(', ', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", status = 0, duser = 0, treat = $data->treat where id = $data->id";
+  $sql = "update pet_phc_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(', ', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
   $sql = "delete from pet_phc_spa_row where spaid = $data->id";
   $db->query($sql);
   
-  if ($data->treat) {
-    foreach ($data->option as $value) {
-      $sql = "insert into pet_phc_spa_row (spaid, typeid) values($data->id, $value)";
-      $db->query($sql);
-    }
+  foreach ($data->option as $value) {
+    $sql = "insert into pet_phc_spa_row (spaid, typeid) values($data->id, $value)";
+    $db->query($sql);
   }
   
   $result['time'] = time();
   $result['list'] = getList();
   $result['status'] = 1;
-
   return $result;
+}
+
+function work() {
+  global $data, $db, $result;
+
+  $start = strtotime(date('Y/m/d'));
+  $end = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_phc_spa where time between $start and $end";
+  $list = $db->all($sql);
+  $data = getuserobj();
+  foreach ($list as $row) {
+    // kiêm tra xong chưa, nếu rồi đẩy vào data
+    // nễu chưa đẩy vào 0
+    $row['customer'] = getcustomer($row['customerid']);
+    $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $row['option'] = implode(', ', $db->arr($sql, 'name'));
+    $row['image'] = parseimage($row['image']);
+
+    if (!empty($row['duser'])) {
+      $data[$row['duser']]['list'] []= $row;
+      $data[$row['duser']]['total'] += $row['number'];
+    }
+    else {
+      $data[0]['list'] []= $row;
+      $data[0]['total'] += $row['number'];
+    }
+  }
+
+  $content = array();
+  foreach ($data as $id => $row) {
+    $content[] = $row;
+  }
+
+  $result['list'] = $content;
+  $result['status'] = 1;
+  return $result;
+}
+
+function getuserobj() {
+  global $db;
+
+  $sql = "select a.userid, a.fullname as name from pet_phc_users a inner join pet_phc_user_per b on a.userid = b.userid and b.module = 'doctor'";
+  $list = $db->all($sql);
+
+  $data = array();
+  $data[0] = array(
+    'userid' => 0,
+    'name' => 'Chưa làm',
+    'total' => 0,
+    'list' => array()
+  );
+  foreach ($list as $key => $value) {
+    $data[$value['userid']] = array(
+      'userid' => $value['userid'],
+      'name' => $value['name'],
+      'total' => 0,
+      'list' => array()
+    );
+  }
+  return $data;
 }
 
 function getList() {
   global $data, $db;
 
-  $start = isodatetotime($data->start);
-  $end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
+  $filter = $data->filter;
+  $start = isodatetotime($filter->start);
+  $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
   $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
   $spa = $db->all($sql);
   
@@ -584,13 +670,14 @@ function getList() {
     $list []= array(
       'id' => $row['id'],
       'near' => $near,
+      'number' => $row['number'],
       'name' => $row['name'],
       'phone' => $row['phone'],
       'name2' => (empty($c['name']) ? '' : $c['name']),
       'phone2' => (empty($c['phone']) ? '' : $c['phone']),
       'user' => $row['user'],
       'note' => $row['note'],
-      'ltime' => (empty($u['name']) ? '' : date('d/m/Y H:i', $row['ltime'])),
+      'ltime' => (empty($u['name']) ? '' : date('d/m H:i', $row['ltime'])),
       'luser' => (empty($u['name']) ? '' : $u['name']),
       'duser' => (empty($d['name']) ? '' : $d['name']),
       'duserid' => $row['duser'],

@@ -20,6 +20,21 @@ function reduce() {
   return $result;
 }
 
+function config() {
+  global $db, $data, $result;
+
+  foreach ($data as $name => $value) {
+    $sql = "select * from pet_phc_config where module = 'site' and name = '$name'";
+    if (empty($r = $db->fetch($sql))) $sql = "insert into pet_phc_config (module, name, value, alt) values ('site', '$name', '$value', 0)";
+    else $sql = "update pet_phc_config set value = '$value' where id = $r[id]";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu';
+  return $result;
+}
+
 function recycle() {
   global $db, $data, $result;
 
@@ -45,6 +60,10 @@ function recycle() {
       $db->query($sql);
     }
   }
+
+  $t = time() - 60 * 60 * 24 * 90; 
+  $sql = "update pet_phc_vaccine status = 4 where status < 3 and calltime < $t"; // sau 3 tháng không nhắc nữa
+  $db->query($sql);
 
   if (in_array('vaccine', $data->option) !== false) {
     $sql = "select a.id, b.fullname as name from pet_phc_usg a inner join pet_phc_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(', ', $doctor) .")";
@@ -217,7 +236,7 @@ function insert() {
 function update() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_users set fullname = '$data->fullname', name = '$data->name' where userid = $data->userid";
+  $sql = "update pet_phc_users set fullname = '$data->fullname', name = '$data->fullname' where userid = $data->userid";
   $db->query($sql);
 
   foreach ($data->module as $name => $value) {
@@ -355,7 +374,7 @@ function updateuser() {
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
   
-  $sql = "update pet_phc_users set username = '$data->username', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
+  $sql = "update pet_phc_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;

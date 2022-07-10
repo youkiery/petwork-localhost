@@ -73,7 +73,7 @@ function initList() {
   if (count($xtra)) $xtra = ' and ' . implode(' and ', $xtra);
   else $xtra = '';
   
-  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 0 order by edit_time desc limit '. $filter->undone * 10;
+  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 0 order by edit_time desc';
   $query = $db->query($sql);
   
   while ($row = $query->fetch_assoc()) {
@@ -93,7 +93,7 @@ function initList() {
     $list['undone'] []= $data;
   }
   
-  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 1 and (edit_time between '. $filter->starttime .' and '. $filter->endtime .') order by edit_time desc limit '. $filter->done * 10;
+  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 1 and (edit_time between '. $filter->starttime .' and '. $filter->endtime .') order by edit_time desc';
   $query = $db->query($sql);
   
   while ($row = $query->fetch_assoc()) {

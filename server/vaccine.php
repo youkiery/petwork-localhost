@@ -294,22 +294,22 @@ function statis() {
     $row['uncall'] = array();
     $row['vaccine'] = array();
 
-    $sql = "select id from pet_phc_vaccine where userid = $row[userid] and status = 5";
+    $sql = "select a.id from pet_phc_vaccine a inner join pet_phc_pet b on a.petid = b.id where a.userid = $row[userid] and a.status = 5";
     $row['vaccine'] = $db->all($sql);
 
-    $sql = "select id from pet_phc_vaccine where userid = $row[userid] and recall < $time and status = 0";
+    $sql = "select a.id from pet_phc_vaccine a inner join pet_phc_pet b on a.petid = b.id where a.userid = $row[userid] and a.recall < $time and a.status = 0";
     $row['uncall'] = $db->all($sql);
 
-    $sql = "select id from pet_phc_usg where userid = $row[userid] and status = 9";
+    $sql = "select a.id from pet_phc_usg a inner join pet_phc_customer b on a.customerid = b.id where a.userid = $row[userid] and a.status = 9";
     $row['usg'] = $db->all($sql);
 
-    $sql = "select id from pet_phc_usg where userid = $row[userid] and recall < $time and status in (2, 3)";
+    $sql = "select a.id from pet_phc_usg a inner join pet_phc_customer b on a.customerid = b.id where a.userid = $row[userid] and a.recall < $time and a.status in (2, 3)";
     $row['unbirth'] = $db->all($sql);
 
-    $sql = "select id from pet_phc_usg where userid = $row[userid] and recall < $time and status in (4, 5)";
+    $sql = "select a.id from pet_phc_usg a inner join pet_phc_customer b on a.customerid = b.id where a.userid = $row[userid] and a.recall < $time and a.status in (4, 5)";
     $row['birth'] = $db->all($sql);
 
-    $sql = "select id from pet_phc_usg where userid = $row[userid] and recall < $time and status in (0, 1)";
+    $sql = "select a.id from pet_phc_usg a inner join pet_phc_customer b on a.customerid = b.id where a.userid = $row[userid] and a.recall < $time and a.status in (0, 1)";
     $row['prog'] = $db->all($sql);
 
     $doctor[$key] = $row;
@@ -431,11 +431,6 @@ function excel() {
   
         if (count($date) == 3) $calltime = strtotime("$date[2]/$date[1]/$date[0]");
         else $calltime = 0;
-        // nếu thời gian nhập < 21 ngày, đặt lại ngày nhắc = 0
-        if ($calltime - $time < $day21) {
-          $calltime = 0;
-          $dat[2] = $row[5];
-        }
         
         $sql = "select * from pet_phc_customer where phone = '$row[2]'";
         if (empty($c = $db->fetch($sql))) {
@@ -457,8 +452,14 @@ function excel() {
         $date = explode('/', $datetime[0]);
         $cometime = strtotime("$date[2]/$date[1]/$date[0]");
         $userid = checkExcept($doctor, $row[1]);
+        // // nếu thời gian nhập < 21 ngày, đặt lại ngày nhắc = 0
+        // if ($calltime - $cometime < $day21) {
+        //   $calltime = 0;
+        //   $dat[2] = $row[5];
+        // }
   
         $sql = "insert into pet_phc_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
+        die($sql);
         if ($db->query($sql)) $res['insert'] ++;
         else {
           $res['error'][] = array(
@@ -511,33 +512,42 @@ function excel() {
     }
   }
 
+  $today = strtotime(date('Y/m/d'));
   if (count($his)) {
+    $sql = "select * from pet_phc_xray_disease order by id asc limit 1";
+    $disease = $db->fetch($sql);
+    $diseaseid = $disease['id'];
     // lấy id người làm
     foreach ($his as $row) {
       $userid = checkExcept($doctor, $row['user']);
+      
+      $datetime = explode(' ', $row['time']);
+      $date = explode('/', $datetime[0]);
+      $cometime = strtotime("$date[2]/$date[1]/$date[0]");
+      $endtime = $cometime + 60 * 60 * 24 - 1;
+
       $time = time();
-      $sql = "select a.* from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where c.phone = '$row[phone]' and insult = 1 order by time desc";
+      $sql = "select a.* from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where c.phone = '$row[phone]' and insult = 0 order by time desc";
       $treating = implode(', ', $row['treat']);
       if (!empty($treat = $db->fetch($sql))) {
-        $sql = "select * from pet_phc_xray_row where xrayid = $treat[id] order by time desc limit 1";
-        $r = $db->fetch($sql);
+        $sql = "select * from pet_phc_xray_row where xrayid = $treat[id] and (time between $cometime and $endtime) order by time desc limit 1";
         // có danh sách trước đó
         // neu hom nay da co thi cap nhat, neu khong thêm vào lịch sử
-        if ($r['time'] > $today) {
+        if (!empty($r = $db->fetch($sql))) {
           $sql = "update pet_phc_xray_row set treat = '$treating' where id = $r[id]";
         }
         else {
-          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($treat[id], $userid, '$r[eye]', '$r[temperate]', '$r[other]', '$treating', '', '$r[status]', $time)";
+          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($treat[id], $userid, '$r[eye]', '$r[temperate]', '$r[other]', '$treating', '', '$r[status]', $cometime)";
         }
         $db->query($sql);
       }
       else {
         // không có danh sách => thêm hồ sơ mới
         $petid = checkpet($row);
-        $sql = "insert into pet_phc_xray(petid, doctorid, insult, time) values($petid, $userid, 0, $time)";
+        $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, diseaseid) values($petid, $userid, 0, $cometime, $diseaseid)";
         $id = $db->insertid($sql);
         
-        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $userid, '', '', '', '$treating', '', '0', $time)";
+        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $userid, '', '', '', '$treating', '', '0', $cometime)";
         $db->query($sql);
       }
     }

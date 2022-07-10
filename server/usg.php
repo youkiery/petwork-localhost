@@ -469,6 +469,7 @@ function doneall() {
     // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
     // nếu không, đặt 5 tháng sau nhắc kỳ salơ
     $recall = $u['cometime'] + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
+    if ($u['note'] == 'mèo') $recall = $u['cometime'] + 60 * 60 * 24 * 30; // là mèo nhắc 1 tháng sau salơ
     if ($u['number']) $recall = $u['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
     $status = intval(boolval($u['number'])) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
 
@@ -541,6 +542,7 @@ function confirm() {
   // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
   // nếu không, đặt 5 tháng sau nhắc kỳ salơ
   $recall = $c['cometime'] + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
+  if ($c['note'] == 'mèo') $recall = $c['cometime'] + 60 * 60 * 24 * 30; // nếu là mèo thì nhắc 1 tháng sau salơ
   if ($c['number']) $recall = $c['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
   $status = intval(boolval($c['number'])) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
   $userid = checkuserid();

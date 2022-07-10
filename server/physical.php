@@ -353,18 +353,10 @@ function insert() {
   else $sql = "update pet_phc_config set value = '$serial' where module = 'physical' and name = 'serial'";
   $db->query($sql);
 
-  $data = array(
-    'id' => $id,
-    'customer' => $data->name,
-    'phone' => $data->phone,
-    'time' => date('d/m/Y', $time)
-  );
-
   $result['status'] = 1;
   $result['list'] = getlist();
   $result['need'] = getneed();
   $result['serial'] = $serial;
-
   return $result;
 }
 
@@ -578,23 +570,10 @@ function getImport() {
 function getlist() {
   global $db, $data;
 
-  $sql = "select a.*, c.fullname as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit ". ($data->page * 10) ." offset 0";
-  $query = $db->query($sql);
-  $list = array();
-  
-  while ($row = $query->fetch_assoc()) {
-    $sql = "select tid, value from pet_phc_physical_data where pid = $row[id]";
-    $row['target'] = $db->obj($sql, 'tid', 'value');
-    $row['time'] = date('d/m/Y', $row['time']);
-    $list []= $row;
-  }
-  return $list;
-}
-
-function getmore() {
-  global $db, $data;
-
-  $sql = "select a.*, c.fullname as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where a.phone like '%$data->key%' or a.customer like '%$data->key%' order by id desc limit 10 offset ". ($data->page - 1) * 10;
+  $filter = $data->filter;
+  $start = isodatetotime($filter->start);
+  $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
+  $sql = "select a.*, c.fullname as doctor from pet_phc_physical a inner join pet_phc_users c on a.doctor = c.userid where (a.phone like '%$filter->key%' or a.customer like '%$filter->key%') and (time between $start and $end) order by id desc";
   $query = $db->query($sql);
   $list = array();
   
