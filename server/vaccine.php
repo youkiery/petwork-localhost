@@ -457,16 +457,19 @@ function excel() {
         //   $calltime = 0;
         //   $dat[2] = $row[5];
         // }
-  
-        $sql = "insert into pet_phc_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
-        die($sql);
-        if ($db->query($sql)) $res['insert'] ++;
-        else {
-          $res['error'][] = array(
-            'name' => $row[3],
-            'phone' => $row[2],
-            'note' => $row[5],
-          );
+
+        $sql = "select * from pet_phc_vaccine where petid = $p[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
+
+        if (empty($r = $db->fetch($sql))) {
+          $sql = "insert into pet_phc_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
+          if ($db->query($sql)) $res['insert'] ++;
+          else {
+            $res['error'][] = array(
+              'name' => $row[3],
+              'phone' => $row[2],
+              'note' => $row[5],
+            );
+          }
         }
       }
       else if (isset($usg[$row[0]])) {
@@ -494,15 +497,18 @@ function excel() {
         $date = explode('/', $datetime[0]);
         $cometime = strtotime("$date[2]/$date[1]/$date[0]");
         $userid = checkExcept($doctor, $row[1]);
-  
-        $sql = "insert into pet_phc_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($c[id], $userid, $cometime, $calltime, $calltime, '$number', 9, '$dat[2]', ". time() .", 0)";
-        if ($db->query($sql)) $res['insert'] ++;
-        else {
-          $res['error'][] = array(
-            'name' => $row[3],
-            'phone' => $row[2],
-            'note' => $row[5],
-          );
+
+        $sql = "select * from pet_phc_vaccine where customerid = $c[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
+        if (empty($r = $db->fetch($sql))) {
+          $sql = "insert into pet_phc_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($c[id], $userid, $cometime, $calltime, $calltime, '$number', 9, '$dat[2]', ". time() .", 0)";
+          if ($db->query($sql)) $res['insert'] ++;
+          else {
+            $res['error'][] = array(
+              'name' => $row[3],
+              'phone' => $row[2],
+              'note' => $row[5],
+            );
+          }
         }
       }
       else if ($row[5] == '1') {

@@ -1,4 +1,9 @@
 <?php
+$x = array();
+$xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');
+foreach ($xr as $key => $value) {
+  $x[$value] = $key;
+}
 
 function auto() {
   global $db, $data, $result;
@@ -382,3 +387,66 @@ function updateuser() {
   
   return $result;
 }
+
+function customercell() {
+  global $db, $result;
+
+  $arr = array('name' => 'A2', 'phone' => 'B2', 'address' => 'C2');
+  $sql = "select * from pet_phc_config where module = 'customer-config'";
+  $c = $db->obj($sql, 'name', 'value');
+  foreach ($arr as $key => $value) {
+    if (!empty($c[$key])) $arr[$key] = $c[$key];
+  }
+  $result['status'] = 1;
+  $result['data'] = $arr;
+  return $result;
+}
+
+function customersave() {
+  global $db, $data, $result;
+
+  foreach ($data as $key => $value) {
+    $sql = "update pet_phc_config set value = '$value' where name = '$key' and module = 'customer-config'";
+    $db->query($sql);
+  }
+  $result['status'] = 1;
+  return $result;
+}
+
+function customer() {
+  global $data, $db, $result, $dir, $x, $xr, $_FILES;
+  
+  $dir = str_replace('/server', '/', ROOTDIR);
+  include $dir .'include/PHPExcel/IOFactory.php';
+  $file = $_FILES['file']['tmp_name'];
+  $inputFileType = PHPExcel_IOFactory::identify($file);
+  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+  $objReader->setReadDataOnly(true);
+  $objPHPExcel = $objReader->load($file);
+  
+  $sheet = $objPHPExcel->getSheet(0); 
+  $highestRow = $sheet->getHighestRow(); 
+  $highestColumn = $sheet->getHighestColumn();
+
+  $name = $data->name[0];
+  $phone = $data->phone[0];
+  $address = $data->address[0];
+  for ($j = $data->name[1]; $j <= $highestRow; $j ++) {
+    $x = array(
+      'name' => $sheet->getCell($name . $j)->getValue(),
+      'phone' => $sheet->getCell($phone . $j)->getValue(),
+      'address' => $sheet->getCell($address . $j)->getValue(),
+    );
+    if (!empty($x['phone'])) {
+      $sql = "select * from pet_phc_customer where phone = '$x[phone]'";
+      if (!empty($c = $db->fetch($sql))) $sql = "update pet_phc_customer set name = '$x[name]', address = '$x[address]' where id = $c[id]";
+      else $sql = "insert into pet_phc_customer (name, phone, address) values('$x[name]', '$x[phone]', '$x[address]')";
+      $db->query($sql);
+    }
+  }
+
+  $result['messenger'] = 'Đã tải file Excel lên';
+  $result['status'] = 1;
+  return $result;
+}
+
