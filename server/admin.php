@@ -304,6 +304,7 @@ function getList() {
     'excel' => 0,
     'hotel' => 0,
     'other' => 0,
+    'luong' => 0,
   );
 
   $sql = 'select name, username, fullname, userid from pet_phc_users where active = 1';
@@ -406,7 +407,9 @@ function customersave() {
   global $db, $data, $result;
 
   foreach ($data as $key => $value) {
-    $sql = "update pet_phc_config set value = '$value' where name = '$key' and module = 'customer-config'";
+    $sql = "select * from pet_phc_config where name = '$key' and module = 'customer-config'";
+    if (!empty($d = $db->fetch($sql))) $sql = "update pet_phc_config set value = '$value' where name = '$key' and module = 'customer-config'";
+    else $sql = "insert into pet_phc_config (module, name, value, alt) values('customer-config', '$key', '$value', 0)";
     $db->query($sql);
   }
   $result['status'] = 1;

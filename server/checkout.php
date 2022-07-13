@@ -156,29 +156,38 @@ function excel() {
     $kiottemp []= getData($file, $kiotkey);
   }
 
-
   // lưu dữ liệu name
   $list = array();
-  foreach ($data->input as $key => $input) {
-    $sql = "select * from pet_phc_accountname where id = ". ($key+1);
-    if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values(". ($key+1) .", '$input')";
-    else $sql = "update pet_phc_accountname set name = '$input' where id = ". ($key+1);
+  if (count($data->input) == 1 && empty($data->input[0])) {
+    $sql = "update pet_phc_accountname set name = '' where id = 1";
     $db->query($sql);
-    
-    // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
-    // chạy data->input, tìm kiếm trong content của bank có nội dung của input, đẩy vào list[input], xóa trong bank
-    $list[$input] = array();
+    $list['khác'] = array();
     foreach ($vietcomtemp as $i => $item) {
-      if (strpos($item['content'], $input) !== false) {
-        $list[$input] []= $item;
-        unset($vietcomtemp[$i]);
+      $list['khác'] []= $item;
+    }
+  } 
+  else {
+    foreach ($data->input as $key => $input) {
+      $sql = "select * from pet_phc_accountname where id = ". ($key+1);
+      if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values(". ($key+1) .", '$input')";
+      else $sql = "update pet_phc_accountname set name = '$input' where id = ". ($key+1);
+      $db->query($sql);
+      
+      // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
+      // chạy data->input, tìm kiếm trong content của bank có nội dung của input, đẩy vào list[input], xóa trong bank
+      $list[$input] = array();
+      foreach ($vietcomtemp as $i => $item) {
+        if (strpos($item['content'], $input) !== false) {
+          $list[$input] []= $item;
+          unset($vietcomtemp[$i]);
+        }
       }
     }
-  }
-  // còn lại thêm vào name khác
-  if (count($vietcomtemp)) {
-    $list['khác'] = $vietcomtemp;
-    $data->input []= 'khác';
+    // còn lại thêm vào name khác
+    if (count($vietcomtemp)) {
+      $list['khác'] = $vietcomtemp;
+      $data->input []= 'khác';
+    }
   }
   // xóa những name không có trong danh sách
   $sql = "delete from pet_phc_accountname where id > ". count($data->input);
