@@ -260,6 +260,11 @@ function savedisease() {
     $sql = "update pet_phc_xray_disease set name = '$row->name' where id = $row->id";
     $db->query($sql);
   }
+
+  if (!empty($data->key)) {
+    $sql = "insert into pet_phc_xray_disease (name) values('$data->key')";
+    $db->query($sql);
+  }
   // $sql = "delete fron pet_phc_xray_disease where id >= $index";
   // $db->query($sql);
 
