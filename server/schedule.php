@@ -101,7 +101,7 @@ function userData() {
       $sql = "select b.fullname as name from pet_phc_row a inner join pet_phc_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
       $l = $db->arr($sql, 'name');
       $temp['list'] []= array(
-        'name' =>  implode(', ', $l),
+        'name' =>  implode(',', $l),
         'color' =>  'green',
       );
 

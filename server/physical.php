@@ -5,7 +5,7 @@ function download() {
   $zip = new ZipArchive;
   
   $fileToModify = 'word/document.xml';
-  $wordDoc = DIR. "/include/export/template2.docx";
+  $wordDoc = DIR. "/include/template2.docx";
   $name = "analysis-". time() .".docx";
   $exportDoc = DIR. "/include/export/". $name;
   
@@ -305,9 +305,10 @@ function updatephysical() {
   global $data, $db, $result;
 
   $userid = checkuserid();
+  $image = implode(',', $data->image);
 
   $time = time();
-  $sql = "update pet_phc_physical set customer = '$data->name', phone = '$data->phone', address = '$data->address', name = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species', serial = '$data->serial', sampletype = '$data->sampletype', samplenumber = '$data->samplenumber', samplesymbol = '$data->samplesymbol', samplestatus = '$data->samplestatus', symptom = '$data->symptom' where id = $data->id";
+  $sql = "update pet_phc_physical set customer = '$data->name', phone = '$data->phone', address = '$data->address', name = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species', serial = '$data->serial', sampletype = '$data->sampletype', samplenumber = '$data->samplenumber', samplesymbol = '$data->samplesymbol', samplestatus = '$data->samplestatus', symptom = '$data->symptom', image = '$image' where id = $data->id";
   $db->query($sql);
 
   foreach ($data->target as $tid => $target) {
@@ -330,9 +331,10 @@ function insert() {
   $query = $db->query($sql);
   $list = $db->all($sql);
   $userid = checkuserid();
+  $image = implode(',', $data->image);
 
   $time = time();
-  $sql = "insert into pet_phc_physical (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', $data->species, '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time)";
+  $sql = "insert into pet_phc_physical (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time, image) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', $data->species, '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time, '$image')";
   $id = $db->insertid($sql);
   // $id = 18;
   if (isset($data->xrayid)) {
@@ -415,7 +417,7 @@ function printword() {
 
   $prof['doctor'] = $doctor['fullname'];
 
-  $html = file_get_contents ( DIR. '/include/export/template2.php');
+  $html = file_get_contents ( DIR. '/include/template2.php');
 
   $html = str_replace('{customer}', $prof['customer'], $html);
   $html = str_replace('{address}', $prof['address'], $html);
@@ -580,6 +582,7 @@ function getlist() {
   while ($row = $query->fetch_assoc()) {
     $sql = "select tid, value from pet_phc_physical_data where pid = $row[id]";
     $row['target'] = $db->obj($sql, 'tid', 'value');
+    $row['image'] = parseimage($row['image']);
     $row['time'] = date('d/m/Y', $row['time']);
     $list []= $row;
   }

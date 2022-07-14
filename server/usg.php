@@ -47,7 +47,7 @@ function gettemplist() {
 
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
@@ -114,7 +114,7 @@ function getlist($today = false) {
   $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";

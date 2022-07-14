@@ -305,7 +305,7 @@ function getUserCat($userid) {
 function getUserCats($userid) {
   global $db;
   $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemcat' and a.name = $userid";
-  return implode(', ', $db->arr($sql, 'name'));
+  return implode(',', $db->arr($sql, 'name'));
 }
 
 function getUserCatlist($userid) {
@@ -322,7 +322,7 @@ function getUserList() {
   $list = $db->all($sql);
   foreach ($list as $key => $row) {
     $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
-    $list[$key]['storage'] = implode(', ', $db->arr($sql, 'name'));
+    $list[$key]['storage'] = implode(',', $db->arr($sql, 'name'));
     $sql = "select b.id, b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
     $list[$key]['per'] = $db->all($sql);
   }
@@ -333,7 +333,7 @@ function per() {
   global $data, $db, $result;
 
   if (count($data->cat)) {
-    $cats = implode(', ', $data->cat);
+    $cats = implode(',', $data->cat);
     $sql = "delete from pet_phc_config where module = 'itemper' and name = $data->userid and value not in ($cats)";
   }
   else $sql = "delete from pet_phc_config where module = 'itemper' and name = $data->userid";
@@ -347,7 +347,7 @@ function per() {
   }
   
   $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
-  $result['storage'] = implode(', ', $db->arr($sql, 'name'));
+  $result['storage'] = implode(',', $db->arr($sql, 'name'));
   $sql = "select b.id, b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
   $result['per'] = $db->all($sql);
 
@@ -418,7 +418,7 @@ function insert() {
   if (!empty($db->fetch($name_sql))) $result['messenger'] = 'Tên mặt hàng đã tồn tại'; 
   else if (!empty($db->fetch($code_sql))) $result['messenger'] = 'Mã mặt hàng đã tồn tại'; 
   else {
-    $sql = "insert into pet_phc_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, $data->cat, 10, '". implode(', ', $data->image) ."')";
+    $sql = "insert into pet_phc_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, $data->cat, 10, '". implode(',', $data->image) ."')";
     $id = $db->insertid($sql);
     foreach ($data->position as $key => $row) {
       $sql = "insert into pet_phc_item_pos_item (itemid, posid) values($id, $row->id)";
@@ -531,7 +531,7 @@ function update() {
   if (!empty($db->fetch($name_sql))) $result['messenger'] = 'Tên mặt hàng đã tồn tại'; 
   else if (!empty($db->fetch($code_sql))) $result['messenger'] = 'Mã mặt hàng đã tồn tại'; 
   else {
-    $sql = "update pet_phc_item set catid = $data->cat, name = '$data->name', code = '$data->code', border = '$data->border', image = '". implode(', ', $data->image) ."' where id = $data->id";
+    $sql = "update pet_phc_item set catid = $data->cat, name = '$data->name', code = '$data->code', border = '$data->border', image = '". implode(',', $data->image) ."' where id = $data->id";
     $db->query($sql);
   
     $poslist = array();
@@ -541,7 +541,7 @@ function update() {
       $db->query($sql);
     }
     // xóa những vị trí không có trong danh sách
-    $sql = "delete from pet_phc_item_pos_item where itemid = $data->id and posid not in (". implode(', ', $poslist) .")";
+    $sql = "delete from pet_phc_item_pos_item where itemid = $data->id and posid not in (". implode(',', $poslist) .")";
     $db->query($sql);
 
     $sourcelist = array();
@@ -551,7 +551,7 @@ function update() {
       $db->query($sql);
     }
     // xóa những vị trí không có trong danh sách
-    $sql = "delete from pet_phc_item_source_item where itemid = $data->id and sourceid not in (". implode(', ', $poslist) .")";
+    $sql = "delete from pet_phc_item_source_item where itemid = $data->id and sourceid not in (". implode(',', $poslist) .")";
     $db->query($sql);
 
     $result['status'] = 1;
@@ -604,13 +604,13 @@ function getList() {
   // $check = true;
   // if (isset($data->cat) && !empty($data->cat)) {
   //   // lọc danh loại hàng từ config
-  //   $cat = implode(', ', $data->cat);
+  //   $cat = implode(',', $data->cat);
   //   $sql = "select * from pet_phc_config where module = 'itemper' and name = $userid and value in ($cat)";
   //   $cat = $db->arr($sql, 'value');
   //   if (count($cat)) {
   //     // có danh sách, hiển thị & cập nhật
   //     $check = false;
-  //     $cats = implode(', ', $cat);
+  //     $cats = implode(',', $cat);
   //     $xtra = " a.catid in ($cats)";
   //     $sql = "update pet_phc_config set value = '$cats'";
   //     $db->query($sql);
@@ -620,7 +620,7 @@ function getList() {
   //   // không có, lấy từ csdl
   //   $sql = "select * from pet_phc_config where module = 'itemper' and name = $userid";
   //   $cat = $db->arr($sql, 'value');
-  //   if (count($cat)) $xtra = ' a.catid in ('. implode(', ', $cat) .')';
+  //   if (count($cat)) $xtra = ' a.catid in ('. implode(',', $cat) .')';
   //   else $xtra = ' 0 ';
   // }
 

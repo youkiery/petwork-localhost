@@ -58,7 +58,7 @@ function updatesc() {
   global $data, $db, $result;
 
   $customerid = checkcustomer($data->phone, $data->name);
-  $image = implode(', ', $data->image);
+  $image = implode(',', $data->image);
   $time = isodatetotime($data->time);
   $ctime = time();
   
@@ -317,7 +317,7 @@ function report() {
 
   $xtra = '';
   if ($data->status == 0) $xtra = 'status = 1,';
-  $sql = "update pet_phc_spa set $xtra duser = $data->uid, dimage = '". implode(', ', $data->image) ."' where id = $data->id";
+  $sql = "update pet_phc_spa set $xtra duser = $data->uid, dimage = '". implode(',', $data->image) ."' where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -349,7 +349,7 @@ function coverData($data) {
       'dimage' => (count($dimage) && !empty($dimage[0]) ? $dimage : array()),
       'hour' => date('H:i', $row['time']),
       'date' => date('d/m/Y', $row['time']),
-      'service' => (count($service) ? implode(', ', $service) : '-')
+      'service' => (count($service) ? implode(',', $service) : '-')
     );
   }
   return $list;
@@ -480,7 +480,7 @@ function schedule() {
   global $data, $db, $result;
 
   $customerid = checkcustomer($data->phone, $data->name);
-  $image = implode(', ', $data->image);
+  $image = implode(',', $data->image);
   $time = isodatetotime($data->time);
   $ctime = time();
   
@@ -505,7 +505,7 @@ function insert() {
   if ($data->did) $duser = $userid;
   else $duser = 0;
   
-  $sql = "insert into pet_phc_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(', ', $data->image)."', 0, $duser, $data->number)";
+  $sql = "insert into pet_phc_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number)";
   $id = $db->insertid($sql);
 
   if (!$data->treat) {
@@ -551,7 +551,7 @@ function update() {
   $userid = checkuserid();
   $data->treat = intval($data->treat);
 
-  $sql = "update pet_phc_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(', ', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
+  $sql = "update pet_phc_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
   $sql = "delete from pet_phc_spa_row where spaid = $data->id";
@@ -581,7 +581,7 @@ function work() {
     // nễu chưa đẩy vào 0
     $row['customer'] = getcustomer($row['customerid']);
     $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
-    $row['option'] = implode(', ', $db->arr($sql, 'name'));
+    $row['option'] = implode(',', $db->arr($sql, 'name'));
     $row['image'] = parseimage($row['image']);
 
     if (!empty($row['duser'])) {
@@ -689,7 +689,7 @@ function getList() {
       'ftime' => date('d/m/Y', $row['time']),
       'time' => date('H:i', $row['time']),
       'option' => $option,
-      'service' => (count($service) ? implode(', ', $service) : '-')
+      'service' => (count($service) ? implode(',', $service) : '-')
     );
   }
 

@@ -12,7 +12,7 @@ function add() {
   $his = $db->obj($sql, 'id', 'his');
   
   $result['status'] = 1;
-  $result['his'] = implode(', ', $his);
+  $result['his'] = implode(',', $his);
   
   return $result;
 }
@@ -23,7 +23,7 @@ function confirm() {
   // thêm vào liệu trình
   $time = isodatetotime($data->time);
   if ($data->id) {
-    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $time)";
+    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
     $db->query($sql);
   }
   else {
@@ -31,7 +31,7 @@ function confirm() {
     $sql = "insert into pet_phc_xray(petid, doctorid, insult, time) values($petid, $data->userid, 0, $time)";
     $id = $db->insertid($sql);
     
-    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $time)";
+    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
     $db->query($sql);
   }
 
@@ -126,8 +126,8 @@ function update() {
     }
   }
   $xtra = '';
-  if (count($list)) $xtra = implode(', ', $list) . ', ';
-  $image = implode(', ', $data->image);
+  if (count($list)) $xtra = implode(',', $list) . ', ';
+  $image = implode(',', $data->image);
 
   $time = isodatetotime($data->time);
   $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', time = $time where id = $data->detailid";
@@ -309,7 +309,7 @@ function insert() {
   $data->sinhhoa = $arr[$data->sinhhoa];
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
-  $image = implode(', ', $data->image);
+  $image = implode(',', $data->image);
 
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $id = $db->query($sql);
@@ -405,7 +405,7 @@ function detail() {
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(', ', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
+  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu)";
   $id = $db->insertid($sql);
   
   $sql = "select a.*, b.fullname as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
@@ -493,7 +493,7 @@ function getlist($id = 0) {
   if ($role['type'] < 2) $xtra []= " (a.doctorid = $userid or a.share = 1 or pos = 1) ";
   else if (isset($filter->{'docs'})) {
     if (empty($filter->docscover)) $filter->docscover = '';
-    $docs = implode(', ', $filter->docs);
+    $docs = implode(',', $filter->docs);
     $sql = "update pet_phc_config set value = '$docs' where module = 'docs' and name = '$userid'";
     $db->query($sql);
     $sql = "update pet_phc_config set value = '$filter->docscover' where module = 'docscover' and name = '$userid'";
@@ -523,6 +523,21 @@ function getlist($id = 0) {
       else $row[$index]['image'] = $image;
       $sql = "select a.image, a.note, a.id, a.status, b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where treatid = $detail[id]";
       $row[$index]['exam'] = $db->all($sql);
+
+      $row[$index]['sinhlyimg'] = array();
+      $row[$index]['sinhhoaimg'] = array();
+
+      if ($detail['sinhly'] > 0) {
+        $sql = "select image from pet_phc_physical where id = $detail[sinhly]";
+        $d = $db->fetch($sql);
+        $row[$index]['sinhlyimg'] = parseimage($d['image']);
+      }
+      if ($detail['sinhhoa'] > 0) {
+        $sql = "select image from pet_phc_profile where id = $detail[sinhhoa]";
+        $d = $db->fetch($sql);
+        $row[$index]['sinhhoaimg'] = parseimage($d['image']);
+      }
+
       foreach ($row[$index]['exam'] as $examindex => $exam) {
         $image = explode(', ', $exam['image']);
         if (count($image) == 1 && $image[0] == '') $row[$index]['exam'][$examindex]['image'] = array();
@@ -552,7 +567,7 @@ function getlist($id = 0) {
     }
     $list[$key]['rate'] = intval($value['rate']);
     $list[$key]['detail'] = $row;
-    $list[$key]['his'] = implode(', ', $his);
+    $list[$key]['his'] = implode(',', $his);
   }
   return $list;
 }

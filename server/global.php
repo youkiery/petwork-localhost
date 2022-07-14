@@ -8,10 +8,10 @@ function checkuserid() {
 }
 
 function parseimage($image) {
-  $image = explode(', ', $image);
+  $image = explode(',', $image);
   $l = array();
   foreach ($image as $key => $value) {
-    if (!empty($value)) $l []= $value;
+    if (!empty($value)) $l []= trim($value);
   }
   return $l;
 }

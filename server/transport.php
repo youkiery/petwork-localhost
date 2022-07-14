@@ -66,7 +66,7 @@ function getlist() {
   foreach ($pl as $i => $p) {
     $sql = "select value as name from pet_phc_config where module = 'transport' and name = '$p[id]' order by id desc";
     $pl[$i]['detail'] = $db->all($sql);
-    $pl[$i]['detailcover'] = implode(', ', $db->arr($sql, 'name'));
+    $pl[$i]['detailcover'] = implode(',', $db->arr($sql, 'name'));
   }
   return $pl;
 }

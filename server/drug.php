@@ -13,7 +13,7 @@ function insert() {
 
   $sql = "select * from pet_phc_drug where name = '$data->name' limit 1";
   if (empty($db->fetch($sql))) {
-    $sql = "insert into pet_phc_drug (code, name, unit, system, limits, effect, effective, disease, note, sideeffect, mechanic, image) values('', '$data->name', '', '', '$data->limits', '$data->effect', '', '', '', '$data->sideeffect', '$data->mechanic', '". implode(', ', $data->image) ."')";
+    $sql = "insert into pet_phc_drug (code, name, unit, system, limits, effect, effective, disease, note, sideeffect, mechanic, image) values('', '$data->name', '', '', '$data->limits', '$data->effect', '', '', '', '$data->sideeffect', '$data->mechanic', '". implode(',', $data->image) ."')";
     $db->query($sql);
     $result['status'] = 1;
     $data = $data->filter;
@@ -30,7 +30,7 @@ function update() {
 
   $sql = "select * from pet_phc_drug where name = '$data->name' and id <> $data->id limit 1";
   if (empty($db->fetch($sql))) {
-    $sql = "update pet_phc_drug set name = '$data->name', limits = '$data->limits', effect = '$data->effect', sideeffect = '$data->sideeffect', mechanic = '$data->mechanic', image = '".implode(', ', $data->image)."' where id = $data->id";
+    $sql = "update pet_phc_drug set name = '$data->name', limits = '$data->limits', effect = '$data->effect', sideeffect = '$data->sideeffect', mechanic = '$data->mechanic', image = '".implode(',', $data->image)."' where id = $data->id";
     $db->query($sql);
     $result['status'] = 1;
     $data = $data->filter;

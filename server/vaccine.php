@@ -117,7 +117,7 @@ function doneall() {
     $db->query($sql);
   }
 
-  $sql = "update pet_phc_vaccine set status = 3 where id in (select a.id from pet_phc_vaccine a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where (a.status = 1 or a.status = 2) and c.id in (". implode(', ', $c) .") order by a.id asc)";
+  $sql = "update pet_phc_vaccine set status = 3 where id in (select a.id from pet_phc_vaccine a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where (a.status = 1 or a.status = 2) and c.id in (". implode(',', $c) .") order by a.id asc)";
   $db->query($sql);
   $result['old'] = array();
   $result['list'] = gettemplist();
@@ -365,7 +365,10 @@ function excel() {
   $highestColumn = $sheet->getHighestColumn();
 
   $sql = "select a.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
-  $doctor = $db->obj($sql, 'name', 'userid');
+  $list = $db->obj($sql, 'name', 'userid');
+  foreach ($list as $key => $row) {
+    $doctor[mb_strtolower($key)] = $row;
+  }
 
   $sql = "select * from pet_phc_type where active = 1";
   $type = $db->obj($sql, 'code', 'id');
@@ -431,6 +434,7 @@ function excel() {
   
         if (count($date) == 3) $calltime = strtotime("$date[2]/$date[1]/$date[0]");
         else $calltime = 0;
+        if (empty($calltime)) $calltime = 0;
         
         $sql = "select * from pet_phc_customer where phone = '$row[2]'";
         if (empty($c = $db->fetch($sql))) {
@@ -592,6 +596,7 @@ function checkpet($data) {
 function checkExcept($list, $name) {
   global $db;
 
+  $name = mb_strtolower($name);
   if (!isset($list[$name])) $userid = $list[array_rand($list)];
   else $userid = $list[$name];
   // kiểm tra userid có trong danh sách manager hay không
@@ -763,7 +768,7 @@ function getlist($today = false) {
   $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
@@ -876,7 +881,7 @@ function gettemplist() {
 
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
@@ -1011,7 +1016,7 @@ function getusglist($today = false) {
   $userid = checkuserid();
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
@@ -1101,7 +1106,7 @@ function getusgtemplist() {
 
   $sql = "select * from pet_phc_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(', ', $data->docs);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";

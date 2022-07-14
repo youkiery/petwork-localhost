@@ -121,7 +121,7 @@ foreach ($json as $key => $row) {
 // $sql = "select * from pet_phc_users where userid not in (select userid from pet_phc_doctor)";
 // $doc = $db->arr($sql, 'userid');
 
-// $sql = "select b.name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(', ', $doc) .")";
+// $sql = "select b.name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doc) .")";
 // $list = $db->arr($sql, 'name');
 
 // $sql = "select userid from pet_phc_doctor";
