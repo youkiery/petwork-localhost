@@ -59,14 +59,16 @@ function parseKey($text) {
 function save() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_config where module = '$data->module' and name = '$data->name'";
-  if (empty($db->fetch($sql))) {
-    $sql = "insert into pet_phc_config (module, name, value) values('$data->module', '$data->name', '$data->value')";
+  foreach ($data->data as $key => $value) {
+    $sql = "select * from pet_phc_config where module = '$data->module' and name = '$key'";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into pet_phc_config (module, name, value) values('$data->module', '$key', '$value')";
+    }
+    else {
+      $sql = "update pet_phc_config set value = '$value' where module = '$data->module' and name = '$key'";
+    }
   }
-  else {
-    $sql = "update pet_phc_config set value = '$data->value' where module = '$data->module' and name = '$data->name'";
-  }
-  $db->query($sql);
+  $result['messenger'] = 'Đã lưu cấu hình';
   $result['status'] = 1;
   return $result;
 }
@@ -274,7 +276,7 @@ function excel() {
   }
 
   // đóng gói dữ liệu trả về
-  $time = time();
+  $time = isodatetotime($data->time);
   $json = addslashes(json_encode($content, JSON_UNESCAPED_UNICODE));
   $sql = "insert into pet_phc_account (content, time) values ('$json', $time)";
   $result['id'] = $db->insertid($sql);
@@ -381,6 +383,7 @@ function getData($file, $key) {
     foreach ($key as $name => $data) {
       if ($name == 'money') {
         $val = str_replace(',', '', $sheet->getCell($data['a'] . $j)->getValue());
+        $val = str_replace('.', '', $val);
         $temp[$name] = $val;
       }
       else {
