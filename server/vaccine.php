@@ -502,7 +502,7 @@ function excel() {
         $cometime = strtotime("$date[2]/$date[1]/$date[0]");
         $userid = checkExcept($doctor, $row[1]);
 
-        $sql = "select * from pet_phc_vaccine where customerid = $c[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
+        $sql = "select * from pet_phc_usg where customerid = $c[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
         if (empty($r = $db->fetch($sql))) {
           $sql = "insert into pet_phc_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($c[id], $userid, $cometime, $calltime, $calltime, '$number', 9, '$dat[2]', ". time() .", 0)";
           if ($db->query($sql)) $res['insert'] ++;

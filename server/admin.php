@@ -417,6 +417,10 @@ function customersave() {
   return $result;
 }
 
+function layso($chuoi) {
+  return intval(preg_replace('/[^0-9]/', '', $chuoi));
+}
+
 function customer() {
   global $data, $db, $result, $dir, $x, $xr, $_FILES;
   
@@ -435,7 +439,8 @@ function customer() {
   $name = $data->name[0];
   $phone = $data->phone[0];
   $address = $data->address[0];
-  for ($j = $data->name[1]; $j <= $highestRow; $j ++) {
+  $so = layso($data->name);
+  for ($j = $so; $j <= $highestRow; $j ++) {
     $x = array(
       'name' => $sheet->getCell($name . $j)->getValue(),
       'phone' => $sheet->getCell($phone . $j)->getValue(),
