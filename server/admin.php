@@ -50,38 +50,62 @@ function recycle() {
   $sql = "select userid from pet_phc_user_per where module = 'doctor' and type = 1 and userid not in (". implode(',', $data->doctor) .")";
   $target = $db->arr($sql, 'userid');
 
-  if (in_array('vaccine', $data->option) !== false) {
-    $sql = "select a.id, b.fullname as name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
-    $list = $db->all($sql);
-
-    $l = count($list);
-    $d = count($target);
-    $n = (int) ($l / $d);
-
-    $c = 0;
-    for ($i = 0; $i < $l; $i++) { 
-      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_phc_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
+    if (!empty($data->userid)) {
+      $sql = "update pet_phc_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
       $db->query($sql);
     }
-  }
+    else {
+      $sql = "select a.id, b.fullname as name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
+      $list = $db->all($sql);
+
+      $l = count($list);
+      $d = count($target);
+      $n = (int) ($l / $d);
+  
+      $c = 0;
+      for ($i = 0; $i < $l; $i++) { 
+        if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+        $sql = "update pet_phc_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
+        $db->query($sql);
+      }
+    }
 
   $t = time() - 60 * 60 * 24 * 90; 
-  $sql = "update pet_phc_vaccine status = 4 where status < 3 and calltime < $t"; // sau 3 tháng không nhắc nữa
+  $sql = "update pet_phc_vaccine status = 4 where status < 3 and calltime < $t"; // đã trôi qua 3 tháng không nhắc nữa
   $db->query($sql);
 
-  if (in_array('vaccine', $data->option) !== false) {
+  if (!empty($data->userid)) {
+    $sql = "update pet_phc_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
     $sql = "select a.id, b.fullname as name from pet_phc_usg a inner join pet_phc_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
     $list = $db->all($sql);
-
     $l = count($list);
     $d = count($target);
     $n = (int) ($l / $d);
-
     $c = 0;
     for ($i = 0; $i < $l; $i++) { 
       if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
       $sql = "update pet_phc_usg set userid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
+  
+  if (!empty($data->userid)) {
+    $sql = "update pet_phc_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_phc_xray a inner join pet_phc_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_phc_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
       $db->query($sql);
     }
   }

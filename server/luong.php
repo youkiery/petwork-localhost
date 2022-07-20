@@ -83,8 +83,8 @@ function danhsachnhanvien() {
     $luong = $db->fetch($sql);
 
     $dauthanglenluong = strtotime(date('Y/m/1', $row['lenluong']));
-    $denhopdong = $row['hopdong'] - 30 * 24 * 60 * 60;
-    $dencamket = $row['camket'] - 30 * 24 * 60 * 60;
+    $denhopdong = $row['hopdong'] - 90 * 24 * 60 * 60;
+    $dencamket = $row['camket'] - 90 * 24 * 60 * 60;
 
     $list[$key]['ten'] = $user['fullname'];
     $list[$key]['luongcoban'] = number_format($row['luongcoban']);
@@ -128,11 +128,48 @@ function danhsachtimthemnhanvien() {
     $list []= array(
       'id' => $row['userid'],
       'ten' => $row['fullname'],
+      'gianluoc' => lower($row['fullname']),
       'taikhoan' => $row['username'],
     );
   }
   
   return $list;
+}
+
+function themnhanvien2() {
+  global $data, $db, $result;
+
+  $username = mb_strtolower($data->username);
+  $password = $data->password;
+
+  include_once('Encryption.php');
+  $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
+  $crypt = new NukeViet\Core\Encryption($sitekey);
+
+  $sql = 'select userid, password from `pet_phc_users` where LOWER(username) = "'. $username .'"';
+  if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
+  else {
+    $time = time();
+    $sql = "insert into pet_phc_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
+    $userid = $db->insertid($sql);
+    
+    $data->luongcoban = str_replace(',', '', $data->luongcoban);
+    if (empty($data->cophan)) $data->cophan = 0;
+    $data->ngayky = isodatetotime($data->ngayky);
+    $data->hopdong = isodatetotime($data->hopdong);
+    $data->camket = isodatetotime($data->camket);
+    $ngayky = date('Y-m-d', $data->ngayky);
+    $lenluong = strtotime("+12 months $ngayky");
+  
+    $sql = "insert into pet_phc_luong_nhanvien (userid, luongcoban, ngayky, lenluong, hopdong, camket, cophan) values($userid, $data->luongcoban, $data->ngayky, $lenluong, $data->hopdong, $data->camket, $data->cophan)";
+    $result['messenger'] = 'Đã thêm nhân viên';
+    $db->query($sql);
+  
+    $result['status'] = 1;
+    $result['danhsach'] = danhsachnhanvien();
+  }
+
+  return $result;
 }
 
 function themnhanvien() {

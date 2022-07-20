@@ -547,7 +547,7 @@ function excel() {
           $sql = "update pet_phc_xray_row set treat = '$treating' where id = $r[id]";
         }
         else {
-          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($treat[id], $userid, '$r[eye]', '$r[temperate]', '$r[other]', '$treating', '', '$r[status]', $cometime)";
+          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, conclude) values($treat[id], $userid, '$r[eye]', '$r[temperate]', '$r[other]', '$treating', '', '$r[status]', $cometime, '$r[conclude]')";
         }
         $db->query($sql);
       }
@@ -557,7 +557,7 @@ function excel() {
         $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, diseaseid) values($petid, $userid, 0, $cometime, $diseaseid)";
         $id = $db->insertid($sql);
         
-        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $userid, '', '', '', '$treating', '', '0', $cometime)";
+        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, conclude) values($id, $userid, '', '', '', '$treating', '', '0', $cometime, '')";
         $db->query($sql);
       }
     }
