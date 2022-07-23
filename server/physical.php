@@ -313,6 +313,7 @@ function updatephysical() {
 
   foreach ($data->target as $tid => $target) {
     $sql = "select * from pet_phc_physical_data where pid = $data->id and tid = $tid";
+    if (strlen($target) == 0) $target = 0;
     if (empty($d = $db->fetch($sql))) $sql = "insert into pet_phc_physical_data (pid, tid, value) values ($data->id, $tid, '$target')";
     else $sql = "update pet_phc_physical_data set value = $target where id = $d[id]";
     $db->query($sql);
@@ -343,8 +344,10 @@ function insert() {
   }
 
   foreach ($list as $target) {
-    $sql = "insert into pet_phc_physical_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
-    $db->query($sql);
+    if (strlen($target)) {
+      $sql = "insert into pet_phc_physical_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
+      $db->query($sql);
+    }
   }
 
   $serial = floatval($data->serial) + 1;

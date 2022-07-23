@@ -17,32 +17,32 @@ function add() {
   return $result;
 }
 
-function confirm() {
-  global $data, $db, $result;
+// function confirm() {
+//   global $data, $db, $result;
 
-  // thêm vào liệu trình
-  $time = isodatetotime($data->time);
-  if ($data->id) {
-    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
-    $db->query($sql);
-  }
-  else {
-    $petid = checkpet();
-    $sql = "insert into pet_phc_xray(petid, doctorid, insult, time) values($petid, $data->userid, 0, $time)";
-    $id = $db->insertid($sql);
+//   // thêm vào liệu trình
+//   $time = isodatetotime($data->time);
+//   if ($data->id) {
+//     $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
+//     $db->query($sql);
+//   }
+//   else {
+//     $petid = checkpet();
+//     $sql = "insert into pet_phc_xray(petid, doctorid, insult, time) values($petid, $data->userid, 0, $time)";
+//     $id = $db->insertid($sql);
     
-    $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
-    $db->query($sql);
-  }
+//     $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
+//     $db->query($sql);
+//   }
 
-  // xóa phiếu tạm
-  $sql = "delete from pet_phc_his_temp where id = $data->tempid";
-  $db->query($sql);
+//   // xóa phiếu tạm
+//   $sql = "delete from pet_phc_his_temp where id = $data->tempid";
+//   $db->query($sql);
 
-  $result['status'] = 1;
-  $result['list'] = getManager();
-  return $result;
-}
+//   $result['status'] = 1;
+//   $result['list'] = getManager();
+//   return $result;
+// }
 
 function printer() {
   global $data, $db, $result;
@@ -61,12 +61,16 @@ function printer() {
   $count = count($names);
   $doctor['halfname'] = mb_strtoupper($names[$count - 2] . ' ' . $names[$count - 1]);
 
+  $sql = "select * from pet_phc_config where id = $doctor[placeid]";
+  if (empty($place = $db->fetch($sql))) $place = array('name' => '');
+
   $sql = "select * from pet_phc_pet where id = $xray[petid]";
   $pet = $db->fetch($sql);
 
   $sql = "select * from pet_phc_customer where id = $pet[customerid]";
   $customer = $db->fetch($sql);
 
+  $html = str_replace('{place}', $place['name'], $html);
   $html = str_replace('{doctor}', $doctor['halfname'], $html);
   $html = str_replace('{customer}', $customer['name'], $html);
   $html = str_replace('{address}', $customer['address'], $html);
@@ -83,6 +87,12 @@ function printer() {
     $t = (isset($treats[$i]) ? $treats[$i] : '');
     $html = str_replace('{treat'. ($i + 1) .'}', $t, $html);
   }
+  $treat = nl2br($detail['subother']);
+  $treats = explode('<br />', $treat);
+  for ($i = 0; $i < 3; $i++) { 
+    $t = (isset($treats[$i]) ? $treats[$i] : '');
+    $html = str_replace('{treating'. ($i + 1) .'}', $t, $html);
+  }
   $treat = nl2br($detail['conclude']);
   $treats = explode('<br />', $treat);
   for ($i = 0; $i < 3; $i++) { 
@@ -91,28 +101,28 @@ function printer() {
   }
   $treat = nl2br($detail['treat']);
   $treats = explode('<br />', $treat);
-  for ($i = 0; $i < 3; $i++) { 
+  for ($i = 0; $i < 5; $i++) { 
     $t = (isset($treats[$i]) ? $treats[$i] : '');
     $html = str_replace('{drug'. ($i + 1) .'}', $t, $html);
   }
 
-  $p = array();
-  if ($detail['sieuam'] != '0') $p []= '☑ Siêu âm';
-  if ($detail['xquang'] != '0') $p []= '☑ X Quang';
-  if ($detail['sinhly'] != '0') $p []= '☑ Sinh lý';
-  if ($detail['sinhhoa'] != '0') $p []= '☑ Sinh hóa';
-  if ($detail['nuoctieu'] != '0') $p []= '☑ Nước tiểu';
-  $sql = "select b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where a.treatid = $data->id";
-  $list = $db->all($sql);
+  // $p = array();
+  // if ($detail['sieuam'] != '0') $p []= '☑ Siêu âm';
+  // if ($detail['xquang'] != '0') $p []= '☑ X Quang';
+  // if ($detail['sinhly'] != '0') $p []= '☑ Sinh lý';
+  // if ($detail['sinhhoa'] != '0') $p []= '☑ Sinh hóa';
+  // if ($detail['nuoctieu'] != '0') $p []= '☑ Nước tiểu';
+  // $sql = "select b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where a.treatid = $data->id";
+  // $list = $db->all($sql);
 
-  foreach ($list as $row) {
-    $p []= '☑ '. $row['name'];
-  }
+  // foreach ($list as $row) {
+  //   $p []= '☑ '. $row['name'];
+  // }
 
-  for ($i = 0; $i < 6; $i++) { 
-    $t = (isset($p[$i]) ? $p[$i] : '');
-    $html = str_replace('{a'. $i .'}', $t, $html);
-  }
+  // for ($i = 0; $i < 6; $i++) { 
+  //   $t = (isset($p[$i]) ? $p[$i] : '');
+  //   $html = str_replace('{a'. $i .'}', $t, $html);
+  // }
 
   $html = str_replace('{date}', date('d', $detail['time']), $html);
   $html = str_replace('{month}', date('m', $detail['time']), $html);
@@ -133,7 +143,6 @@ function temp() {
   foreach ($list as $key => $row) {
     $sql = "select * from pet_phc_xray_row where xrayid = $row[id] order by id desc limit 1";
     $r = $db->fetch($sql);
-    $list[$key]['eye'] = (empty($r['eye']) ? '' : $r['eye']);
     $list[$key]['temperate'] = (empty($r['temperate']) ? '' : $r['temperate']);
     $list[$key]['other'] = (empty($r['other']) ? '' : $r['other']);
     $list[$key]['status'] = (empty($r['status']) ? 0 : $r['status']);
@@ -210,7 +219,7 @@ function update() {
   $image = implode(',', $data->image);
 
   $time = isodatetotime($data->time);
-  $sql = "update pet_phc_xray_row set $xtra eye = '$data->eye', temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', conclude = '$data->conclude' time = $time where id = $data->detailid";
+  $sql = "update pet_phc_xray_row set $xtra temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', conclude = '$data->conclude', subother = '$data->subother', time = $time where id = $data->detailid";
   $db->query($sql);
 
   foreach ($data->exam as $exam) {
@@ -396,7 +405,7 @@ function insert() {
   $data->nuoctieu = $arr[$data->nuoctieu];
   $image = implode(',', $data->image);
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
+  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->query($sql);
 
   if (!empty($data->near)) {
@@ -490,7 +499,7 @@ function detail() {
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($data->id, $userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
+  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($data->id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->insertid($sql);
   
   $sql = "select a.*, b.fullname as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
@@ -599,7 +608,7 @@ function getlist($id = 0) {
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
-    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time desc";
+    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);

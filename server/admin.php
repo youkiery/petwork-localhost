@@ -332,10 +332,14 @@ function getList() {
     'accounting' => 0,
   );
 
-  $sql = 'select name, username, fullname, userid from pet_phc_users where active = 1';
+  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1';
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
+    $sql = "select * from pet_phc_config where id = $row[placeid]";
+    if (empty($place = $db->fetch($sql))) $place = array('name' => 'Chưa chọn');
+    $list[$index]['place'] = $place['name'];
+
     $sql = 'select * from pet_phc_user_per where userid = '. $row['userid'];
     $query = $db->query($sql);
     $temp = $module;
@@ -483,3 +487,70 @@ function customer() {
   return $result;
 }
 
+function placeinit() {
+  global $db, $result, $data;
+
+  $result['status'] = 1;
+  $result['list'] = placelist();
+  return $result;
+}
+
+function placelist() {
+  global $db, $result, $data;
+
+  $sql = "select id, name from pet_phc_config where module = 'place' and alt = 1";
+  $list = $db->all($sql);
+  return $list;
+}
+
+function placeremove() {
+  global $db, $result, $data;
+
+  $sql = "update pet_phc_config where set alt = 0 where id = $data->placeid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = placelist();
+  return $result;
+}
+
+function placeupdate() {
+  global $db, $result, $data;
+
+  $sql = "update pet_phc_config set name = '$data->name' where id = $data->placeid";
+  $db->query($sql);
+
+  $sql = "update pet_phc_users set placeid = $data->placeid where userid = $data->userid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['placelist'] = placelist();
+  $result['adminlist'] = getlist();
+  return $result;
+}
+
+function placeinsert() {
+  global $db, $result, $data;
+
+  $sql = "insert into pet_phc_config (module, name, value, alt) values('place', '$data->name', '', 1)";
+  $id = $db->insertid($sql);
+
+  $sql = "update pet_phc_users set placeid = $id where userid = $data->userid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['placelist'] = placelist();
+  $result['adminlist'] = getlist();
+  return $result;
+}
+
+function placeselect() {
+  global $db, $result, $data;
+
+  $sql = "update pet_phc_users set placeid = $data->placeid where userid = $data->userid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['adminlist'] = getlist();
+  return $result;
+}

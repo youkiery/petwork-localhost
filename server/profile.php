@@ -255,6 +255,7 @@ function updateprofile() {
   $db->query($sql);
 
   foreach ($data->target as $tid => $target) {
+    if (strlen($target) == 0) $target = 0;
     $sql = "select * from pet_phc_profile_data where pid = $data->id and tid = $tid";
     if (empty($d = $db->fetch($sql))) $sql = "insert into pet_phc_profile_data (pid, tid, value) values ($data->id, $tid, '$target')";
     else $sql = "update pet_phc_profile_data set value = $target where id = $d[id]";
@@ -286,8 +287,10 @@ function insert() {
   }
 
   foreach ($list as $target) {
-    $sql = "insert into pet_phc_profile_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
-    $db->query($sql);
+    if (strlen($target)) {
+      $sql = "insert into pet_phc_profile_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
+      $db->query($sql);
+    }
   }
 
   $serial = floatval($data->serial) + 1;

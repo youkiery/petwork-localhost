@@ -72,7 +72,7 @@ function chuy() {
 function danhsachnhanvien() {
   global $db;
   
-  $sql = "select * from pet_phc_luong_nhanvien order by lenluong";
+  $sql = "select * from pet_phc_luong_nhanvien order by id asc";
   $list = $db->all($sql);
   $homnay = time();
 
@@ -85,12 +85,15 @@ function danhsachnhanvien() {
     $dauthanglenluong = strtotime(date('Y/m/1', $row['lenluong']));
     $denhopdong = $row['hopdong'] - 90 * 24 * 60 * 60;
     $dencamket = $row['camket'] - 90 * 24 * 60 * 60;
+    $sonam = floor(($homnay - $row['hopdong']) / 365 / 60 / 60 / 24);
+    $luonghientai = number_format($sonam * 500000 + $row['luongcoban']);
 
+    $list[$key]['sonam'] = $sonam;
+    $list[$key]['luonghientai'] = $luonghientai;
     $list[$key]['ten'] = $user['fullname'];
     $list[$key]['luongcoban'] = number_format($row['luongcoban']);
     $list[$key]['tietkiem'] = number_format($luong['tietkiem']);
     $list[$key]['lenluong'] = date('d/m/Y', $row['lenluong']);
-    $list[$key]['ngayky'] = date('d/m/Y', $row['ngayky']);
     $list[$key]['hopdong'] = date('d/m/Y', $row['hopdong']);
     $list[$key]['camket'] = date('d/m/Y', $row['camket']);
     $list[$key]['denlenluong'] = 0;
@@ -155,13 +158,11 @@ function themnhanvien2() {
     
     $data->luongcoban = str_replace(',', '', $data->luongcoban);
     if (empty($data->cophan)) $data->cophan = 0;
-    $data->ngayky = isodatetotime($data->ngayky);
     $data->hopdong = isodatetotime($data->hopdong);
     $data->camket = isodatetotime($data->camket);
-    $ngayky = date('Y-m-d', $data->ngayky);
-    $lenluong = strtotime("+12 months $ngayky");
+    $lenluong = strtotime("+12 months ". date('Y-m-d', $data->hopdong));
   
-    $sql = "insert into pet_phc_luong_nhanvien (userid, luongcoban, ngayky, lenluong, hopdong, camket, cophan) values($userid, $data->luongcoban, $data->ngayky, $lenluong, $data->hopdong, $data->camket, $data->cophan)";
+    $sql = "insert into pet_phc_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan) values($userid, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan)";
     $result['messenger'] = 'Đã thêm nhân viên';
     $db->query($sql);
   
@@ -177,19 +178,17 @@ function themnhanvien() {
 
   $data->luongcoban = str_replace(',', '', $data->luongcoban);
   if (empty($data->cophan)) $data->cophan = 0;
-  $data->ngayky = isodatetotime($data->ngayky);
   $data->hopdong = isodatetotime($data->hopdong);
   $data->camket = isodatetotime($data->camket);
-  $ngayky = date('Y-m-d', $data->ngayky);
-  $lenluong = strtotime("+12 months $ngayky");
+  $lenluong = strtotime("+12 months ". date('Y-m-d', $data->hopdong));
 
-  $sql = "select * from pet_phc_luong_nhanvien where userid = $data->userid";
+  $sql = "select * from pet_phc_luong_nhanvien where userid = $data->id";
   if (empty($nhanvien = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_luong_nhanvien (userid, luongcoban, ngayky, lenluong, hopdong, camket, cophan) values($data->userid, $data->luongcoban, $data->ngayky, $lenluong, $data->hopdong, $data->camket, $data->cophan)";
+    $sql = "insert into pet_phc_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan) values($data->id, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan)";
     $result['messenger'] = 'Đã thêm nhân viên';
   }
   else {
-    $sql = "update pet_phc_luong_nhanvien set luongcoban = $data->luongcoban, ngayky = $data->ngayky, lenluong = $lenluong, hopdong = $data->hopdong, camket = $data->camket, cophan = $data->cophan where userid = $data->userid";
+    $sql = "update pet_phc_luong_nhanvien set luongcoban = $data->luongcoban, lenluong = $lenluong, hopdong = $data->hopdong, camket = $data->camket, cophan = $data->cophan, tile = $data->tile where userid = $data->id";
     $result['messenger'] = 'Đã cập nhật nhân viên';
   }
   $db->query($sql);
@@ -239,13 +238,17 @@ function lenluong() {
 function khoitaoluongthang() {
   global $data, $db, $result;
 
-  $excel = array('nhanvien' => 'A1', 'doanhthu' => 'B1');
+  $excel = array('nhanvien' => 'A1', 'doanhthu' => 'B1', 'loinhuan' => 'C1');
   $sql = "select * from pet_phc_config where module = 'luongthang'";
   $cauhinh = $db->obj($sql, 'name', 'value');
   if (isset($cauhinh['nhanvien'])) $excel['nhanvien'] = $cauhinh['nhanvien'];
   if (isset($cauhinh['doanhthu'])) $excel['doanhthu'] = $cauhinh['doanhthu'];
+  if (isset($cauhinh['loinhuan'])) $excel['loinhuan'] = $cauhinh['loinhuan'];
+
+  $sql = "select a.fullname as tennhanvien, '0' as ngaynghi from pet_phc_users a inner join pet_phc_luong_nhanvien b on a.userid = b.userid";
 
   $result['status'] = 1;
+  $result['ngaynghi'] = $db->all($sql);
   $result['excel'] = $excel;
   return $result;
 }
@@ -291,63 +294,105 @@ function excelluongthang() {
   $so = layso($data->excel['nhanvien']);
   $chunhanvien = laychu(strtoupper($data->excel['nhanvien']));
   $chudoanhthu = laychu(strtoupper($data->excel['doanhthu']));
-  $tongdoanhthu = 0;
+  $chuloinhuan = laychu(strtoupper($data->excel['loinhuan']));
+  $tongdoanhthu  = 0;
+  $tongloinhuan = 0;
+  $tongthuchi = 0;
   for ($j = $so; $j <= $highestRow; $j ++) {
     $nhanvien = $sheet->getCell($chunhanvien . $j)->getValue();
     $doanhthu = layso($sheet->getCell($chudoanhthu . $j)->getValue());
-    if (!empty($nhanvien)) $doanhthunhanvien[mb_strtolower($nhanvien)] = $doanhthu;
-    $tongdoanhthu += $doanhthu;
+    $loinhuan = layso($sheet->getCell($chuloinhuan . $j)->getValue());
+    if (!empty($nhanvien)) {
+      $doanhthunhanvien[alias($nhanvien)] = array('doanhthu' => $doanhthu, 'loinhuan' => $loinhuan);
+    }
+  }
+
+  foreach ($doanhthunhanvien as $dulieu) {
+    $tongdoanhthu += $dulieu['doanhthu'];
+    $tongloinhuan += $dulieu['loinhuan'];
   }
 
   // lấy danh sách nhân viên
-  $sql = "select a.userid, a.fullname from pet_phc_users a inner join pet_phc_luong_nhanvien b on a.userid = b.userid";
-  $danhsachnhanvien = $db->obj($sql, 'fullname', 'userid');
+  $sql = "select a.userid, a.fullname as tennhanvien, b.luongcoban, b.hopdong, b.tile, b.cophan from pet_phc_users a inner join pet_phc_luong_nhanvien b on a.userid = b.userid";
+  $danhsachnhanvien = $db->all($sql);
   $nhanvien = array();
+  $homnay = time();
+  // chạy dữ liệu chi
+  foreach ($data->thuchi as $tienchi) {
+    $tongthuchi += str_replace(',', '', $tienchi);
+  }
+
+  $ngaynghi = array();
+  foreach ($data->ngaynghi as $tennhanvien => $songay) {
+    $ngaynghi[alias($tennhanvien)] = $songay;
+  }
+
   // chạy dữ liệu doanh thu, thêm vào 
-  $dulieudoanhthu = array();
-  foreach ($danhsachnhanvien as $tennhanvien => $userid) {
-    if (isset($doanhthunhanvien[mb_strtolower($tennhanvien)])) $doanhthu = $doanhthunhanvien[mb_strtolower($tennhanvien)];
-    else $doanhthu = 0;
-    $dulieudoanhthu []= array(
-      'userid' => $userid,
-      'nhanvien' => $tennhanvien,
-      'doanhthu' => $doanhthu,
-      'ngaynghi' => 0
+  $dulieuluong = array();
+  $tongluong = 0;
+  foreach ($danhsachnhanvien as $nhanvien) {
+    $luongcung = $nhanvien['luongcoban'] + 500000 * floor(($homnay - $nhanvien['hopdong']) / 365 / 60 / 60 / 24);
+    $tennhanvien = alias($nhanvien['tennhanvien']);
+    
+    if (isset($doanhthunhanvien[$tennhanvien])) {
+      $doanhthu = $doanhthunhanvien[$tennhanvien]['doanhthu'];
+      $loinhuan = $doanhthunhanvien[$tennhanvien]['loinhuan'];
+    }
+    else {
+      $loinhuan = 0;
+      $doanhthu = 0;
+    }
+
+    if (isset($ngaynghi[$tennhanvien])) $nghiphep = $ngaynghi[$tennhanvien] * $luongcung / 30;
+    else $nghiphep = 0;
+    $luongthuong = $loinhuan * $nhanvien['tile'] / 100 - $luongcung;
+    $phucap = 0;
+    if ($luongthuong > $luongcung * 0.3) $tietkiem = $luongthuong / 2;
+    else $tietkiem = $luongcung * 0.15;
+    $tongluong += $luongcung + ($luongthuong > 0 ? $luongthuong : 0) + $phucap - $nghiphep;
+    $dulieuluong []= array(
+      'userid' => $nhanvien['userid'],
+      'tennhanvien' => $nhanvien['tennhanvien'],
+      'luongcung' => number_format($luongcung),
+      'luongthuong' => number_format($luongthuong),
+      'phucap' => number_format($phucap),
+      'doanhthu' => number_format($doanhthu),
+      'loinhuan' => number_format($loinhuan),
+      'cophan' => $nhanvien['cophan'],
+      'tile' => $nhanvien['tile'],
+      'tietkiem' => number_format($tietkiem),
+      'nghiphep' => number_format($nghiphep),
+      'luongcophan' => 0,
+      'tongluong' => 0,
+      'luongthuc' => 0,
     );
   }
 
-  $tienchi = 0;
-  // cập nhật csdl
-  if (empty($data->id)) {
-    // thêm lần đầu
-    $sql = "insert into pet_phc_luong (doanhthu, tienchi, loinhuan, thoigian, trangthai) values($tongdoanhthu, 0, $tongdoanhthu, $time, 0)";
-    $id = $db->insertid($sql);
+  // tính lãi sau lương và tiền chi
+  $laisauthuchi = $tongloinhuan - $tongthuchi - $tongluong;
+  foreach ($dulieuluong as $thutu => $nhanvien) {
+    $luongcung = str_replace(',', '', $nhanvien['luongcung']);
+    $luongthuong = str_replace(',', '', $nhanvien['luongthuong']);
+    $luongthuong = ($luongthuong > 0 ? $luongthuong : 0);
+    $phucap = str_replace(',', '', $nhanvien['phucap']);
+    $nghiphep = str_replace(',', '', $nhanvien['nghiphep']);
+    $tietkiem = str_replace(',', '', $nhanvien['tietkiem']);
+    $luongcophan = $laisauthuchi * $nhanvien['cophan'] / 100;
+    $luongcophan = ($luongcophan > 0 ? $luongcophan : 0);
+    $dulieuluong[$thutu]['luongcophan'] = number_format($luongcophan);
+    $dulieuluong[$thutu]['tongluong'] = number_format($luongcung + $luongthuong + $phucap + $luongcophan - $nghiphep);
+    $dulieuluong[$thutu]['thucnhan'] = number_format($luongcung + $luongthuong + $phucap + $luongcophan - $nghiphep - $tietkiem);
   }
-  else {
-    $sql = "select * from pet_phc_luong where id = $data->id";
-    // kiếm tra có trên csdl hay không
-    if (!empty($luong = $db->fetch($sql))) {
-      // nếu có, lấy ra cập nhật lại
-      // lấy tổng thu chi
-      $id = $luong['id'];
-      $sql = "select sum(tienchi) from pet_phc_luong_tienchi where luongid = $id";
-      $tienchi = $db->fetch($sql);
-      $loinhuan = $tongdoanhthu - $thuchi;
-      $sql = "update pet_phc_luong set doanhthu = $tongdoanhthu, tienchi = $tienchi, loinhuan = $loinhuan where id = $id";
-      $db->query($sql);
-    }
-    else {
-    // nếu không, thêm lần đầu
-      $sql = "insert into pet_phc_luong (doanhthu, chi, loinhuan, thoigian, trangthai) values($tongdoanhthu, 0, $tongdoanhthu, $time, 0)";
-      $id = $db->insertid($sql);
-    }
-  }
+
   // đóng gói dữ liệu trả về
-  $result['id'] = $luong['id'];
+  // $result['id'] = $luong['id'];
   $result['dulieu'] = array(
-    'nhanvien' => $dulieudoanhthu,
-    'tongdoanhthu' => $tongdoanhthu,
-    'tienchi' => $tienchi
+    'nhanvien' => $dulieuluong,
+    'tongchi' => number_format($tongthuchi),
+    'tongdoanhthu' => number_format($tongdoanhthu),
+    'tongloinhuan' => number_format($tongloinhuan),
+    'tongnhanvien' => number_format($tongluong),
+    'tongcodong' => number_format($laisauthuchi),
   );
   $result['tinnhan'] = 'Đã tải file Excel lên';
   $result['status'] = 1;
