@@ -64,21 +64,20 @@ function printer() {
   $sql = "select * from pet_phc_config where id = $doctor[placeid]";
   if (empty($place = $db->fetch($sql))) $place = array('name' => '');
 
-  $sql = "select * from pet_phc_pet where id = $xray[petid]";
-  $pet = $db->fetch($sql);
-
-  $sql = "select * from pet_phc_customer where id = $pet[customerid]";
+  $sql = "select * from pet_phc_customer where id = $xray[customerid]";
   $customer = $db->fetch($sql);
+  $sex = array(0 => '', 'Đực', 'Cái');
 
   $html = str_replace('{place}', $place['name'], $html);
   $html = str_replace('{doctor}', $doctor['halfname'], $html);
   $html = str_replace('{customer}', $customer['name'], $html);
   $html = str_replace('{address}', $customer['address'], $html);
   $html = str_replace('{phone}', $customer['phone'], $html);
-  $html = str_replace('{petname}', $pet['name'], $html);
-  $html = str_replace('{age}', '', $html);
-  $html = str_replace('{species}', '', $html);
-  $html = str_replace('{gender}', '', $html);
+  $html = str_replace('{petname}', $xray['petname'], $html);
+  $html = str_replace('{weight}', $xray['weight'], $html);
+  $html = str_replace('{age}', $xray['age'], $html);
+  $html = str_replace('{species}', $xray['species'], $html);
+  $html = str_replace('{gender}', $sex[$xray['gender']], $html);
   $html = str_replace('{temperate}', $detail['temperate'], $html);
   $lim = 65;
   $treat = nl2br($detail['other']);
@@ -134,61 +133,10 @@ function printer() {
   return $result;
 }
 
-function temp() {
-  global $data, $db, $result;
-
-  $sql = "select a.*, b.id as petid, b.name as pet, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where a.insult = 0 order by id desc";
-  $list = $db->all($sql);
-
-  foreach ($list as $key => $row) {
-    $sql = "select * from pet_phc_xray_row where xrayid = $row[id] order by id desc limit 1";
-    $r = $db->fetch($sql);
-    $list[$key]['temperate'] = (empty($r['temperate']) ? '' : $r['temperate']);
-    $list[$key]['other'] = (empty($r['other']) ? '' : $r['other']);
-    $list[$key]['status'] = (empty($r['status']) ? 0 : $r['status']);
-  }
-
-  $temp = array();
-  $left = array();
-  foreach ($list as $row) {
-    // echo $row['phone'] . ": $data->phone <br>";
-    if ($row['phone'] == $data->phone) $temp []= $row;
-    else $left []= $row;
-  }
-
-  foreach ($left as $row) {
-    $temp []= $row;
-  }
-
-  $result['status'] = 1;
-  $result['list'] = $temp;
-  return $result;
-}
-
-function manager() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = getManager();
-  return $result;
-}
-
-function getManager() {
-  global $data, $db;
-
-  $userid = checkuserid();
-  $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his'";
-  $role = $db->fetch($sql);
-  if ($role['type'] > 1) $sql = "select a.*, b.fullname as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid";
-  else $sql = "select a.*, b.fullname as user from pet_phc_his_temp a inner join pet_phc_users b on a.userid = b.userid where a.userid = $userid";
-
-  return $db->all($sql);
-}
-
 function update() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid where id = $data->id";
+  $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
   if (!empty($data->near)) {
@@ -255,7 +203,7 @@ function statistic() {
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.doctorid = $userid and";
 
-  $sql = "select a.*, b.name as pet, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
+  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
   $list = $db->all($sql);
   $data = array();
   
@@ -316,32 +264,6 @@ function remove() {
   return $result;
 }
 
-function pet() {
-  global $data, $db, $result;
-
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
-
-  if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_customer (name, phone, addess) values('$data->name', '$data->phone', '')";
-    $c['id'] = $db->insertid($sql);
-  }
-  
-  $sql = "select * from pet_phc_pet where id = $data->pet";
-  if (empty($p = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_pet (name, customerid) values('Chưa đặt tên', $c[id])";
-    $p['id'] = $db->insertid($sql);
-  }
-  
-  $sql = "select id, name from pet_phc_pet where customerid = $c[id]";
-  $list = $db->all($sql);
-  
-  $result['status'] = 1;
-  $result['petid'] = $p['id'];
-  $result['petlist'] = $list;
-  
-  return $result;
-}
-
 function savedisease() {
   global $data, $db, $result, $userid;
   
@@ -390,12 +312,11 @@ function insertdisease() {
 function insert() {
   global $data, $db, $result;
 
-  $petid = checkpet();
-  $userid = checkuserid();
   $customerid = checkcustomer();
+  $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   $time = time();
-  $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, pos, diseaseid) values($petid, $userid, 0, $data->time, $data->pos, $data->diseaseid)";
+  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, diseaseid, petname, age, gender, species, weight) values($petid, $userid, 0, $data->time, $data->pos, $data->diseaseid, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
   $id = $db->insertid($sql);
   $arr = array('0' => '0', '1' => '-1');
   $data->xquang = $arr[$data->xquang];
@@ -479,8 +400,8 @@ function detail() {
 
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
-  
-  $sql = "update pet_phc_xray set pos = $data->pos, disease = $data->diseaseid where id = $data->id";
+
+  $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
   if (!empty($data->near)) {
@@ -602,7 +523,7 @@ function getlist($id = 0) {
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
 
-  $sql = "select a.*, b.id as petid, b.name as pet, b.customerid, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
@@ -648,9 +569,6 @@ function getlist($id = 0) {
       $list[$key]['scstatus'] = $sc['status'];
     }
 
-    $sql = "select * from pet_phc_xray_his where petid = $value[petid]";
-    $his = $db->obj($sql, 'id', 'his');
-
     if (count($row)) {
       $list[$key]['status'] = $row[count($row) - 1]['status'];
       $list[$key]['time'] = $row[0]['time'];
@@ -660,8 +578,8 @@ function getlist($id = 0) {
       $list[$key]['time'] = date('d/m/Y');
     }
     $list[$key]['rate'] = intval($value['rate']);
+    if (!count($row)) $row = array(array('xquang' => 0, 'sieuam' => 0, 'nuoctieu' => 0, 'sinhly' => 0, 'sinhhoa' => 0));
     $list[$key]['detail'] = $row;
-    $list[$key]['his'] = implode(',', $his);
   }
   return $list;
 }

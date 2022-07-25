@@ -64,12 +64,13 @@ function download() {
     
     $oldContents = $zip->getFromName($fileToModify);
   
+    $sex = array(0 => '', 'Đực', 'Cái');
     $newContents = str_replace('{customer}', $prof['customer'], $oldContents);
     $newContents = str_replace('{address}', $prof['address'], $newContents);
     $newContents = str_replace('{name}', $prof['name'], $newContents);
     $newContents = str_replace('{weight}', $prof['weight'], $newContents);
     $newContents = str_replace('{age}', $prof['age'], $newContents);
-    $newContents = str_replace('{gender}', ($prof['gender'] ? 'Đực' : 'Cái'), $newContents);
+    $newContents = str_replace('{gender}', $sex[$prof['gender']], $newContents);
     $newContents = str_replace('{type}', $prof['species'], $newContents);
     $newContents = str_replace('{sampleid}', $prof['id'], $newContents);
     $newContents = str_replace('{serial}', $prof['serial'], $newContents);
@@ -202,8 +203,12 @@ function init() {
   global $data, $db, $result;
     
   $sql = "select * from pet_phc_config where module = 'physical' and name = 'serial' limit 1";
-  if (empty($serial = $db->fetch($sql))) $serial = 0;
-  $serial = intval($serial) + 1;
+  if (empty($serial = $db->fetch($sql))) {
+    $serial = 1;
+    $sql = "insert into pet_phc_config (module, name, value, alt) values('physical', 'serial', 1, 0)";
+    $db->query($sql);
+  }
+  else $serial = intval($serial['value']) + 1;
 
   $result['status'] = 1;
   $result['list'] = getlist();
@@ -224,9 +229,13 @@ function getneed() {
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $sql = "select b.name as petname, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where a.id = $row[xrayid]";
+    $sql = "select petname, weight, age, gender, species, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
     $list[$key]['petname'] = $info['petname'];
+    $list[$key]['age'] = $info['age'];
+    $list[$key]['weight'] = $info['weight'];
+    $list[$key]['gender'] = $info['gender'];
+    $list[$key]['species'] = $info['species'];
     $list[$key]['name'] = $info['name'];
     $list[$key]['phone'] = $info['phone'];
     $list[$key]['address'] = $info['address'];
@@ -335,7 +344,7 @@ function insert() {
   $image = implode(',', $data->image);
 
   $time = time();
-  $sql = "insert into pet_phc_physical (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time, image) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', $data->species, '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time, '$image')";
+  $sql = "insert into pet_phc_physical (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time, image) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', '$data->species', '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time, '$image')";
   $id = $db->insertid($sql);
   // $id = 18;
   if (isset($data->xrayid)) {
@@ -344,7 +353,7 @@ function insert() {
   }
 
   foreach ($list as $target) {
-    if (strlen($target)) {
+    if (strlen($data->target->{$target['id']})) {
       $sql = "insert into pet_phc_physical_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
       $db->query($sql);
     }
@@ -422,12 +431,13 @@ function printword() {
 
   $html = file_get_contents ( DIR. '/include/template2.php');
 
+  $sex = array(0 => '', 'Đực', 'Cái');
   $html = str_replace('{customer}', $prof['customer'], $html);
   $html = str_replace('{address}', $prof['address'], $html);
   $html = str_replace('{name}', $prof['name'], $html);
   $html = str_replace('{weight}', $prof['weight'], $html);
   $html = str_replace('{age}', $prof['age'], $html);
-  $html = str_replace('{gender}', ($prof['gender'] ? 'Đực' : 'Cái'), $html);
+  $html = str_replace('{gender}', $sex[$prof['gender']], $html);
   $html = str_replace('{type}', $prof['species'], $html);
   $html = str_replace('{sampleid}', $prof['id'], $html);
   $html = str_replace('{serial}', $prof['serial'], $html);
