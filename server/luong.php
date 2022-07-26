@@ -34,14 +34,14 @@ function danhsachluong() {
   foreach ($luongthang as $key => $row) {
     $sql = "select * from pet_phc_luong_tra where luongid = $row[id]";
     $luong = $db->all($sql);
-    $luongthang['key']['tietkiem'] = 0;
-    $luongthang['key']['tongluong'] = 0;
+    $luongthang[$key]['tietkiem'] = 0;
+    $luongthang[$key]['tongluong'] = 0;
     foreach ($luong as $chitietluong) {
-      $luongthang['key']['tietkiem'] += $chitietluong['tietkiem'];
-      $luongthang['key']['tongluong'] += $chitietluong['tong'];
+      $luongthang[$key]['tietkiem'] += $chitietluong['tietkiem'];
+      $luongthang[$key]['tongluong'] += $chitietluong['tong'];
     }
 
-    $luongthang['key']['thang'] = date('m', $row['thoigian']);
+    $luongthang[$key]['thang'] = date('m', $row['thoigian']);
   }
   return $luongthang;
 }
@@ -269,6 +269,151 @@ function laychu($chuoi) {
   return preg_replace('/[^A-Z]/', '', $chuoi);
 }
 
+// $result['dulieu'] = array(
+//   'nhanvien' => $dulieuluong,
+//   'thuchi' => $data->thuchi,
+//   'tongchi' => number_format($tongthuchi),
+//   'tongdoanhthu' => number_format($tongdoanhthu),
+//   'tongloinhuan' => number_format($tongloinhuan),
+//   'tongnhanvien' => number_format($tongluong),
+//   'tongcodong' => number_format($laisauthuchi),
+// );
+
+// 'userid' => $nhanvien['userid'],
+// 'tennhanvien' => $nhanvien['tennhanvien'],
+// 'luongcung' => number_format($luongcung),
+// 'luongthuong' => number_format($luongthuong),
+// 'tilethuong' => number_format($tilethuong),
+// 'doanhthu' => number_format($doanhthu),
+// 'loinhuan' => number_format($loinhuan),
+// 'cophan' => $nhanvien['cophan'],
+// 'tile' => $nhanvien['tile'],
+// 'tietkiem' => number_format($tietkiem),
+// 'nghiphep' => number_format($nghiphep),
+// 'luongcophan' => 0,
+// 'tongluong' => 0,
+// 'thucnhan' => 0,
+// 'phucap' => $nhanvien['phucap'],
+// 'luongphucap' => 0,
+
+
+function chotluongthang() {
+  global $data, $db, $result;
+
+  // cập nhật thông tin lên csdl
+  $homnay = time();
+
+  // thêm chốt lương
+  $tongdoanhthu = str_replace(',', '', $data->tongdoanhthu);
+  $tongloinhuan = str_replace(',', '', $data->tongloinhuan);
+  $tongchi = str_replace(',', '', $data->tongchi);
+  $tongnhanvien = str_replace(',', '', $data->tongnhanvien);
+  $tongcodong = str_replace(',', '', $data->tongcodong);
+
+  $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values($tongdoanhthu, $tongloinhuan, $tongchi, $tongnhanvien, $tongcodong, $homnay, 1)";
+  $id = $db->insertid($sql);
+
+  // thêm thu chi
+  foreach ($data->thuchi as $thuchi) {
+    $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $thuchi->loaichi)";
+    $db->query($sql);
+  }
+
+  // thêm chốt lương nhân viên
+  foreach ($data->nhanvien as $nhanvien) {
+    $doanhthu = str_replace(',', '', $nhanvien->doanhthu);
+    $luongcung = str_replace(',', '', $nhanvien->luongcung);
+    $luongthuong = str_replace(',', '', $nhanvien->luongthuong);
+    $luongphucap = str_replace(',', '', $nhanvien->luongphucap);
+    $nghiphep = str_replace(',', '', $nhanvien->nghiphep);
+    $tietkiem = str_replace(',', '', $nhanvien->tietkiem);
+    $luongcophan = str_replace(',', '', $nhanvien->luongcophan);
+    $tongluong = str_replace(',', '', $nhanvien->tongluong);
+    $thucnhan = str_replace(',', '', $nhanvien->thucnhan);
+    $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, luong, thuong, phucap, nghiphep, tietkiem, nhantietkiem, cophan, tong, thucnhan) values($nhanvien->userid, $id, $doanhthu, $luongcung, $luongthuong, $luongphucap, $nghiphep, $tietkiem, 0, $luongcophan, $tongluong, $thucnhan)";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã chốt lương tháng';
+  $result['chitiet'] = chitietluongthang();
+  return $result;
+}
+
+function chitiet() {
+  global $db, $result;
+
+  $result['status'] = 1;
+  $result['chitiet'] = chitietluongthang();
+  return $result;
+}
+
+function chitietluongthang() {
+  global $db;
+  $thangnay = date('m');
+  $denngay = strtotime(date('Y/'. (date('m') + 1) .'/1'));
+  if ($thangnay == 1) {
+    // nếu tháng này là tháng 1 thì lấy từ tháng 2 năm trước đến năm nay
+    $tungay = strtotime((date('Y') - 1) . '/2/1');
+  }
+  else {
+    // nếu không lấy từ tháng 2 đến tháng này
+    $tungay = strtotime(date('Y/2/1'));
+  }
+
+  $sql = "select * from pet_phc_luong where (thoigian between $tungay and $denngay) order by id desc";
+  $danhsach = $db->all($sql);
+  
+  $thutu = 0;
+  $chitietnhanvien = array();
+  foreach ($danhsach as $luong) {
+    // chỉ tính lương tháng này
+    $sql = "select * from pet_phc_luong_tra where luongid = $luong[id]";
+    $danhsachnhanvien = $db->all($sql);
+    foreach ($danhsachnhanvien as $nhanvien) {
+      if (!$thutu) {
+        $sql = "select fullname from pet_phc_users where userid = $nhanvien[userid]";
+        $nguoidung = $db->fetch($sql);
+
+        $chitietnhanvien[$nhanvien['userid']] = array(
+          'tennhanvien' => $nguoidung['fullname'],
+          'doanhthu' => $nhanvien['doanhthu'],
+          'luongcung' => $nhanvien['luong'],
+          'luongthuong' => $nhanvien['thuong'],
+          'luongphucap' => $nhanvien['phucap'],
+          'nghiphep' => $nhanvien['nghiphep'],
+          'tietkiem' => $nhanvien['tietkiem'],
+          'tongluong' => $nhanvien['tong'],
+          'thucnhan' => $nhanvien['thucnhan'],
+          'tongtietkiem' => 0,
+          'tongcophan' => 0,
+          'dstietkiem' => array(),
+          'dscophan' => array(),
+        );
+      }
+      if (!empty($chitietnhanvien[$nhanvien['userid']])) {
+        $chitietnhanvien[$nhanvien['userid']]['tongtietkiem'] += $nhanvien['tietkiem'];
+        $chitietnhanvien[$nhanvien['userid']]['tongcophan'] += $nhanvien['cophan'];
+        $chitietnhanvien[$nhanvien['userid']]['dstietkiem'] []= array(
+          'thang' => date('m', $luong['thoigian']),
+          'tietkiem' => $nhanvien['tietkiem']
+        );
+        $chitietnhanvien[$nhanvien['userid']]['dscophan'] []= array(
+          'thang' => date('m', $luong['thoigian']),
+          'cophan' => $nhanvien['cophan']
+        );
+      }
+    }
+    $thutu ++;
+  }
+  $chitiet = array();
+  foreach ($chitietnhanvien as $nhanvien) {
+    $chitiet []= $nhanvien;
+  }
+
+  return $chitiet;
+}
+
 function excelluongthang() {
   global $data, $db, $result, $dir, $x, $xr, $_FILES;
 
@@ -312,8 +457,8 @@ function excelluongthang() {
   $nhanvien = array();
   $homnay = time();
   // chạy dữ liệu chi
-  foreach ($data->thuchi as $tienchi) {
-    $tongthuchi += str_replace(',', '', $tienchi);
+  foreach ($data->thuchi as $thuchi) {
+    $tongthuchi += str_replace(',', '', $thuchi['tienchi']);
   }
 
   $ngaynghi = array();
@@ -378,22 +523,14 @@ function excelluongthang() {
     // $luongphucap = ($luongphucap > 0 ? $luongphucap : 0);
     $dulieuluong[$thutu]['luongphucap'] = number_format($luongphucap);
     $dulieuluong[$thutu]['luongcophan'] = number_format($luongcophan);
-    $dulieuluong[$thutu]['tongluong'] = number_format($luongcung + $luongthuong + $phucap + $luongcophan + $luongphucap - $nghiphep);
-    $dulieuluong[$thutu]['thucnhan'] = number_format($luongcung + $luongthuong + $phucap + $luongcophan + $luongphucap - $nghiphep - $tietkiem);
+    $dulieuluong[$thutu]['tongluong'] = number_format($luongcung + $luongthuong +  $luongphucap - $nghiphep);
+    $dulieuluong[$thutu]['thucnhan'] = number_format($luongcung + $luongthuong + $luongphucap - $nghiphep - $tietkiem);
   }
-
-  // cập nhật thông tin lên csdl
-  
-  // kiểm tra data có id chưa
-    // nếu chưa, thêm vào phc_luong, thêm thông tin thu chi
-    // nếu rồi cập nhật, cập nhật thông tin thu chi
-  // kiểm tra nhân viên có trong phc_tra chưa
-    // nếu chưa thì thêm
-    // nếu rồi thì cập nhật
 
   // đóng gói dữ liệu trả về
   $result['dulieu'] = array(
     'nhanvien' => $dulieuluong,
+    'thuchi' => $data->thuchi,
     'tongchi' => number_format($tongthuchi),
     'tongdoanhthu' => number_format($tongdoanhthu),
     'tongloinhuan' => number_format($tongloinhuan),
