@@ -316,7 +316,7 @@ function insert() {
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   $time = time();
-  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, diseaseid, petname, age, gender, species, weight) values($petid, $userid, 0, $data->time, $data->pos, $data->diseaseid, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
+  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, diseaseid, petname, age, gender, species, weight) values($customerid, $userid, 0, $data->time, $data->pos, $data->diseaseid, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
   $id = $db->insertid($sql);
   $arr = array('0' => '0', '1' => '-1');
   $data->xquang = $arr[$data->xquang];

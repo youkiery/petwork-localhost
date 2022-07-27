@@ -13,7 +13,7 @@ function getlist() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end) + 60 * 60 * 24 -1;
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_sieuam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.time between $start and $end";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_sieuam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.time between $start and $end order by id desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -32,7 +32,7 @@ function getneed() {
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $sql = "select b.name as petname, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where a.id = $row[xrayid]";
+    $sql = "select b.name as petname, b.name, b.phone, b.address from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
     $list[$key]['petname'] = $info['petname'];
     $list[$key]['name'] = $info['name'];

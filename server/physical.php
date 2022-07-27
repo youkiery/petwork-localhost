@@ -49,10 +49,6 @@ function download() {
       );
     }
     
-    $sql = 'select value from pet_phc_config where name = "species" limit 1';
-    $row = $db->fetch($sql);
-    $prof['species'] = $row['value'];
-    
     $sql = 'select value from pet_phc_config where name = "sampletype" limit 1';
     $row = $db->fetch($sql);
     $prof['sampletype'] = $row['value'];
@@ -229,7 +225,7 @@ function getneed() {
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $sql = "select petname, weight, age, gender, species, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where a.id = $row[xrayid]";
+    $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
     $list[$key]['petname'] = $info['petname'];
     $list[$key]['age'] = $info['age'];
@@ -353,7 +349,7 @@ function insert() {
   }
 
   foreach ($list as $target) {
-    if (strlen($data->target->{$target['id']})) {
+    if (isset($data->target->{$target['id']}) && strlen($data->target->{$target['id']})) {
       $sql = "insert into pet_phc_physical_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
       $db->query($sql);
     }
@@ -415,10 +411,6 @@ function printword() {
       'tick' => $tick
     );
   }
-
-  $sql = 'select value from pet_phc_config where name = "species" limit 1';
-  $row = $db->fetch($sql);
-  $prof['species'] = $row['value'];
 
   $sql = 'select value from pet_phc_config where name = "sampletype" limit 1';
   $row = $db->fetch($sql);

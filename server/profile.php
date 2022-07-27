@@ -49,10 +49,6 @@ function download() {
       );
     }
     
-    $sql = 'select value from pet_phc_config where name = "species" limit 1';
-    $row = $db->fetch($sql);
-    $prof['species'] = $row['value'];
-    
     $sql = 'select value from pet_phc_config where name = "sampletype" limit 1';
     $row = $db->fetch($sql);
     $prof['sampletype'] = $row['value'];
@@ -296,7 +292,7 @@ function insert() {
   }
 
   foreach ($list as $target) {
-    if (strlen($target)) {
+    if (isset($data->target->{$target['id']}) && strlen($data->target->{$target['id']})) {
       $sql = "insert into pet_phc_profile_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
       $db->query($sql);
     }
@@ -358,11 +354,7 @@ function printword() {
       'tick' => $tick
     );
   }
-
-  $sql = 'select value from pet_phc_config where name = "species" limit 1';
-  $row = $db->fetch($sql);
-  $prof['species'] = $row['value'];
-
+  
   $sql = 'select value from pet_phc_config where name = "sampletype" limit 1';
   $row = $db->fetch($sql);
   $prof['sampletype'] = $row['value'];
