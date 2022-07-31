@@ -28,6 +28,13 @@ function getlist() {
 function getneed() {
   global $data, $db, $result;
     
+  // $userid = checkuserid();
+  // $sql = "select placeid from pet_phc_users where userid = $userid";
+  // $user = $db->fetch($sql);
+  // $placeid = $user['placeid'];
+
+  // $sql = "select a.id, a.xrayid, a.image from pet_phc_xray_row a inner join pet_phc_users b on a.userid = b.userid where a.sieuam < 0 and (b.placeid = $placeid or b.placeid = 0)";
+
   $sql = "select id, xrayid, image from pet_phc_xray_row where sieuam < 0";
   $list = $db->all($sql);
 

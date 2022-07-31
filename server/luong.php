@@ -323,7 +323,8 @@ function chotluongthang() {
   global $data, $db, $result;
 
   chotluong();
-  $sql = "update pet_phc_luong set trangthai = 1 where id = $data->id";
+  $thoigian = isodatetotime($data->thoigian);
+  $sql = "update pet_phc_luong set trangthai = 1, thoigian = $thoigian where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -342,16 +343,19 @@ function chitiet() {
 }
 
 function chitietluongthang() {
-  global $db;
-  $thangnay = date('m');
-  $denngay = strtotime(date('Y/'. (date('m') + 1) .'/1'));
+  global $db, $data;
+  // lấy ngày cần xem
+  $thoigian = $data->thoigian;
+  $thangnay = date('m', $thoigian);
+  $namnay = date('Y', $thoigian);
+  $denngay = strtotime(date($namnay .'/'. ($thangnay + 1) .'/1'));
   if ($thangnay == 1) {
     // nếu tháng này là tháng 1 thì lấy từ tháng 2 năm trước đến năm nay
-    $tungay = strtotime((date('Y') - 1) . '/2/1');
+    $tungay = strtotime(($namnay - 1) . '/2/1');
   }
   else {
     // nếu không lấy từ tháng 2 đến tháng này
-    $tungay = strtotime(date('Y/2/1'));
+    $tungay = strtotime(date($namnay .'/2/1'));
   }
 
   $sql = "select * from pet_phc_luong where (thoigian between $tungay and $denngay) order by id desc";
@@ -440,6 +444,7 @@ function dulieuluongtheoid() {
     'tongchi' => 0,
     'tongnhanvien' => 0,
     'tongcodong' => 0,
+    'thoigian' => 0,
   );
 
   $sql = "select * from pet_phc_luong where id = $data->id";
@@ -495,11 +500,16 @@ function dulieuluongtheoid() {
   $dulieu['tongchi'] = number_format($luong['tienchi']);
   $dulieu['tongnhanvien'] = number_format($luong['luongnhanvien']);
   $dulieu['tongcodong'] = number_format($luong['lairong']);
+  $dulieu['thoigian'] = $luong['thoigian'];
   return $dulieu;
 }
 
 function luungaynghi() {
   global $data, $db, $result;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $sql = "update pet_phc_luong set thoigian = $thoigian where id = $data->id";
+  $db->query($sql);
 
   foreach ($data->ngaynghi as $tt => $nhanvien) {
     $luongcung = str_replace(',', '', $data->nhanvien[$tt]->luongcung);
@@ -518,7 +528,7 @@ function luungaynghi() {
 
   $result['dulieu'] = dulieuluongtheoid();
   $result['danhsach'] = danhsachluong();
-  $result['tinnhan'] = 'Đã lưu ngày nghỉ';
+  $result['messenger'] = 'Đã lưu ngày nghỉ';
   $result['status'] = 1;
   return $result;
 }
@@ -663,7 +673,7 @@ function chotluong() {
   global $data, $db;
     
   // cập nhật thông tin lên csdl
-  $homnay = time();
+  $thoigian = isodatetotime($data->thoigian);
   $tongdoanhthu = str_replace(',', '', $data->tongdoanhthu);
   $tongloinhuan = str_replace(',', '', $data->tongloinhuan);
   $tongchi = str_replace(',', '', $data->tongchi);
@@ -672,7 +682,7 @@ function chotluong() {
 
   // nếu có id, cập nhật, nếu không thêm chốt lương
   if (!empty($id = $data->id)) {
-    $sql = "update pet_phc_luong set doanhthu = $tongdoanhthu, loinhuan = $tongloinhuan, tienchi = $tongchi, luongnhanvien = $tongnhanvien, lairong = $tongcodong where id = $id";
+    $sql = "update pet_phc_luong set doanhthu = $tongdoanhthu, loinhuan = $tongloinhuan, tienchi = $tongchi, luongnhanvien = $tongnhanvien, lairong = $tongcodong, thoigian = $thoigian where id = $id";
     $db->query($sql);
 
     // xóa thu chi để thêm lại
@@ -684,7 +694,7 @@ function chotluong() {
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values($tongdoanhthu, $tongloinhuan, $tongchi, $tongnhanvien, $tongcodong, $homnay, 0)";
+    $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values($tongdoanhthu, $tongloinhuan, $tongchi, $tongnhanvien, $tongcodong, $thoigian, 0)";
     $id = $db->insertid($sql);
   }
 
