@@ -103,7 +103,7 @@ function statistic() {
     if (empty($temp[$row['userid']])) {
       $sql = "select fullname from pet_phc_users where userid = $row[userid]";
       $u = $db->fetch($sql);
-      $temp[$row['userid']] = array('name' => $u['name'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
+      $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
     $temp[$row['userid']]['clock'] += $row['clocke'] - $row['clockf'];
     $temp[$row['userid']]['cole'] += $row['money'];
@@ -115,7 +115,7 @@ function statistic() {
     if (empty($temp[$row['userid']])) {
       $sql = "select fullname from pet_phc_users where userid = $row[userid]";
       $u = $db->fetch($sql);
-      $temp[$row['userid']] = array('name' => $u['name'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
+      $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
     $temp[$row['userid']]['pay'] = $row['price'];
   }

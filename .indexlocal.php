@@ -9,6 +9,12 @@ include_once(ROOTDIR . '/server/db.php');
 include_once(ROOTDIR . '/server/global.php');
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
+// $thoigian = time();
+// for ($i = 0; $i < 7; $i++) { 
+//   $hientai = $thoigian + 24 * 60 * 60 * $i;
+//   echo date('w', $hientai) . ": ". date('d/m/Y', $hientai) . "<br>";
+// }
+
 // $sql = "select a.id, b.value from pet_phc_profile a inner join pet_phc_config b on a.species = b.id";
 // $list = $db->all($sql);
 
