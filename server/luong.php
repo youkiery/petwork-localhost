@@ -508,6 +508,7 @@ function luungaynghi() {
   global $data, $db, $result;
 
   $thoigian = isodatetotime($data->thoigian);
++
   $sql = "update pet_phc_luong set thoigian = $thoigian where id = $data->id";
   $db->query($sql);
 
@@ -655,6 +656,7 @@ function excelluongthang() {
     'id' => ($data->id ? $data->id : 0),
     'nhanvien' => $dulieuluong,
     'thuchi' => $data->thuchi,
+    'thoigian' => $data->thoigian,
     'tongchi' => number_format($tongthuchi),
     'tongdoanhthu' => number_format($tongdoanhthu),
     'tongloinhuan' => number_format($tongloinhuan),
@@ -725,3 +727,92 @@ function chotluong() {
 
   return $id;
 }
+
+function capnhatnhanvien() {
+  global $data, $db;
+
+  $data->phucap2 = str_replace(',', '', $data->phucap2);
+  $sql = "update pet_phc_luong_nhanvien set tile = '$data->tile', phucap = $data->phucap, phucap2 = $data->phucap2 where userid = $data->userid";
+  $db->query($sql);
+
+  $sql = "select * from pet_phc_luong where id = $data->id";
+  $luong = $db->fetch($sql);
+  
+  $sql = "select * from pet_phc_luong_tra where userid = $data->userid and luongid = $data->id";
+  $nhanvien = $db->fetch($sql);
+  
+  $tilethuong = $nhanvien['loinhuan'] * $data->tile / 100;
+  $luongphucap = $data->phucap2 + $luong['lairong'] * $data->phucap / 100;
+  $sql = "update pet_phc_luong_tra set tile = $data->tile, tilethuong = $tilethuong, phucap = $data->phucap, phucap2 = $data->phucap2, luongphucap = $luongphucap where userid = $data->userid and luongid = $data->id";
+  $db->query($sql);
+
+  $result['dulieu'] = dulieuluongtheoid();
+  $result['tinnhan'] = 'Đã cập nhật lương';
+  $result['status'] = 1;
+  return $result;
+}
+
+function nhanvienthemtay() {
+  global $data, $db;
+
+  $sql = "select b.userid, b.fullname as tennhanvien from pet_phc_luong_nhanvien a inner join pet_phc_users b on a.userid = b.userid order by a.userid";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $nhanvien) {
+    $danhsach[$thutu]['doanhthu'] = 0;
+    $danhsach[$thutu]['luong'] = 0;
+    $danhsach[$thutu]['luongthuong'] = 0;
+    $danhsach[$thutu]['phucap'] = 0;
+    $danhsach[$thutu]['nghiphep'] = 0;
+    $danhsach[$thutu]['tietkiem'] = 0;
+    $danhsach[$thutu]['cophan'] = 0;
+    $danhsach[$thutu]['tongluong'] = 0;
+    $danhsach[$thutu]['thucnhan'] = 0;
+  }
+
+  $result['danhsach'] = array(
+    'thoigian' => date('d-m-Y'),
+    'danhsach' => $danhsach
+  );
+  $result['status'] = 1;
+  return $result;
+}
+
+function themtay() {
+  global $data, $db;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, 0, 0, $thoigian, 1)";
+  $id = $db->insertid($sql);
+
+  foreach ($data->danhsach as $danhsach) {
+    $doanhthu = str_replace(',', '', $danhsach->doanhthu);
+    $luong = str_replace(',', '', $danhsach->luong);
+    $luongthuong = str_replace(',', '', $danhsach->luongthuong);
+    $thuong = $luongthuong;
+    if ($thuong < 0) $thuong = 0;
+    $phucap = str_replace(',', '', $danhsach->phucap);
+    $nghiphep = str_replace(',', '', $danhsach->nghiphep);
+    $tietkiem = str_replace(',', '', $danhsach->tietkiem);
+    $cophan = str_replace(',', '', $danhsach->cophan);
+    $tongluong = str_replace(',', '', $danhsach->tongluong);
+    $thucnhan = str_replace(',', '', $danhsach->thucnhan);
+    
+    $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($danhsach->userid, $id, $doanhthu, 0, $luong, 0, $luongthuong, $thuong, $phucap, 0, 0, 0, $nghiphep, $tietkiem, 0, 0, $cophan, $tongluong, $thucnhan)";
+    $db->query($sql);
+  }
+
+  $result['danhsach'] = danhsachluong();
+  $result['status'] = 1;
+  return $result;
+}
+
+function sosanh() {
+  global $data, $db;
+
+  
+  
+  $result['status'] = 1;
+  return $result;
+}
+
