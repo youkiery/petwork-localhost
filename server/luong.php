@@ -810,9 +810,46 @@ function themtay() {
 function sosanh() {
   global $data, $db;
 
-  
+  $sql = "select b.userid, b.fullname as tennhanvien from pet_phc_luong_nhanvien a inner join pet_phc_users b on a.userid = b.userid order by a.userid";
+  $danhsachnhanvien = $db->all($sql);
+
+  $thoigian = isodatetotime($data->thoigian);
+  $thangnay = date('m', $thoigian);
+  $namnay = date('Y', $thoigian);
+  $denngay = strtotime(date($namnay .'/'. ($thangnay + 1) .'/1'));
+  if ($thangnay == 1) {
+    // nếu tháng này là tháng 1 thì lấy từ tháng 2 năm trước đến năm nay
+    $tungay = strtotime(($namnay - 1) . '/2/1');
+  }
+  else {
+    // nếu không lấy từ tháng 2 đến tháng này
+    $tungay = strtotime(date($namnay .'/2/1'));
+  }
+
+  foreach ($danhsachnhanvien as $thutu => $nhanvien) {
+    $danhsachnhanvien[$thutu]['danhsach'] = array('luongcoban' => array(), 'luongthuong' => array(), 'luongphucap' => array());
+    for ($i = 0; $i < 12; $i++) { 
+      $danhsachnhanvien[$thutu]['danhsach']['luongcoban'][$i] = 0;
+      $danhsachnhanvien[$thutu]['danhsach']['luongthuong'][$i] = 0;
+      $danhsachnhanvien[$thutu]['danhsach']['luongphucap'][$i] = 0;
+    }
+
+    $sql = "select a.thoigian, b.* from pet_phc_luong a inner join pet_phc_luong_tra b on a.id = b.luongid where b.userid = $nhanvien[userid] and (a.thoigian between $tungay and $denngay) order by id desc";
+    $danhsachluong = $db->all($sql);
+
+    foreach ($danhsachluong as $luong) {
+      $ngay1 = intval(date('m', $luong['thoigian']));
+      if ($ngay1 == 1) $ngay = $ngay1 + 10;
+      else $ngay = $ngay1 - 2;
+
+      $danhsachnhanvien[$thutu]['danhsach']['luongcoban'][$ngay] = number_format($luong['luong']);
+      $danhsachnhanvien[$thutu]['danhsach']['luongthuong'][$ngay] = number_format($luong['tilethuong']);
+      $danhsachnhanvien[$thutu]['danhsach']['luongphucap'][$ngay] = number_format($luong['luongphucap']);
+    }
+  }
   
   $result['status'] = 1;
+  $result['danhsach'] = $danhsachnhanvien;
   return $result;
 }
 

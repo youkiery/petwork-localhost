@@ -51,8 +51,8 @@
         $ngaythang = date('d/m/Y', ($thutungay == 0 ? 6 : $thutungay - 1) * 60 * 60 * 24 + $batdau);
         foreach ($dsdk as $thutu => $userid) {
           if ($thutu >= $gioihan[$thutungay]) {
-            if ($gioihan[$thutungay] == 1) $nghiphat = 1 + $thutu - $gioihan[$thutungay];
-            else $nghiphat = 1;
+            if ($gioihan[$thutungay] == 1) $nghiphat = (1 + $thutu - $gioihan[$thutungay]) / 2;
+            else $nghiphat = 0.5;
             $danhsach []= $nguoidung[$userid] ." +$nghiphat nghỉ phạt vào buổi $dulieubuoi[$buoi] ngày $ngaythang";
           }
         }
