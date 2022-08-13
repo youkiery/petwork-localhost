@@ -217,6 +217,18 @@ function init() {
   return $result;
 }
 
+function removeneed() {
+  global $data, $db, $result;
+
+  $sql = "update pet_phc_xray_row set sinhhoa = 0 where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getneed();
+  return $result;
+}
+
+
 function getneed() {
   global $data, $db, $result;
     
@@ -386,40 +398,54 @@ function printword() {
   $html = str_replace('{MM}', date('m', $prof['time']), $html);
   $html = str_replace('{YYYY}', date('Y', $prof['time']), $html);
 
-  for ($i = 1; $i <= 18; $i++) { 
+  $h1 = '';
+  $h2 = '';
+
+  for ($i = 1; $i <= 25; $i++) { 
     if (!empty($prof['target'][$i - 1])) {
       $profile = $prof['target'][$i - 1];
-      $html = str_replace('{target'. $i .'}', $profile['name'] ,$html);
-      $html = str_replace('{unit'. $i .'}', $profile['unit'], $html);
-      $html = str_replace('{range'. $i .'}', $profile['flag'], $html);
-      $html = str_replace('{restar'. $i .'}', $profile['tar'], $html);
+      
+      $target = $profile['name'];
+      $unit = $profile['unit'];
+      $range = $profile['flag'];
+      $restar = $profile['tar'];
 
       if ($profile['tick'] == '<') {
-        $html = str_replace('{rg'. $i .'}', $profile['value'], $html);
-        $html = str_replace('{rn'. $i .'}', '', $html);
-        $html = str_replace('{rt'. $i .'}', '', $html);
+          $rg = $profile['value'];
+          $rn = '';
+          $rt = '';
       }
       else if ($profile['tick'] == '>') {
-        $html = str_replace('{rt'. $i .'}', $profile['value'], $html);
-        $html = str_replace('{rn'. $i .'}', '', $html);
-        $html = str_replace('{rg'. $i .'}', '', $html);
+        $rt = $profile['value'];
+        $rn = '';
+        $rg = '';
       }
       else {
-        $html = str_replace('{rn'. $i .'}', $profile['value'], $html);
-        $html = str_replace('{rt'. $i .'}', '', $html);
-        $html = str_replace('{rg'. $i .'}', '', $html);
+          $rn = $profile['value'];
+        $rt = '';
+        $rg = '';
       }
     }
     else {
-      $html = str_replace('{target'. $i .'}', '', $html);
-      $html = str_replace('{rn'. $i .'}', '', $html);
-      $html = str_replace('{rt'. $i .'}', '', $html);
-      $html = str_replace('{rg'. $i .'}', '', $html);
-      $html = str_replace('{unit'. $i .'}', '', $html);
-      $html = str_replace('{range'. $i .'}', '', $html);
-      $html = str_replace('{restar'. $i .'}', '', $html);
+      $target = '';
+      $rn = '';
+      $rt = '';
+      $rg = '';
+      $unit = '';
+      $range = '';
+      $restar = '';
     }
+    $h1 .= "
+      <tr class='underline'>
+        <td> $target </td>
+        <td> <b><span>$rn</span> <span class='red'>$rt</span> <span class='blue'>$rg</span> </b> </td>
+        <td> $unit </td>
+        <td> $range </td>
+      </tr>";
+    $h2 .= "<div>$restar</div>";
   }  
+  $html = str_replace('{target}', $h1, $html);
+  $html = str_replace('{restar}', $h2, $html);
 
   $result['status'] = 1;
   $result['html'] = $html;

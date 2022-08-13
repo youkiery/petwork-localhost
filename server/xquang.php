@@ -25,6 +25,17 @@ function getlist() {
   return $list;
 }
 
+function removeneed() {
+  global $data, $db, $result;
+
+  $sql = "update pet_phc_xray_row set xquang = 0 where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getneed();
+  return $result;
+}
+
 function getneed() {
   global $data, $db, $result;
     

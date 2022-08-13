@@ -26,6 +26,17 @@ function getlist() {
   return $list;
 }
 
+function removeneed() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_phc_exam where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getneed();
+  return $result;
+}
+
 function getneed() {
   global $data, $db, $result;
     
