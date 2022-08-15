@@ -330,9 +330,10 @@ function getList() {
     'other' => 0,
     'luong' => 0,
     'accounting' => 0,
+    'work' => 0,
   );
 
-  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1';
+  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1 and userid <> 1';
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {

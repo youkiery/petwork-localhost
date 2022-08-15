@@ -400,7 +400,7 @@ function detail() {
 
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
-
+  
   $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
@@ -422,6 +422,14 @@ function detail() {
 
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($data->id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->insertid($sql);
+
+  $customerid = checkcustomer();
+  $time = time();
+
+  foreach ($data->exam as $exam) {
+    $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
+    $db->query($sql);
+  }
   
   $sql = "select a.*, b.fullname as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
   $row = $db->fetch($sql);

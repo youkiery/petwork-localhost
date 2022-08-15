@@ -14,7 +14,7 @@ function getlist() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end) + 60 * 60 * 24 -1;
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_phc_exam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_exam_type d on a.typeid = d.id where a.time between $start and $end and a.status = 1";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_phc_exam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_exam_type d on a.typeid = d.id where a.time between $start and $end and a.status = 1 order by a.time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -40,7 +40,7 @@ function removeneed() {
 function getneed() {
   global $data, $db, $result;
     
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_phc_exam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_exam_type d on a.typeid = d.id where a.status = 0";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_phc_exam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_exam_type d on a.typeid = d.id where a.status = 0 order by a.time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -83,7 +83,8 @@ function update() {
   $userid = checkuserid();
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
-  $sql = "update pet_phc_exam set customerid = $customerid, image = '$image', note = '$data->note', status = 1 where id = $data->id";
+  $time = time();
+  $sql = "update pet_phc_exam set customerid = $customerid, image = '$image', note = '$data->note', status = 1, time = $time where id = $data->id";
   $id = $db->insertid($sql);
 
   $result['status'] = 1;
