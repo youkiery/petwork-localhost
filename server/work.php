@@ -182,3 +182,16 @@ function danhsachcongviec() {
 
   return $danhsachcongviec;
 }
+
+function chuyentrangthai() {
+  global $db, $data, $result;
+
+  $arr = array(0 => 1, 2);
+  $status = $arr[$data->status];
+  $sql = "update pet_phc_work set status = $status where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachcongviec();
+  return $result;
+}
