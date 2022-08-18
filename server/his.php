@@ -47,7 +47,9 @@ function add() {
 function printer() {
   global $data, $db, $result;
 
-  $html = file_get_contents ( DIR. 'include/template3.php');
+  // $html = file_get_contents ( DIR. 'include/template3.php');
+  $sql = "select * from pet_phc_form where name = 'his'";
+  $html = $db->fetch($sql)['value'];
 
   $sql = "select * from pet_phc_xray_row where id = $data->id";
   $detail = $db->fetch($sql);
@@ -73,7 +75,7 @@ function printer() {
   $html = str_replace('{customer}', $customer['name'], $html);
   $html = str_replace('{address}', $customer['address'], $html);
   $html = str_replace('{phone}', $customer['phone'], $html);
-  $html = str_replace('{petname}', $xray['petname'], $html);
+  $html = str_replace('{name}', $xray['petname'], $html);
   $html = str_replace('{weight}', $xray['weight'], $html);
   $html = str_replace('{age}', $xray['age'], $html);
   $html = str_replace('{species}', $xray['species'], $html);
@@ -123,9 +125,9 @@ function printer() {
   //   $html = str_replace('{a'. $i .'}', $t, $html);
   // }
 
-  $html = str_replace('{date}', date('d', $detail['time']), $html);
-  $html = str_replace('{month}', date('m', $detail['time']), $html);
-  $html = str_replace('{year}', date('Y', $detail['time']), $html);
+  $html = str_replace('{DD}', date('d', $detail['time']), $html);
+  $html = str_replace('{MM}', date('m', $detail['time']), $html);
+  $html = str_replace('{YY}', date('Y', $detail['time']), $html);
   $html = str_replace('{doctor2}', $doctor['fullname'], $html);
 
   $result['status'] = 1;

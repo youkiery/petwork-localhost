@@ -295,6 +295,11 @@ function permission($userid) {
 function getsiteconfig() {
   global $data, $db;
 
+  $arr = array('title', 'logo');
   $sql = "select * from pet_phc_config where module = 'site'";
-  return $db->obj($sql, 'name', 'value');
+  $site = $db->obj($sql, 'name', 'value');
+  foreach ($arr as $key) {
+    if (empty($site[$key])) $site[$key] = '';
+  }
+  return $site;
 }

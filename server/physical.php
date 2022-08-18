@@ -432,7 +432,9 @@ function printword() {
 
   $prof['doctor'] = $doctor['fullname'];
 
-  $html = file_get_contents ( DIR. '/include/template2.php');
+  // $html = file_get_contents ( DIR. 'include/template2.php');
+  $sql = "select * from pet_phc_form where name = 'phys'";
+  $html = $db->fetch($sql)['value'];
 
   $sex = array(0 => '', 'Đực', 'Cái');
   $html = str_replace('{customer}', $prof['customer'], $html);

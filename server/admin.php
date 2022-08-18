@@ -13,6 +13,17 @@ function auto() {
   return $result;
 }
 
+function getform() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_phc_form where name = '$data->form'";
+  $form = $db->fetch($sql);
+  if (empty($form['value'])) $form['value'] = '';
+  $result['status'] = 1;
+  $result['html'] = $form['value'];
+  return $result;
+}
+
 function reduce() {
   global $db, $data, $result;
 
@@ -25,10 +36,25 @@ function reduce() {
   return $result;
 }
 
+function configform() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_phc_form where name = '$data->form'";
+  $form = $db->fetch($sql);
+
+  if (empty($form)) $sql = "insert into pet_phc_form (name, value) values('$data->form', '$data->html')";
+  else $sql = "update pet_phc_form set value = '$data->html' where id = $form[id]";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu';
+  return $result;
+}
+
 function config() {
   global $db, $data, $result;
 
-  foreach ($data as $name => $value) {
+  foreach ($data->config as $name => $value) {
     $sql = "select * from pet_phc_config where module = 'site' and name = '$name'";
     if (empty($r = $db->fetch($sql))) $sql = "insert into pet_phc_config (module, name, value, alt) values ('site', '$name', '$value', 0)";
     else $sql = "update pet_phc_config set value = '$value' where id = $r[id]";
