@@ -138,8 +138,18 @@ function printer() {
 function update() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
+  $sql = "update pet_phc_xray set pos = $data->pos petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
+
+  $sql = "delete from pet_phc_config where module = 'hisdisease' and name = $data->id";
+  $db->query($sql);
+  
+  foreach ($data->disease->list as $key => $value) {
+    if ($value) {
+      $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
+      $db->query($sql);
+    }
+  }
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
@@ -318,7 +328,7 @@ function insert() {
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   $time = time();
-  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, diseaseid, petname, age, gender, species, weight) values($customerid, $userid, 0, $data->time, $data->pos, $data->diseaseid, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
+  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, petname, age, gender, species, weight) values($customerid, $userid, 0, $data->time, $data->pos, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
   $id = $db->insertid($sql);
   $arr = array('0' => '0', '1' => '-1');
   $data->xquang = $arr[$data->xquang];
@@ -327,6 +337,11 @@ function insert() {
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
   $image = implode(',', $data->image);
+
+  foreach ($data->disease->list as $key => $value) {
+    $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $id, $key, 0)";
+    $db->query($sql);
+  }
 
   $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->query($sql);
@@ -403,8 +418,17 @@ function detail() {
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   
-  $sql = "update pet_phc_xray set pos = $data->pos, diseaseid = $data->diseaseid, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
+  $sql = "update pet_phc_xray set pos = $data->pos, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
+
+  $sql = "delete from pet_phc_config where module = 'hisdisease' and name = $data->id";
+  $db->query($sql);
+  
+  foreach ($data->disease->list as $key => $value) {
+    $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
+    $db->query($sql);
+  }
+
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
@@ -526,14 +550,17 @@ function getlist($id = 0) {
     if (count($filter->docs)) $xtra []= " a.doctorid in ($docs) ";
   }
 
-  if (!empty($filter->diseaseid)) {
-    $xtra []= ' a.diseaseid = '. $filter->diseaseid .' ';
-  }
 
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
 
-  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+  if (!empty($filter->diseaseid)) {
+    $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+  }
+  else {
+    $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+  }
+
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
@@ -570,7 +597,8 @@ function getlist($id = 0) {
       }
     }
 
-    $list[$key]['disease'] = $diseaseobj[$value['diseaseid']];
+    $sql = "select b.id, b.name, 1 as done from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
+    $list[$key]['disease'] = array('text' => implode(', ', $db->arr($sql, 'name')), 'list' => $db->obj($sql, 'id', 'done'));
 
     $sql = "select * from pet_phc_xray_schedule where xrayid = $value[id] order by id desc limit 1";
     $list[$key]['sc'] = '';

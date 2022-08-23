@@ -280,16 +280,42 @@ function badge() {
 function permission($userid) {
   global $data, $db;
 
-  $sql = "select name, 0 as per from pet_phc_config where module = 'setting'";
-  $c = $db->obj($sql, 'name', 'per');
-
-  $sql = "select * from pet_phc_user_per where userid = $userid";
-  $query = $db->query($sql);
-  
-  while ($row = $query->fetch_assoc()) {
-    $c[$row['module']] = intval($row['type']);
+  if ($userid == 1) {
+    return array(
+      'spa' => 2,
+      'vaccine' => 2,
+      'schedule' => 2,
+      'item' => 2,
+      'kaizen' => 2,
+      'drug' => 2,
+      'price' => 2,
+      'ride' => 2,
+      'profile' => 2,
+      'physical' => 2,
+      'his' => 2,
+      'sieuam' => 2,
+      'xquang' => 2,
+      'transport' => 2,
+      'excel' => 2,
+      'hotel' => 2,
+      'other' => 2,
+      'luong' => 2,
+      'accounting' => 2,
+      'work' => 2,
+    );
   }
-  return $c;
+  else {
+    $sql = "select name, 0 as per from pet_phc_config where module = 'setting'";
+    $c = $db->obj($sql, 'name', 'per');
+  
+    $sql = "select * from pet_phc_user_per where userid = $userid";
+    $query = $db->query($sql);
+    
+    while ($row = $query->fetch_assoc()) {
+      $c[$row['module']] = intval($row['type']);
+    }
+    return $c;
+  }
 }
 
 function getsiteconfig() {

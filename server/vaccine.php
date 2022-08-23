@@ -488,7 +488,7 @@ function excel() {
         else $number = 0;
   
         if ($number == 0) $calltime = time();
-        else if (count($date) == 3) $calltime = strtotime("$date[2]/$date[1]/$date[0]");
+        else if (count($date) == 3) $calltime = strtotime(purenumber($date[2]) ."/". purenumber($date[1]) . "/". purenumber($date[0]));
         else $calltime = 0;
         
         $sql = "select * from pet_phc_customer where phone = '$row[2]'";

@@ -30,7 +30,7 @@ function themcongviec() {
   if (empty($expiretime)) $expiretime = 0;
 
   if (empty($data->id)) {
-    $sql = "insert into pet_phc_work (userid, departid, title, content, file, time, createtime, expiretime, status) values($userid, $data->departid, '$data->title', '$data->content', '$file', $time, $createtime, $expiretime, 0)";
+    $sql = "insert into pet_phc_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($userid, $data->departid, '$data->title', '$data->content', '$file', $time, $createtime, $expiretime, $time, 0)";
     $data->id = $db->insertid($sql);
   }
   else {
@@ -40,14 +40,33 @@ function themcongviec() {
 
   $sql = "delete from pet_phc_work_follow where workid = $data->id";
   $db->query($sql);
+  $sql = "delete from pet_phc_work_assign where workid = $data->id";
+  $db->query($sql);
+  $sql = "delete from pet_phc_work_repeat where workid = $data->id";
+  $db->query($sql);
 
-  if (isset($data->follow)) {
-    foreach ($data->follow as $nhanvien) {
-      if ($nhanvien->value == 'true') {
-        $sql = "insert into pet_phc_work_follow (workid, userid) values($data->id, $nhanvien->userid)";
-        $db->query($sql);
-      } 
-    }
+  foreach ($data->follow->list as $nhanvien) {
+    if ($nhanvien->value == 'true') {
+      $sql = "insert into pet_phc_work_follow (workid, userid) values($data->id, $nhanvien->userid)";
+      $db->query($sql);
+    } 
+  }
+  foreach ($data->assign->list as $nhanvien) {
+    if ($nhanvien->value == 'true') {
+      $sql = "insert into pet_phc_work_assign (workid, userid) values($data->id, $nhanvien->userid)";
+      $db->query($sql);
+    } 
+  }
+
+  // repeat
+  $repeat = $data->repeat;
+  if ($repeat->type) {
+    $repeat->time = isodatetotime($repeat->time);
+    if (empty($repeat->time)) $repeat->time = 0;
+    $list = array();
+    $repeat->list = implode(',', $repeat->list);
+    $sql = "insert into pet_phc_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
+    $db->query($sql);
   }
 
   $result['status'] = 1;
@@ -133,30 +152,50 @@ function parsefile($file) {
   return $l;
 }
 
-// work: id, userid, title, content, time
-// sequence: id, workid, overlap
-// follow: id, workid, userid
-// file: id, url
-// comment: id, workid, comment
 function danhsachcongviec() {
   global $db, $data, $result;
+
+  $filter = $data->filter;
+  $thoigian = strtotime(date('Y/m/d'));
+
+  $xtra = array();
+  if (!empty($filter->tukhoa)) $xtra []= "(title like '%$filter->tukhoa%' or content like '%$filter->tukhoa%')";
+  if (!empty($filter->danhmuc)) $xtra []= "departid = $filter->danhmuc";
+  switch ($filter->denhan) {
+    case '0':
+      $xtra []= '1';
+      break;
+    case '1':
+      // gần hạn
+      $gioihan = strtotime(date('Y/m/d')) - 7 * 60 * 60 * 24;
+      $xtra []= "(expiretime > 0 and expiretime < $gioihan)";
+      break;
+    case '2':
+      // quá hạn
+      $xtra []= "expiretime > $thoigian";
+      break;
+  }
+  $hoanthanh = array(0 => '1', 'status = 0', 'status > 0');
+  $xtra [] = $hoanthanh[$filter->hoanthanh];
+
+  if (!empty($xtra)) $xtra = 'and '. implode(' and ', $xtra);
+  else $xtra = '';
 
   $userid = checkuserid();
   $homnay = strtotime(date('Y/m/d')) - 1;
   switch ($data->chedo) {
     case '0':
-      // công việc, lấy userid = userid, depart in (user depart)
+      // công việc, lấy userid = userid, depart in (user depart), workid in assign
       $sql = "select a.id from pet_phc_work_depart a inner join pet_phc_work_depart_user b on a.id = b.departid where b.userid = $userid";
       $chuyenmuc = $db->arr($sql, 'id');
-      if (count($chuyenmuc)) $xtra = 'or departid in ('. implode(', ', $chuyenmuc) .')';
-      else $xtra = '';
-      $sql = "select * from pet_phc_work where (userid = $userid $xtra) order by time desc limit 50";
+      if (count($chuyenmuc)) $xtra2 = 'or departid in ('. implode(', ', $chuyenmuc) .')';
+      else $xtra2 = '';
+      $sql = "select * from pet_phc_work where ((userid = $userid $xtra2) or id in (select workid as id from pet_phc_work_assign where userid = $userid)) $xtra order by time desc, updatetime desc limit 50";
       $danhsachcongviec = $db->all($sql);
-
       break;
     case '1':
-      // follow
-      $sql = "select * from pet_phc_work where id in (select workid as id from pet_phc_work_follow where userid = $userid) order by time desc limit 50";
+      // workin in follow
+      $sql = "select * from pet_phc_work where id in (select workid as id from pet_phc_work_follow where userid = $userid) $xtra order by time desc, updatetime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
   }
@@ -174,6 +213,21 @@ function danhsachcongviec() {
     $danhsachcongviec[$thutu]['file'] = parsefile($congviec['file']);
     $danhsachcongviec[$thutu]['expiretime'] = date('d/m/Y', $congviec['expiretime']);
     $danhsachcongviec[$thutu]['expire'] = 0;
+    $danhmuc = '';
+    if ($congviec['departid'] > 0) {
+      $sql = "select * from pet_phc_work_depart where id = $congviec[departid]";
+      if (!empty($depart = $db->fetch($sql))) $danhmuc = $depart['name'];
+    }
+
+    $danhsachcongviec[$thutu]['danhmuc'] = $danhmuc;
+    // nếu chế độ = 0, kiểm tra userid = $userid, type = 2, nếu không type = 1, còn không type = 0
+    if ($data->chedo == '0') {
+      if ($congviec['userid'] == $userid) $type = 2;
+      else $type = 1;
+    }
+    else $type = 0;
+    $danhsachcongviec[$thutu]['type'] = $type; // 0, chỉ xem, 1, hoàn thành, 2, duyệt
+
     if (empty($congviec['expiretime'])) {
       $danhsachcongviec[$thutu]['expiretime'] = '';
     }
@@ -188,10 +242,165 @@ function chuyentrangthai() {
 
   $arr = array(0 => 1, 2);
   $status = $arr[$data->status];
-  $sql = "update pet_phc_work set status = $status where id = $data->id";
+  $utime = time();
+  if ($status == 2) $time = 0;
+  else $time = time();
+  $sql = "update pet_phc_work set status = $status, updatetime = $utime, time = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
+  $result['trangthai'] = $status;
   $result['danhsach'] = danhsachcongviec();
   return $result;
+}
+
+function laythongtin() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_phc_work where id = $data->id";
+  $congviec = $db->fetch($sql);
+
+  $sql = "select * from pet_phc_users where active = 1";
+  $nhanvien = $db->obj($sql, 'userid');
+
+  $sql = "select * from pet_phc_work_follow where workid = $data->id";
+  $theodoi = $db->all($sql);
+  $follow = array('text' => array(), 'list' => array());
+  foreach ($theodoi as $dulieu) {
+    $follow['text'] []= $nhanvien[$dulieu['userid']]['fullname'];
+  }
+  foreach ($nhanvien as $dulieu) {
+    $value = false;
+    foreach ($theodoi as $dulieutheodoi) {
+      if ($dulieutheodoi['userid'] == $dulieu['userid']) $value = true;
+    }
+    $follow['list'] []= array(
+      'value' => $value,
+      'userid' => $dulieu['userid'],
+      'name' => $dulieu['fullname']
+    );
+  }
+
+  $sql = "select * from pet_phc_work_assign where workid = $data->id";
+  $giaoviec = $db->all($sql);
+  $assign = array('text' => array(), 'list' => array());
+  foreach ($giaoviec as $dulieu) {
+    $assign['text'] []= $nhanvien[$dulieu['userid']]['fullname'];
+  }
+  foreach ($nhanvien as $dulieu) {
+    $value = false;
+    foreach ($giaoviec as $dulieugiaoviec) {
+      if ($dulieugiaoviec['userid'] == $dulieu['userid']) $value = true;
+    }
+    $assign['list'] []= array(
+      'value' => $value,
+      'userid' => $dulieu['userid'],
+      'name' => $dulieu['fullname']
+    );
+  }
+
+  $sql = "select * from pet_phc_work_repeat where workid = $data->id";
+  if (empty($laplai = $db->fetch($sql))) $repeat = array(
+    'type' => '0',
+    'time' => '',
+    'list' => array(0, 0, 0, 0, 0, 0, 0),
+  );
+  else $repeat = array(
+    'type' => $laplai['type'],
+    'time' => date('d-m-Y', $laplai['time']),
+    'list' => implode(',', $laplai['list']),
+  );
+
+  $dulieu = array(
+    'id' => $congviec['id'],
+    'title' => $congviec['title'],
+    'content' => $congviec['content'],
+    'departid' =>$congviec['departid'],
+    'image' => parseimage($congviec['file']),
+    'create' => date('Y-m-d', $congviec['createtime']),
+    'expire' => $congviec['expiretime'] > 0 ? date('Y-m-d', $congviec['expiretime']) : '',
+    'follow' => $follow,
+    'assign' => $assign,
+    'repeat' => $repeat
+  );
+
+  $result['status'] = 1;
+  $result['dulieu'] = $dulieu;
+  return $result;
+}
+
+function laybinhluan() {
+  global $db, $data, $result;
+
+  $result['status'] = 1;
+  $result['binhluan'] = danhsachbinhluan();
+  return $result;
+}
+
+function xoabinhluan() {
+  global $db, $data, $result;
+
+  $sql = "delete from pet_phc_work_comment where id = $data->commentid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã xóa bình luận';
+  $result['binhluan'] = danhsachbinhluan();
+  return $result;
+}
+
+function thongke() {
+  global $db, $data, $result;
+
+  $batdau = isodatetotime($data->batdau);
+  $ketthuc = isodatetotime($data->ketthuc);
+  $sql = "select userid, fullname as ten from pet_phc_users where active = 1 order by userid asc";
+  $danhsachnhanvien = $db->all($sql);
+
+  foreach ($danhsachnhanvien as $key => $nhanvien) {
+    $danhsachnhanvien[$key]['tong'] = 0;
+    $danhsachnhanvien[$key]['hoanthanh'] = 0;
+    $danhsachnhanvien[$key]['conlai'] = 0;
+    $sql = "select * from pet_phc_work where (createtime between $batdau and $ketthuc) and userid = $nhanvien[userid]";
+    $danhsachcongviec = $db->all($sql);
+    foreach ($danhsachcongviec as $congviec) {
+      $danhsachnhanvien[$key]['tong'] ++;
+      if ($congviec['status'] == 2) $danhsachnhanvien[$key] ['hoanthanh'] ++;
+      else $danhsachnhanvien[$key] ['conlai'] ++;
+    }
+    if ($danhsachnhanvien[$key]['tong'] > 0) {
+      $danhsachnhanvien[$key]['phantramhoanthanh'] = round($danhsachnhanvien[$key]['hoanthanh'] * 100 / $danhsachnhanvien[$key]['tong'], 2);
+      $danhsachnhanvien[$key]['phantramconlai'] = round($danhsachnhanvien[$key]['conlai'] * 100 / $danhsachnhanvien[$key]['tong'], 2);
+    }
+  }
+
+  $result['status'] = 1;
+  $result['nhanvien'] = $danhsachnhanvien;
+  return $result;
+}
+
+function nhantin() {
+  global $db, $data, $result;
+
+  $userid = checkuserid();
+  $time = time();
+  if (empty($data->commentid)) $sql = "insert into pet_phc_work_comment (workid, userid, comment, file, time) values($data->workid, $userid, '$data->chat', '$data->image', $time)";
+  else $sql = "update pet_phc_work_comment set comment = '$data->chat', file = '$data->image' where id = $data->commentid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['binhluan'] = danhsachbinhluan();
+  return $result;
+}
+
+function danhsachbinhluan() {
+  global $db, $data, $result;
+
+  $sql = "select a.*, b.fullname from pet_phc_work_comment a inner join pet_phc_users b on a.userid = b.userid where a.workid = $data->id order by time asc";
+  $danhsachbinhluan = $db->all($sql);
+  foreach ($danhsachbinhluan as $key => $binhluan) {
+    $danhsachbinhluan[$key]['time'] = date('d/m/Y h:i', $binhluan['time']);
+  }
+
+  return $danhsachbinhluan;
 }
