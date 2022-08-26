@@ -67,6 +67,7 @@ function save() {
     else {
       $sql = "update pet_phc_config set value = '$value' where module = '$data->module' and name = '$key'";
     }
+    $db->query($sql);
   }
   $result['messenger'] = 'Đã lưu cấu hình';
   $result['status'] = 1;

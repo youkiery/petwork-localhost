@@ -47,20 +47,18 @@ $db = new database($config['servername'], $config['username'], $config['password
 //   $db->query($sql);
 // }
 
+$sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '$config[database]'";
+$list = $db->all($sql);
 
+$data = array();
+foreach ($list as $row) {
+  $tablename = $row['table_name'];
+  $data[$tablename] = array();
+  $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$config[database]' AND TABLE_NAME = '$tablename'";
+  $l = $db->all($sql);
+  foreach ($l as $r) {
+    $data[$tablename] []= $r['COLUMN_NAME'];
+  }
+}
 
-// $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '$config[database]'";
-// $list = $db->all($sql);
-
-// $data = array();
-// foreach ($list as $row) {
-//   $tablename = $row['table_name'];
-//   $data[$tablename] = array();
-//   $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$config[database]' AND TABLE_NAME = '$tablename'";
-//   $l = $db->all($sql);
-//   foreach ($l as $r) {
-//     $data[$tablename] []= $r['COLUMN_NAME'];
-//   }
-// }
-
-// echo json_encode($data);die();
+echo json_encode($data);die();
