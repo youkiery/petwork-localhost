@@ -367,11 +367,11 @@ function checkcustomer() {
 
   $sql = "select * from pet_phc_customer where phone = '$data->phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$data->name' where id = $customer[id]";
+    $sql = "update pet_phc_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
+    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
     $customer['id'] = $db->insertid($sql);
   }
 
@@ -428,7 +428,6 @@ function detail() {
     $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
     $db->query($sql);
   }
-
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
@@ -555,10 +554,10 @@ function getlist($id = 0) {
   else $xtra = "";
 
   if (!empty($filter->diseaseid)) {
-    $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   else {
-    $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
 
   $list = $db->all($sql);
@@ -683,6 +682,8 @@ function schedule() {
   global $db, $data, $result;
 
   $near = isodatetotime($data->time);
+  // $customerid = checkcustomer();
+  // $sql = "update pet_phc_xray set customerid = $customerid";
   $sql = "select * from pet_phc_xray_schedule where status = 0 and id = $data->id";
   if (!empty($sc = $db->fetch($sql))) $sql = "update pet_phc_xray_schedule set time = $near where id = $sc[id]";
   else $sql = "insert into pet_phc_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";

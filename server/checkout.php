@@ -12,7 +12,8 @@ function note() {
   global $db, $data, $result;
 
   $json = addslashes(json_encode($data->content, JSON_UNESCAPED_UNICODE));
-  $sql = "update pet_phc_account set content = '$json' where id = $data->id";
+  $time = isodatetotime($data->time);
+  $sql = "update pet_phc_account set content = '$json', time = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
