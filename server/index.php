@@ -16,8 +16,6 @@ foreach ($list as $row) {
   $sql = "update pet_phc_vaccine set customerid = $row[customerid] where id = $row[id]";
   $db->query($sql);
 }
-
-die();
 */
 
 // error_reporting(E_ALL);

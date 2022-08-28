@@ -277,7 +277,6 @@
       $dulieu[$thutu]['nghilo'] = $nghilo;
       $danhsach []= $dulieu[$thutu];
     }
-  //   echo json_encode($danhsach);die();
 
     $result['status'] = 1;
     $result['danhsach'] = $danhsach;
@@ -317,7 +316,6 @@
       $dulieu[$dangky['type']][date('w', $dangky['time'])] []= $dangky['userid'];
     }
     $dulieubuoi = array(2 => 'sáng', 'chiều');
-    var_dump($dulieu);die();
 
     foreach ($dulieu as $buoi => $ngay) {
       foreach ($ngay as $thutungay => $dsdk) {
