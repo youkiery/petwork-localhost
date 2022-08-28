@@ -131,14 +131,16 @@ function themcongviec() {
   $sql = "delete from pet_phc_work_repeat where workid = $data->id";
   $db->query($sql);
 
-  $repeat = $data->repeat;
-  if ($repeat->type) {
-    $repeat->time = isodatetotime($repeat->time);
-    if (empty($repeat->time)) $repeat->time = 0;
-    $list = array();
-    $repeat->list = implode(',', $repeat->list);
-    $sql = "insert into pet_phc_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
-    $db->query($sql);
+  if (isset($repeat)) {
+    $repeat = $data->repeat;
+    if ($repeat->type) {
+      $repeat->time = isodatetotime($repeat->time);
+      if (empty($repeat->time)) $repeat->time = 0;
+      $list = array();
+      $repeat->list = implode(',', $repeat->list);
+      $sql = "insert into pet_phc_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
+      $db->query($sql);
+    }
   }
 
   $result['status'] = 1;
@@ -150,8 +152,11 @@ function themcongviec() {
 function themnhanvien() {
   global $db, $data, $result;
 
+  if (isset($data->child)) $parent = $data->child;
+  else $parent = 0;
+
   if (!isset($data->id)) {
-    $sql = "insert into pet_phc_work_depart (name) values('$data->name')";
+    $sql = "insert into pet_phc_work_depart (name, parentid) values('$data->name', $parent)";
     $data->id = $db->insertid($sql);
   }
   else {
@@ -205,16 +210,37 @@ function xoadanhmuc() {
 function danhsachdanhmuc() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_work_depart where active = 1 order by name asc";
+  $sql = "select * from pet_phc_work_depart where active = 1 and parentid = 0 order by name asc";
   $danhsach = $db->all($sql);
+  $list = array();
 
   foreach ($danhsach as $thutu => $danhmuc) {
     $sql = "select a.userid, b.fullname from pet_phc_work_depart_user a inner join pet_phc_users b on a.userid = b.userid where a.departid = $danhmuc[id]";
     $danhsach[$thutu]['list'] = $db->obj($sql, 'userid', 'fullname');
     $danhsach[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
+    $sql = "select * from pet_phc_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
+
+    $child = $db->all($sql);
+    if (count($child)) {
+      $danhsach[$thutu]['child'] = $child;
+
+      foreach ($danhsach[$thutu]['child'] as $thutuchild => $c) {
+        $sql = "select a.userid, b.fullname from pet_phc_work_depart_user a inner join pet_phc_users b on a.userid = b.userid where a.departid = $c[id]";
+        $danhsach[$thutu]['child'][$thutuchild]['list'] = $db->obj($sql, 'userid', 'fullname');
+        $danhsach[$thutu]['child'][$thutuchild]['text'] = implode(', ', $db->arr($sql, 'fullname'));
+      }
+    }
+    else $danhsach[$thutu]['child'] = array(array('id' => 0, 'name' => '-'));
+    $list []= $danhsach[$thutu];
+    if (count($child)) {
+      foreach ($child as $tt => $c) {
+        $child[$tt]['name'] = $danhmuc['name'].'/'. $c['name'];
+        $list []= $child[$tt];
+      }
+    }
   }
 
-  return $danhsach;
+  return $list;
 }
 
 function parsefile($file) {
@@ -291,7 +317,15 @@ function danhsachcongviec() {
     $danhmuc = '';
     if ($congviec['departid'] > 0) {
       $sql = "select * from pet_phc_work_depart where id = $congviec[departid]";
-      if (!empty($depart = $db->fetch($sql))) $danhmuc = $depart['name'];
+      if (!empty($depart = $db->fetch($sql))) {
+        $danhmuc = $depart['name'];        
+        if ($depart['parentid']) {
+          $sql = "select * from pet_phc_work_depart where id = $depart[parentid]";
+          if (!empty($depart = $db->fetch($sql))) {
+            $danhmuc = $depart['name'] .'/'. $danhmuc;
+          }
+        }
+      }
     }
 
     $danhsachcongviec[$thutu]['danhmuc'] = $danhmuc;
