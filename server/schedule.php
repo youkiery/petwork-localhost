@@ -260,8 +260,8 @@
             $thutuphat = $key - $gioihanngay;
             if ($gioihanngay == 1) {
               // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
-              $dulieu[$nhanvien['userid']]['nghiphat'] += 1 + $thutuphat;
-              $dulieu[$nhanvien['userid']]['tongnghi'] += 1 + $thutuphat;
+              $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
+              $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
             }
           }
         }
@@ -322,8 +322,11 @@
         $ngaythang = date('d/m/Y', ($thutungay == 0 ? 6 : $thutungay - 1) * 60 * 60 * 24 + $batdau);
         foreach ($dsdk as $thutu => $userid) {
           if ($thutu >= $gioihan[$thutungay]) {
+            if ($gioihan[$thutungay] == 1) {
             $thutuphat = $thutu - $gioihan[$thutungay];
             $nghiphat = (1 + $thutuphat) / 2;
+            }
+            else $nghiphat = 0.5;
             $danhsach []= $nguoidung[$userid] ." +$nghiphat nghỉ phạt vào buổi $dulieubuoi[$buoi] ngày $ngaythang";
           }
         }

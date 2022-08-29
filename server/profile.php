@@ -232,7 +232,7 @@ function removeneed() {
 function getneed() {
   global $data, $db, $result;
     
-  $sql = "select id, xrayid, image from pet_phc_xray_row where sinhhoa < 0";
+  $sql = "select id, xrayid, image from pet_phc_xray_row where sinhhoa < 0 order by time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
