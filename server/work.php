@@ -230,7 +230,7 @@ function danhsachdanhmuc() {
         $danhsach[$thutu]['child'][$thutuchild]['text'] = implode(', ', $db->arr($sql, 'fullname'));
       }
     }
-    else $danhsach[$thutu]['child'] = array(array('id' => 0, 'name' => '-'));
+    else $danhsach[$thutu]['child'] = array(array('id' => 0, 'name' => 'Không có danh mục con'));
     $list []= $danhsach[$thutu];
     if (count($child)) {
       foreach ($child as $tt => $c) {
