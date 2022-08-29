@@ -34,7 +34,7 @@ function danhsachlaplai() {
 
     $danhsachcongviec[$thutu]['time'] = date('d/m/Y', $congviec['time']);
     $danhsachcongviec[$thutu]['createtime'] = date('d/m/Y', $congviec['createtime']);
-    $danhsachcongviec[$thutu]['file'] = parsefile($congviec['file']);
+    $danhsachcongviec[$thutu]['file'] = parseimage($congviec['file']);
     $danhsachcongviec[$thutu]['expiretime'] = date('d/m/Y', $congviec['expiretime']);
     $danhsachcongviec[$thutu]['expire'] = 0;
     $danhmuc = '';
@@ -243,15 +243,6 @@ function danhsachdanhmuc() {
   return $list;
 }
 
-function parsefile($file) {
-  $file = explode(',', $file);
-  $l = array();
-  foreach ($file as $content) {
-    if (strlen($content)) $l []= $content;
-  }
-  return $l;
-}
-
 function danhsachcongviec() {
   global $db, $data, $result;
 
@@ -311,7 +302,7 @@ function danhsachcongviec() {
 
     $danhsachcongviec[$thutu]['time'] = date('d/m/Y', $congviec['time']);
     $danhsachcongviec[$thutu]['createtime'] = date('d/m/Y', $congviec['createtime']);
-    $danhsachcongviec[$thutu]['file'] = parsefile($congviec['file']);
+    $danhsachcongviec[$thutu]['file'] = parseimage($congviec['file']);
     $danhsachcongviec[$thutu]['expiretime'] = date('d/m/Y', $congviec['expiretime']);
     $danhsachcongviec[$thutu]['expire'] = 0;
     $danhmuc = '';

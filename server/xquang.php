@@ -18,8 +18,7 @@ function getlist() {
 
   foreach ($list as $key => $row) {
     $list[$key]['time'] = date('d/m/Y', $row['time']);
-    $list[$key]['image'] = explode(',', $row['image']);
-    if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
+    $list[$key]['image'] = parseimage($row['image']);
   }
 
   return $list;
@@ -49,8 +48,7 @@ function getneed() {
     $list[$key]['name'] = $info['name'];
     $list[$key]['phone'] = $info['phone'];
     $list[$key]['address'] = $info['address'];
-    $list[$key]['image'] = explode(',', $row['image']);
-    if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
+    $list[$key]['image'] = parseimage($row['image']);
   }
 
   return $list;
@@ -72,8 +70,10 @@ function insert() {
   }
 
   $result['status'] = 1;
-  $result['list'] = getlist();
-  $result['need'] = getneed();
+  if (!isset($data->his)) {
+    $result['list'] = getlist();
+    $result['need'] = getneed();
+  }
   return $result;
 }
 
@@ -111,8 +111,7 @@ function getinfo() {
   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_xquang a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.id = $data->id";
   $data = $db->fetch($sql);
   $data['time'] = date('d/m/Y', $data['time']);
-  $data['image'] = explode(',', $data['image']);
-  if (count($data['image']) == 1 && $data['image'][0] == '') $data['image'] = array();
+  $data['image'] = parseimage($data['image']);
 
   $result['status'] = 1;
   $result['data'] = $data;

@@ -19,7 +19,7 @@ function getlist() {
 
   foreach ($list as $key => $row) {
     $list[$key]['time'] = date('d/m/Y', $row['time']);
-    $list[$key]['image'] = explode(',', $row['image']);
+    $list[$key]['image'] = parseimage($row['image']);
     if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
   }
 
@@ -45,7 +45,7 @@ function getneed() {
 
   foreach ($list as $key => $row) {
     $list[$key]['time'] = date('d/m/Y', $row['time']);
-    $list[$key]['image'] = explode(',', $row['image']);
+    $list[$key]['image'] = parseimage($row['image']);
     if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
   }
 
@@ -111,7 +111,7 @@ function getinfo() {
   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_phc_exam a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid inner join pet_phc_exam_type d on a.typeid = d.id where a.id = $data->id";
   $data = $db->fetch($sql);
   $data['time'] = date('d/m/Y', $data['time']);
-  $data['image'] = explode(',', $data['image']);
+  $data['image'] = parseimage($data['image']);
   if (count($data['image']) == 1 && $data['image'][0] == '') $data['image'] = array();
 
   $result['status'] = 1;

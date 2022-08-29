@@ -246,8 +246,7 @@ function getneed() {
     $list[$key]['name'] = $info['name'];
     $list[$key]['phone'] = $info['phone'];
     $list[$key]['address'] = $info['address'];
-    $list[$key]['image'] = explode(',', $row['image']);
-    if (count($list[$key]['image']) == 1 && $list[$key]['image'][0] == '') $list[$key]['image'] = array();
+    $list[$key]['image'] = parseimage($row['image']);
   }
 
   return $list;
@@ -319,8 +318,10 @@ function insert() {
   $db->query($sql);
 
   $result['status'] = 1;
-  $result['list'] = getlist();
-  $result['need'] = getneed();
+  if (!isset($data->his)) {
+    $result['list'] = getlist();
+    $result['need'] = getneed();
+  }
   $result['serial'] = $serial;
   return $result;
 }
@@ -565,6 +566,18 @@ function specieslist() {
 
   $sql = "select id, value as name from pet_phc_config where module = 'profile' and name = 'species' order by value asc";
   return $db->all($sql);
+}
+
+function initsample() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_phc_target where active = 1 and module = 'profile' order by id asc";
+  $sql2 = "select id, value as name from pet_phc_config where module = 'profile' and name = 'sampletype' order by value asc";
+
+  $result['status'] = 1;
+  $result['target'] = $db->all($sql);
+  $result['sample'] = $db->all($sql2);
+  return $result;
 }
 
 function targetlist() {

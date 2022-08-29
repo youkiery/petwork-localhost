@@ -335,8 +335,8 @@ function coverData($data) {
     $sql = "select fullname as name from pet_phc_users where userid = $row[duser]";
     $d = $db->fetch($sql);
   
-    $image = explode(', ', $row['image']);
-    $dimage = explode(', ', $row['dimage']);
+    $image = parseimage($row['image']);
+    $dimage = parseimage($row['dimage']);
     $list []= array(
       'id' => $row['id'],
       'name' => $row['name'],
@@ -345,8 +345,8 @@ function coverData($data) {
       'duser' => (empty($d['name']) ? '' : $d['name']),
       'note' => $row['note'],
       'status' => $row['status'],
-      'image' => (count($image) && !empty($image[0]) ? $image : array()),
-      'dimage' => (count($dimage) && !empty($dimage[0]) ? $dimage : array()),
+      'image' => $image,
+      'dimage' => $dimage,
       'hour' => date('H:i', $row['time']),
       'date' => date('d/m/Y', $row['time']),
       'service' => (count($service) ? implode(',', $service) : '-')
@@ -665,8 +665,8 @@ function getList() {
     $sql = "select * from pet_phc_spa_schedule where customerid = $row[customerid] and time > $time";
     $near = $db->count($sql);
 
-    $image = explode(', ', $row['image']);
-    $dimage = explode(', ', $row['dimage']);
+    $image = parseimage($row['image']);
+    $dimage = parseimage($row['dimage']);
     $list []= array(
       'id' => $row['id'],
       'near' => $near,
@@ -684,8 +684,8 @@ function getList() {
       'status' => $row['status'],
       'treat' => $row['treat'],
       'weight' => $row['weight'],
-      'image' => (count($image) && !empty($image[0]) ? $image : array()),
-      'dimage' => (count($dimage) && !empty($dimage[0]) ? $dimage : array()),
+      'image' => $image,
+      'dimage' => $dimage,
       'ftime' => date('d/m/Y', $row['time']),
       'time' => date('H:i', $row['time']),
       'option' => $option,

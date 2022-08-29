@@ -11,7 +11,7 @@ function parseimage($image) {
   $image = explode(',', $image);
   $l = array();
   foreach ($image as $key => $value) {
-    if (!empty($value)) $l []= trim($value);
+    if (!empty($value)) $l []= preg_replace('/\s+/', '', $value);
   }
   return $l;
 }

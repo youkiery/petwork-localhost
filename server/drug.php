@@ -66,7 +66,7 @@ function getList() {
   $list = array();
 
   while ($row = $query->fetch_assoc()) {
-    $image = explode(', ', $row['image']);
+    $image = parseimage($row['image']);
     $row['limits'] = urldecode($row['limits']);
     $row['effect'] = urldecode($row['effect']);
     $row['sideeffect'] = urldecode($row['sideeffect']);

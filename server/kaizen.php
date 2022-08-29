@@ -78,7 +78,7 @@ function initList() {
   
   while ($row = $query->fetch_assoc()) {
     $user = checkUserById($row['userid']);
-    $image = explode(', ', $row['image']);
+    $image = parseimage($row['image']);
     if (count($image) == 1 && $image[0] == '') $image = array();
     $data = array(
       'id' => $row['id'],

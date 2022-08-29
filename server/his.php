@@ -196,6 +196,49 @@ function update() {
   return $result;
 }
 
+function getinfo() {
+  global $data, $db, $result, $userid;
+  
+  $type = $data->typed;
+  if ($type == 'xquang' || $type == 'sieuam') {
+    $sql = "select b.name, b.phone, b.address, '' as note, 1 as his from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $data->xrayid";
+    $info = $db->fetch($sql);
+    $info['image'] = array();
+    $info['xrayid '] = $data->id;
+  }
+  else if ($type == 'physical' || $type == 'profile') {
+    $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address, a.weight, a.age, a.gender from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where a.id = $data->xrayid";
+    $info = $db->fetch($sql);
+    // doctor, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, target
+    $info['doctor'] = checkuserid();
+    $sql = "select * from pet_phc_config where module = 'profile' and name = 'serial' limit 1";
+    $serial = $db->fetch($sql)['value'];
+    $info['serial'] = $serial;
+    $sql = "select id from pet_phc_config where module = 'physical' and name = 'sampletype' limit 1";
+    $info['sampletype'] = $db->fetch($sql)['id'];
+    $info['samplenumber'] = 1;
+    $info['samplesymbol'] = $serial;
+    $info['samplestatus'] = '1';
+    $info['symptom'] = '';
+    $info['his'] = 1;
+    $sql = "select * from pet_phc_target where active = 1 and module = 'physical' order by id asc";
+    $list = $db->arr($sql, 'id');
+    $target = array();
+    foreach ($list as $value) {
+      $target[$value] = '';
+    }
+    $info['target'] = $target;
+    $info['act'] = $type;
+    $info['xrayid'] = $data->xrayid;
+    $info['image'] = array();
+    $info['xrayid'] = $data->id;
+  }
+
+  $result['status'] = 1;
+  $result['data'] = $info;
+  return $result;
+}
+
 function getChatTotalCount($data) {
   $count = array(0 => 0, 0);
   foreach ($data as $row) {
@@ -569,7 +612,7 @@ function getlist($id = 0) {
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);
-      $image = explode(', ', $detail['image']);
+      $image = parseimage($detail['image']);
       if (count($image) == 1 && $image[0] == '') $row[$index]['image'] = array();
       else $row[$index]['image'] = $image;
       $sql = "select a.image, a.note, a.id, a.status, b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where treatid = $detail[id]";
@@ -590,7 +633,7 @@ function getlist($id = 0) {
       }
 
       foreach ($row[$index]['exam'] as $examindex => $exam) {
-        $image = explode(', ', $exam['image']);
+        $image = parseimage($exam['image']);
         if (count($image) == 1 && $image[0] == '') $row[$index]['exam'][$examindex]['image'] = array();
         else $row[$index]['exam'][$examindex]['image'] = $image;
       }
