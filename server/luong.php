@@ -345,7 +345,7 @@ function chitiet() {
 function chitietluongthang() {
   global $db, $data;
   // lấy ngày cần xem
-  $thoigian = $data->thoigian;
+  $thoigian = isodatetotime($data->thoigian);
   $thangnay = date('m', $thoigian);
   $namnay = date('Y', $thoigian);
   $denngay = strtotime(date($namnay .'/'. ($thangnay + 1) .'/1'));
@@ -508,7 +508,6 @@ function luungaynghi() {
   global $data, $db, $result;
 
   $thoigian = isodatetotime($data->thoigian);
-+
   $sql = "update pet_phc_luong set thoigian = $thoigian where id = $data->id";
   $db->query($sql);
 

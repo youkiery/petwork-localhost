@@ -144,7 +144,7 @@ function themcongviec() {
   }
 
   $result['status'] = 1;
-  if ($data->laplai) $result['laplai'] = danhsachlaplai();
+  if (isset($data->laplai)) $result['laplai'] = danhsachlaplai();
   $result['danhsach'] = danhsachcongviec();
   return $result;
 }
@@ -251,7 +251,11 @@ function danhsachcongviec() {
 
   $xtra = array();
   if (!empty($filter->tukhoa)) $xtra []= "(title like '%$filter->tukhoa%' or content like '%$filter->tukhoa%')";
-  if (!empty($filter->danhmuc)) $xtra []= "departid = $filter->danhmuc";
+  if (!empty($filter->danhmuc)) {
+    $sql = "select * from pet_phc_work_depart where parentid = $filter->danhmuc";
+    $danhmuc = $db->arr($sql, 'id');
+    $xtra []= "(departid = $filter->danhmuc". (count($danhmuc) ? ' or departid in (' .implode(', ', $danhmuc). ')' : '') . ")";
+  }
   switch ($filter->denhan) {
     case '0':
       $xtra []= '1';
@@ -273,7 +277,8 @@ function danhsachcongviec() {
   else $xtra = '';
   $time = time();
 
-  $userid = checkuserid();
+  if ($filter->nhanvien > 0) $userid = $filter->nhanvien;
+  else $userid = checkuserid();
   $homnay = strtotime(date('Y/m/d')) - 1;
   switch ($data->chedo) {
     case '0':
