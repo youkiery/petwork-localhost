@@ -14,6 +14,7 @@ function luong() {
   $result['status'] = 1;
   $result['chuy'] = chuy();
   $result['danhsach'] = danhsachluong();
+  $result['mucchi'] = danhsachmucchi();
   return $result;
 }
 
@@ -500,7 +501,7 @@ function dulieuluongtheoid() {
   $dulieu['tongchi'] = number_format($luong['tienchi']);
   $dulieu['tongnhanvien'] = number_format($luong['luongnhanvien']);
   $dulieu['tongcodong'] = number_format($luong['lairong']);
-  $dulieu['thoigian'] = $luong['thoigian'];
+  $dulieu['thoigian'] = date(DATE_ISO8601, $luong['thoigian']);
   return $dulieu;
 }
 
@@ -508,7 +509,44 @@ function luungaynghi() {
   global $data, $db, $result;
 
   $thoigian = isodatetotime($data->thoigian);
-  $sql = "update pet_phc_luong set thoigian = $thoigian where id = $data->id";
+  
+  if (isset($data->id)) {
+    $id = $data->id;
+    // xóa thu chi để thêm lại
+    $sql = "delete from pet_phc_luong_tienchi where luongid = $id";
+    $db->query($sql);
+    // thêm thu chi
+    $tongchi = 0;
+    foreach ($data->thuchi as $thuchi) {
+      $tienchi = str_replace(',', '', $thuchi->tienchi);
+      $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $tienchi)";
+      $db->query($sql);
+      $tongchi += $tienchi;
+    }
+  }
+
+  // tính lại lương, cổ phần  
+  // tính lại lương nhân vien
+
+  // tính lãi sau lương và tiền chi
+  $data->tongcodong = layso($data->tongloinhuan) - $tongchi - layso($data->tongnhanvien);
+  foreach ($data->nhanvien as $thutu => $nhanvien) {
+    $luongcung = str_replace(',', '', $nhanvien->luongcung);
+    $luongthuong = str_replace(',', '', $nhanvien->luongthuong);
+    $luongthuong = ($luongthuong > 0 ? $luongthuong : 0);
+    $nghiphep = str_replace(',', '', $nhanvien->nghiphep);
+    $tietkiem = str_replace(',', '', $nhanvien->tietkiem);
+    $luongcophan = $data->tongcodong * $nhanvien->cophan / 100;
+    // $luongcophan = ($luongcophan > 0 ? $luongcophan : 0);
+    $luongphucap = $data->tongcodong * $nhanvien->phucap / 100 + $nhanvien->phucap2;
+    // $luongphucap = ($luongphucap > 0 ? $luongphucap : 0);
+    $tongluong = $luongcung + $luongthuong + $luongphucap - $nghiphep;
+    $thucnhan = $luongcung + $luongthuong + $luongphucap - $nghiphep - $tietkiem;
+    $sql = "update pet_phc_luong_tra set luongphucap = $luongphucap, cophan = $luongcophan, tong = $tongluong, thucnhan = $thucnhan where userid = $nhanvien->userid and luongid = $data->id";
+    $db->query($sql);
+  }
+
+  $sql = "update pet_phc_luong set thoigian = $thoigian, tienchi = $tongchi, lairong = $data->tongcodong where id = $data->id";
   $db->query($sql);
 
   foreach ($data->ngaynghi as $tt => $nhanvien) {
@@ -770,11 +808,58 @@ function nhanvienthemtay() {
   }
 
   $result['danhsach'] = array(
-    'thoigian' => date('d-m-Y'),
+    'thoigian' => date(DATE_ISO8601),
     'danhsach' => $danhsach
   );
   $result['status'] = 1;
   return $result;
+}
+
+function mucchi() {
+  global $db, $data, $result;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachmucchi();
+  return $result;
+}
+
+function luumucchi() {
+  global $db, $data, $result;
+
+  $danhsach = array();
+  foreach ($data->danhsach as $mucchi) {
+    $tienchi = str_replace(',', '', $mucchi->tienchi);
+    if (!empty($mucchi->id)) {
+      $sql = "update pet_phc_config set value = '$mucchi->loaichi', alt = '$tienchi' where id = $mucchi->id";
+      $db->query($sql);
+      $danhsach []= $mucchi->id;
+    }
+    else {
+      $sql = "insert into pet_phc_config (module, name, value, alt) values('luong', 'tienchi', '$mucchi->loaichi', '$tienchi')";
+      $danhsach []= $db->insertid($sql);
+    }
+  }
+
+  if (count($danhsach)) {
+    $sql = "delete from pet_phc_config where module = 'luong' and name = 'tienchi' and id not in (". implode(', ', $danhsach) .")";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu mục chi';
+  return $result;
+}
+
+function danhsachmucchi() {
+  global $db, $data, $result;
+
+  $sql = "select id, value as loaichi, alt as tienchi from pet_phc_config where module = 'luong' and name = 'tienchi'";
+  $danhsachmucchi = $db->all($sql);
+
+  foreach ($danhsachmucchi as $key => $mucchi) {
+    $danhsachmucchi[$key]['tienchi'] = number_format($mucchi['tienchi']);
+  }
+  return $danhsachmucchi;
 }
 
 function themtay() {

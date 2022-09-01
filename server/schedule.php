@@ -5,12 +5,28 @@
     
     $result['status'] = 1;
     $result['data'] = getList($data);
-    $result['quangay'] = getoverload();
     $result['list'] = getScheduleUser();
     $result['except'] = getExcept();
+    $result['quangay'] = getoverload();
+    $result['dachotlich'] = kiemtrachotlich();
     return $result;
   }
 
+  function kiemtrachotlich() {
+    global $data, $db;
+
+    $time = $data->time;
+    $ngaybatdau = strtotime(date('Y', $time) .'/'. date('m', $time) .'/1');
+    $ngayketthuc = strtotime(date('Y', $time) .'/'. (date('m', $time) + 1) .'/1') - 1;
+
+    $sql = "select thoigian from pet_phc_luong where thoigian between $ngaybatdau and $ngayketthuc";
+    $danhsach = $db->arr($sql, 'thoigian');
+
+    foreach ($danhsach as $key => $value) {
+      $danhsach[$key] = date('d/m/Y', $value);
+    }
+    return $danhsach;
+  }
 
   function userreg() {
     global $data, $db, $result;
@@ -216,8 +232,8 @@
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
-    $batdau = isodatetotime($data->batdau);
-    $ketthuc = isodatetotime($data->ketthuc);
+    $batdau = isodatetotime($data->filter->batdau);
+    $ketthuc = isodatetotime($data->filter->ketthuc);
     // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
     $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
 
@@ -280,6 +296,108 @@
 
     $result['status'] = 1;
     $result['danhsach'] = $danhsach;
+    return $result;
+  }
+
+  function chotlich() {
+    global $db, $data, $result;
+
+    $sql = "select b.fullname, a.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+
+    $danhsachnhanvien = $db->all($sql);
+    $danhsach = array();
+    $dulieu = array();
+    $batdau = isodatetotime($data->filter->batdau);
+    $ketthuc = isodatetotime($data->filter->ketthuc);
+    // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
+    $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
+
+    $gioihan = array(
+      0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
+    );
+
+    $sql = "select b.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $danhsachngoaile = $db->arr($sql, 'userid');
+    if (empty($danhsachngoaile)) $ngoaile = '0';
+    else $ngoaile = implode(', ', $danhsachngoaile);
+
+    $danhsachid = array();
+    foreach ($danhsachnhanvien as $nhanvien) {
+      $danhsachid []= $nhanvien['userid'];
+      $sql = "select id, type, user_id as userid, time, reg_time from pet_phc_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
+      $lichnghi = $db->all($sql);
+
+      $dulieu[$nhanvien['userid']] = array(
+        'userid' => $nhanvien['userid'],
+        'tennhanvien' => $nhanvien['fullname'],
+        'nghi' => 0,
+        'nghiphat' => 0,
+        'tongnghi' => 0,
+        'nghilo' => 0,
+      );
+
+      foreach ($lichnghi as $nghi) {
+        $dulieu[$nhanvien['userid']]['nghi'] ++;
+        $daungay = strtotime(date('Y/m/d', $nghi['time']));
+        $cuoingay = $daungay + 24 * 60 * 60 - 1;
+        $dangky = $nghi['reg_time'];
+        $ngaytrongtuan = date('w', $nghi['time']);
+        $gioihanngay = $gioihan[$ngaytrongtuan];
+        // tìm trong type cùng ngày (trừ except) có vượt limit không
+        $sql = "select user_id as userid, reg_time from pet_phc_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
+        $ngaynghi = $db->all($sql);
+        foreach ($ngaynghi as $key => $row) {
+          if ($row['userid'] == $nghi['userid'] && ($key >= $gioihanngay)) {
+            $dulieu[$nhanvien['userid']]['nghiphat'] ++;
+            $dulieu[$nhanvien['userid']]['tongnghi'] ++;
+            $thutuphat = $key - $gioihanngay;
+            if ($gioihanngay == 1) {
+              // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
+              $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
+              $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
+            }
+          }
+        }
+      }
+    }
+
+    foreach ($dulieu as $thutu => $thongtin) {
+      $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
+      $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
+      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'];
+      $nghilo = $dulieu[$thutu]['tongnghi'] - $tuan;
+      if ($nghilo < 0) $nghilo = 0;
+      $dulieu[$thutu]['nghilo'] = $nghilo;
+      $danhsach []= $dulieu[$thutu];
+    }
+
+    $tongnhanvien = count($danhsach);
+    $thoigian = $data->time / 1000;
+
+    $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, $tongnhanvien, 0, $thoigian, 0)";
+    $id = $db->insertid($sql);
+
+    $sql = "select value as loaichi, alt as tienchi from pet_phc_config where module = 'luong' and name = 'tienchi'";
+    $danhmucchi = $db->all($sql);
+    
+    foreach ($danhmucchi as $tienchi) {
+      $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$tienchi[loaichi]', $tienchi[tienchi])";
+      $db->query($sql);
+    }
+
+    $sql = "select userid, 0 as nghilo from pet_phc_luong_nhanvien where userid not in (". implode(', ', $danhsachid) .")";
+    if (count($nhanvien = $db->all($sql))) {
+      $danhsach = array_merge($danhsach, $nhanvien);
+    }
+
+    foreach ($danhsach as $nhanvien) {
+      $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien[userid], $id, 0, 0, 0, 0, 0, 0, 0, 0, 0, $nhanvien[nghilo], 0, 0, 0, 0, 0, 0, 0)";
+      $db->query($sql);
+    }
+
+    $result['status'] = 1;
+    $result['dachotlich'] = kiemtrachotlich();
+    $result['messenger'] = 'Đã chốt chốt lịch nghỉ';
     return $result;
   }
   
