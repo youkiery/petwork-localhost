@@ -138,7 +138,7 @@ function history() {
 function inserthistory() {
   global $data, $db, $result;
 
-  $petid = checkcustomer();
+  $petid = checkpet();
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
@@ -159,7 +159,7 @@ function inserthistory() {
 function updatehistory() {
   global $data, $db, $result;
 
-  $petid = checkcustomer();
+  $petid = checkpet();
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
@@ -516,6 +516,7 @@ function excel() {
         }
       }
       else if ($row[5] == '1') {
+        // var_dump($row);echo "<br>";
         if (empty($his[$row[2]])) $his[$row[2]] = array('name' => $row['3'], 'phone' => $row['2'], 'user' => $row['1'], 'time' => $row['4'], 'treat' => array());
         $his[$row[2]]['treat'] []= $row['6'] . ": ". $row['7'];
       }
@@ -537,7 +538,7 @@ function excel() {
       $endtime = $cometime + 60 * 60 * 24 - 1;
 
       $time = time();
-      $sql = "select a.* from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id where c.phone = '$row[phone]' and insult = 0 order by time desc";
+      $sql = "select a.* from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where c.phone = '$row[phone]' and insult = 0 order by time desc";
       $treating = implode(', ', $row['treat']);
       if (!empty($treat = $db->fetch($sql))) {
         $sql = "select * from pet_phc_xray_row where xrayid = $treat[id] and (time between $cometime and $endtime) order by time desc limit 1";
@@ -547,17 +548,24 @@ function excel() {
           $sql = "update pet_phc_xray_row set treat = '$treating' where id = $r[id]";
         }
         else {
-          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, conclude) values($treat[id], $userid, '$r[eye]', '$r[temperate]', '$r[other]', '$treating', '', '$r[status]', $cometime, '$r[conclude]')";
+          // lấy mặc định từ trước đó, nếu không có thì để trống
+          $sql = "select * from pet_phc_xray_row where xrayid = $treat[id] order by time desc limit 1";
+          if (empty($r = $db->fetch($sql))) {
+            $r = array('subother' => '', 'temperate' => '', 'other' => '', 'image' => '', 'status' => 0, 'conclude' => '');
+          }
+
+          $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($treat[id], $userid, '$r[subother]', '$r[temperate]', '$r[other]', '$treating', '$r[image]', '$r[status]', $cometime, 0, 0, 0, 0, 0, '$r[conclude]')";
         }
         $db->query($sql);
       }
       else {
         // không có danh sách => thêm hồ sơ mới
-        $petid = checkpet($row);
-        $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, diseaseid) values($petid, $userid, 0, $cometime, $diseaseid)";
+        $customerid = checkcustomer($row['name'], $row['phone']);
+        $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, petname, age, gender, species, weight) values($customerid, $userid, 0, $cometime, 0, '', '', '', '', '')";
         $id = $db->insertid($sql);
+        // $sql = "insert into pet_phc_xray(petid, doctorid, insult, time, diseaseid) values($petid, $userid, 0, $cometime, $diseaseid)";
         
-        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time, conclude) values($id, $userid, '', '', '', '$treating', '', '0', $cometime, '')";
+        $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '', '', '', '$treating', '', '0', $cometime, 0, 0, 0, 0, 0, '')";
         $db->query($sql);
       }
     }
@@ -572,26 +580,42 @@ function excel() {
   return $result;
 }
 
-function checkpet($data) {
-  global $db;
-  $sql = "select * from pet_phc_customer where phone = '$data[phone]'";
+function checkcustomer($name, $phone) {
+  global $db, $data;
 
-  if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_customer (name, phone, address) values('$data[name]', '$data[phone]', '')";
-    $c['id'] = $db->insertid($sql);
-  }
-  else {
-    $sql = "update pet_phc_customer set name = '$data[name]' where id = $c[id]";
+  $sql = "select * from pet_phc_customer where phone = '$/phone'";
+  if (!empty($customer = $db->fetch($sql))) {
+    $sql = "update pet_phc_customer set name = '$name' where id = $customer[id]";
     $db->query($sql);
   }
-
-  $sql = "select * from pet_phc_pet where name = 'Chưa đặt tên' and customerid = '$c[id]'";
-  if (empty($p = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_pet (name, customerid) values('Chưa đặt tên', $c[id])";
-    return $db->insertid($sql);
+  else {
+    $sql = "insert into pet_phc_customer (name, phone, address) values ('$name', '$phone', '')";
+    $customer['id'] = $db->insertid($sql);
   }
-  return $p['id'];
+
+  return $customer['id'];
 }
+
+// function checkpet($data) {
+//   global $db;
+//   $sql = "select * from pet_phc_customer where phone = '$data[phone]'";
+
+//   if (empty($c = $db->fetch($sql))) {
+//     $sql = "insert into pet_phc_customer (name, phone, address) values('$data[name]', '$data[phone]', '')";
+//     $c['id'] = $db->insertid($sql);
+//   }
+//   else {
+//     $sql = "update pet_phc_customer set name = '$data[name]' where id = $c[id]";
+//     $db->query($sql);
+//   }
+
+//   $sql = "select * from pet_phc_pet where name = 'Chưa đặt tên' and customerid = '$c[id]'";
+//   if (empty($p = $db->fetch($sql))) {
+//     $sql = "insert into pet_phc_pet (name, customerid) values('Chưa đặt tên', $c[id])";
+//     return $db->insertid($sql);
+//   }
+//   return $p['id'];
+// }
 
 function checkExcept($list, $name) {
   global $db;
@@ -618,7 +642,7 @@ function getvacid($id) {
 function insert() {
   global $data, $db, $result;
 
-  $petid = checkcustomer();
+  $petid = checkpet();
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
@@ -688,7 +712,7 @@ function search() {
 function update() {
   global $data, $db, $result;
 
-  $petid = checkcustomer();
+  $petid = checkpet();
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
@@ -988,7 +1012,7 @@ function getDoctor() {
   return $db->all($sql);
 }
 
-function checkcustomer() {
+function checkpet() {
   global $db, $data;
 
   $sql = "select * from pet_phc_customer where phone = '$data->phone'";

@@ -261,28 +261,95 @@ function statistic() {
   $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
   $list = $db->all($sql);
   $data = array();
+  $rev = array(0 => 'dieutri', 'xuatvien', 'dachet');
   
   foreach ($list as $key => $value) {
-    if (empty($data[$value['doctorid']])) $data[$value['doctorid']] = array(0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0, 'name' => $value['doctor']);
-    $data[$value['doctorid']] [$value['insult']] ++;
-    $data[$value['doctorid']] [3] ++;
-    $data[$value['doctorid']] [4] += $value['rate'];
+    if (empty($data[$value['doctorid']])) $data[$value['doctorid']] = array(
+      'doctorid' => $value['doctorid'],
+      'name' => $value['doctor'],
+      'balance' => 0,
+      'dieutri' => 0,
+      'xuatvien' => 0,
+      'dachet' => 0,
+      'tongca' => 0,
+      'danhgia' => 0,
+      'tongdanhgia' => 0
+    );
+    $data[$value['doctorid']][$rev[$value['insult']]] ++;
+    $data[$value['doctorid']]['tongca'] ++;
+    if ($data[$value['doctorid']]['danhgia'] > 0) {
+      $data[$value['doctorid']]['danhgia'] += $value['rate'];
+      $data[$value['doctorid']]['tongdanhgia'] += 3;
+    }
   }
   
-  $stat = array();
-  
-  foreach ($data as $key => $value) {
-    if ($value[2] > $value[1]) $data[$key]['balance'] = 2;
-    else if ($value[1] > $value[2]) $data[$key]['balance'] = 1;
-    else $data[$key]['balance'] = 0;
-    $stat []= $data[$key];
+  foreach ($data as $doctorid => $thongtin) {
+    $data[$doctorid]['tiledieutri'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['dieutri'] * 100 / $thongtin['tongca'], 1) : 0);
+    $data[$doctorid]['tilexuatvien'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['xuatvien'] * 100 / $thongtin['tongca'], 1) : 0);
+    $data[$doctorid]['tiledachet'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['dachet'] * 100 / $thongtin['tongca'], 1) : 0);
+    $data[$doctorid]['tiledanhgia'] = ($thongtin['tongdanhgia'] > 0 ? number_format($thongtin ['danhgia'] * 100 / $thongtin['tongdanhgia'], 1) : 0);
+    if ($thongtin['xuatvien'] > $thongtin['dachet']) $data[$doctorid]['balance'] = 1;
+    else if ($thongtin['xuatvien'] < $thongtin['dachet']) $data[$doctorid]['balance'] = 2;
   }
-  
-  usort($data, "ratest");
 
-  $result['status'] = 1;
-  $result['data'] = $stat;
+  $danhsach = array();
+  foreach ($data as $thongtin) {
+    $danhsach []= $thongtin;
+  }
   
+  $result['status'] = 1;
+  $result['data'] = $danhsach;
+  return $result;
+}
+
+function statistic2() {
+  global $data, $db, $result;
+
+  $data->start = isodatetotime($data->start);
+  $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
+
+  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where (a.time between $data->start and $data->end) order by id desc";
+  $danhsach = $db->all($sql);
+  $dulieu = array();
+  $rev = array(0 => 'dieutri', 'xuatvien', 'dachet');
+  
+  foreach ($danhsach as $dieutri) {
+    $sql = "select a.value as idbenh, b.name from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = $dieutri[id]";
+    $benh = $db->all($sql, 'value');
+    foreach ($benh as $thongtin) {
+      if (empty($dulieu[$thongtin['idbenh']])) $dulieu[$thongtin['idbenh']] = array(
+        'id' => $thongtin['idbenh'],
+        'balance' => 0,
+        'tenbenh' => $thongtin['name'],
+        'dieutri' => 0,
+        'xuatvien' => 0,
+        'dachet' => 0,
+        'tongca' => 0,
+        'danhsachxuatvien' => array(),
+        'danhsachdachet' => array()
+      );
+      if ($dieutri['insult'] == 1) $dulieu[$thongtin['idbenh']]['danhsachxuatvien'] []= $dieutri['id'];
+      else if ($dieutri['insult'] == 2) $dulieu[$thongtin['idbenh']]['danhsachdachet'] []= $dieutri['id'];
+      $dulieu[$thongtin['idbenh']]['tongca'] ++;
+      $dulieu[$thongtin['idbenh']][$rev[$dieutri['insult']]] ++;
+    }
+  }
+
+  foreach ($dulieu as $idbenh => $thongtin) {
+    $dulieu[$idbenh]['tiledieutri'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['dieutri'] * 100 / $thongtin['tongca'], 1) : 0);
+    $dulieu[$idbenh]['tilexuatvien'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['xuatvien'] * 100 / $thongtin['tongca'], 1) : 0);
+    $dulieu[$idbenh]['tiledachet'] = ($thongtin['tongca'] > 0 ? number_format($thongtin ['dachet'] * 100 / $thongtin['tongca'], 1) : 0);
+    if ($thongtin['xuatvien'] > $thongtin['dachet']) $dulieu[$idbenh]['balance'] = 1;
+    else if ($thongtin['xuatvien'] < $thongtin['dachet']) $dulieu[$idbenh]['balance'] = 2;
+  }
+
+  $danhsach = array();
+  foreach ($dulieu as $thongtin) {
+    $danhsach []= $thongtin;
+  }
+  
+  $result['status'] = 1;
+  $result['data'] = $danhsach;
   return $result;
 }
 
@@ -597,12 +664,11 @@ function getlist($id = 0) {
   else $xtra = "";
 
   if (!empty($filter->diseaseid)) {
-    $sql = "select a.*, c.name as customer, c.phone, c.address d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   else {
     $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
-
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
@@ -784,4 +850,41 @@ function checkpet() {
     $db->query($sql);
     return $data->petid;
   }
+}
+
+function xemdieutri() {
+  global $db, $data, $result;
+
+  $diseaseobj = getdiseaseobj();
+
+  $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where a.id in (". implode(', ', $data->danhsach) .") order by a.insult asc, id desc";
+  $list = $db->all($sql);
+  $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
+  
+  foreach ($list as $key => $value) {
+    $list[$key]['chat'] = getChatCount($value['id']);
+    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
+    $row = $db->all($sql);
+    foreach ($row as $index => $detail) {
+      $row[$index]['time'] = date('d/m/Y', $detail['time']);
+      $row[$index]['image'] = parseimage($detail['image']);
+    }
+
+    $sql = "select b.id, b.name, 1 as done from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
+    $list[$key]['disease'] = array('text' => implode(', ', $db->arr($sql, 'name')), 'list' => $db->obj($sql, 'id', 'done'));
+
+    if (count($row)) {
+      $list[$key]['status'] = $row[count($row) - 1]['status'];
+      $list[$key]['time'] = $row[0]['time'];
+    }
+    else {
+      $list[$key]['status'] = 0;
+      $list[$key]['time'] = date('d/m/Y');
+    }
+    if (!count($row)) $row = array(array('xquang' => 0, 'sieuam' => 0, 'nuoctieu' => 0, 'sinhly' => 0, 'sinhhoa' => 0));
+    $list[$key]['detail'] = $row;
+  }
+  $result['status'] = 1;
+  $result['danhsach'] = $list;
+  return $result;
 }
