@@ -260,7 +260,7 @@ function badge() {
   );
   $sql = "select * from pet_phc_xray where insult = 0";
   $result['data']['his'] = $db->count($sql);
-  $sql = "select * from pet_phc_kaizen where done = 0";
+  $sql = "select * from pet_phc_kaizen where active = 1 and done = 0";
   $result['data']['kaizen'] = $db->count($sql);
   $sql = "select * from pet_phc_xray_row where sinhhoa < 0";
   $result['data']['profile'] = $db->count($sql);

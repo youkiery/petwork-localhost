@@ -68,18 +68,19 @@ function initList() {
   $userid = checkuserid();
   $role = checkRole();
 
-  if (!empty($filter->keyword)) $xtra []= '((result like "%'. $filter->keyword .'%") or (solution like "%'. $filter->keyword .'%") or (problem like "%'. $filter->keyword .'%"))';
+  if (!empty($filter->keyword)) $xtra []= '((result like "%'. $filter->keyword .'%") or (solution like "%'. $filter->keyword .'%") or (problem like "%'. $filter->keyword .'%") or (noidungtugiac like "%'. $filter->keyword .'%") or (noidungdongdoi like "%'. $filter->keyword .'%"))';
   if ($role < 2) $xtra []= 'userid = ' . $userid;
   if (count($xtra)) $xtra = ' and ' . implode(' and ', $xtra);
   else $xtra = '';
   
-  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 0 order by edit_time desc';
-  $query = $db->query($sql);
+  $sql = "select * from pet_phc_kaizen where active = 1 $xtra and done = 0 order by edit_time desc";
+  $danhsach = $db->all($sql);
   
-  while ($row = $query->fetch_assoc()) {
+  foreach ($danhsach as $row) {
     $user = checkUserById($row['userid']);
     $image = parseimage($row['image']);
-    if (count($image) == 1 && $image[0] == '') $image = array();
+    $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
+    $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
       'name' => $user['name'],
@@ -88,6 +89,10 @@ function initList() {
       'solution' => $row['solution'],
       'result' => $row['result'],
       'image' => $image,
+      'noidungdongdoi' => $row['noidungdongdoi'],
+      'noidungtugiac' => $row['noidungtugiac'],
+      'hinhanhdongdoi' => $hinhanhdongdoi,
+      'hinhanhtugiac' => $hinhanhtugiac,
       'time' => date('d/m/Y', $row['edit_time'])
     );
     $list['undone'] []= $data;
@@ -98,6 +103,7 @@ function initList() {
   
   while ($row = $query->fetch_assoc()) {
     $user = checkUserById($row['userid']);
+    if (empty($user)) $user = ['name' => ''];
     $data = array(
       'id' => $row['id'],
       'name' => $user['name'],
@@ -125,8 +131,10 @@ function insertData() {
   $userid = checkuserid();
   $time = time();
   $image = implode(',', $data->image);
+  $hinhanhtugiac = implode(',', $data->hinhanhtugiac);
+  $hinhanhdongdoi = implode(',', $data->hinhanhdongdoi);
 
-  $sql = "insert into pet_phc_kaizen (userid, problem, solution, result, post_time, edit_time, image) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image')";
+  $sql = "insert into pet_phc_kaizen (userid, problem, solution, result, post_time, edit_time, image, noidungdongdoi, hinhanhdongdoi, noidungtugiac, hinhanhtugiac) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image', '$data->noidungdongdoi', '$hinhanhdongdoi', '$data->noidungtugiac', '$hinhanhtugiac')";
   $db->query($sql);
 }
 
@@ -136,7 +144,7 @@ function updateData() {
   $time = time();
   $image = implode(',', $data->image);
 
-  $sql = "update pet_phc_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image' where id = $data->id";
+  $sql = "update pet_phc_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image', noidungdongdoi = '$noidungdongdoi', noidungtugiac = '$noidungtugiac', hinhanhdongdoi = '$hinhanhdongdoi', hinhanhtugiac = '$hinhanhtugiac' where id = $data->id";
   $db->query($sql);
 }
 

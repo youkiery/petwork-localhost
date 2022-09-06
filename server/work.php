@@ -511,7 +511,7 @@ function nhantin() {
 
   $userid = checkuserid();
   $time = time();
-  if (empty($data->commentid)) $sql = "insert into pet_phc_work_comment (workid, userid, comment, file, time) values($data->workid, $userid, '$data->chat', '$data->image', $time)";
+  if (empty($data->commentid)) $sql = "insert into pet_phc_work_comment (workid, userid, comment, file, time) values($data->id  , $userid, '$data->chat', '$data->image', $time)";
   else $sql = "update pet_phc_work_comment set comment = '$data->chat', file = '$data->image' where id = $data->commentid";
   $db->query($sql);
 
