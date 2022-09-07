@@ -103,7 +103,9 @@ function initList() {
   
   while ($row = $query->fetch_assoc()) {
     $user = checkUserById($row['userid']);
-    if (empty($user)) $user = ['name' => ''];
+    $image = parseimage($row['image']);
+    $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
+    $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
       'name' => $user['name'],
@@ -111,6 +113,11 @@ function initList() {
       'problem' => $row['problem'],
       'solution' => $row['solution'],
       'result' => $row['result'],
+      'image' => $image,
+      'noidungdongdoi' => $row['noidungdongdoi'],
+      'noidungtugiac' => $row['noidungtugiac'],
+      'hinhanhdongdoi' => $hinhanhdongdoi,
+      'hinhanhtugiac' => $hinhanhtugiac,
       'time' => date('d/m/Y', $row['edit_time'])
     );
     $list['done'] []= $data;

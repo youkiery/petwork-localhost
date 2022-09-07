@@ -234,7 +234,7 @@ function danhsachdanhmuc() {
     $list []= $danhsach[$thutu];
     if (count($child)) {
       foreach ($child as $tt => $c) {
-        $child[$tt]['name'] = $danhmuc['name'].'/'. $c['name'];
+        $child[$tt]['name'] = '⊦ '. $c['name'];
         $list []= $child[$tt];
       }
     }

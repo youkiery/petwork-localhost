@@ -12,6 +12,30 @@
     return $result;
   }
 
+  function thongkedangky() {
+    global $data, $db, $result;
+
+    $start = isodatetotime($data->start);
+    $end = isodatetotime($data->end);
+    $sql = "select a.time, a.reg_time, a.reg_type, a.type, b.fullname from pet_phc_row_log a inner join pet_phc_users b on a.userid = b.userid where time between $start and $end order by id desc";
+    $danhsachdangky = $db->all($sql);
+    $danhsach = [];
+    $rev = [0 => 'đăng ký', 'hủy đăng ký'];
+    $rev2 = [0 => 'trực bệnh viện', 'trực lưu bệnh', 'nghỉ sáng', 'nghỉ chiều'];
+
+    foreach ($danhsachdangky as $key => $dangky) {
+      $reg = $rev[$dangky['reg_type']];
+      $reg2 = $rev2[$dangky['type']];
+      $regtime = date('d/m/Y H:i:s', $dangky['reg_time']);
+      $time = date('d/m/Y', $dangky['time']);
+      $danhsach []= "$dangky[fullname] $reg $reg2 ngày $time lúc $regtime";
+    }
+
+    $result['status'] = 1;
+    $result['danhsach'] = $danhsach;
+    return $result;
+  }
+
   function kiemtrachotlich() {
     global $data, $db;
 
@@ -95,7 +119,7 @@
       'CN',
     );
     $checkprevent = array(
-      1 => 2, 2, 2, 2, 2, 1, 1    
+      1 => 2, 2, 2, 2, 2, 1, 1
     );
     $dat = array();
     
@@ -196,17 +220,22 @@
     global $db, $result;
     $start = $time;
     $end = $start + 60 * 60 * 24 - 1;
+    $ctime = time();
 
     if ($action == 'insert') {
       $sql = "select * from pet_phc_row where user_id = $userid and type = $type and (time between $start and $end)";
       $r = $db->fetch($sql);
       if (empty($r)) {
-        $sql = 'insert into pet_phc_row (user_id, type, time, reg_time) values('. $userid .', '. $type .', '. $time .', '. time() .')';
+        $sql = 'insert into pet_phc_row (user_id, type, time, reg_time) values('. $userid .', '. $type .', '. $time .', '. $ctime .')';
         $db->query($sql);
       }
+      $sql = 'insert into pet_phc_row_log (userid, type, time, reg_time, reg_type) values('. $userid .', '. $type .', '. $time .', '. $ctime .', 0)';
+      $db->query($sql);
     }
     else {
       $sql = "delete from pet_phc_row where type = $type and user_id = $userid and (time between $start and $end)";
+      $db->query($sql);
+      $sql = 'insert into pet_phc_row_log (userid, type, time, reg_time, reg_type) values('. $userid .', '. $type .', '. $time .', '. $ctime .', 1)';
       $db->query($sql);
     }
   }
