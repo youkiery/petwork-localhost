@@ -335,14 +335,11 @@ function donerecall() {
 function excel() {
   global $data, $db, $result, $_FILES;
 
-  $dir = str_replace('/server', '/', ROOTDIR);
-  // $des = $dir ."export/DanhSachChiTietHoaDon_KV09102021-222822-523-1633793524.xlsx";
-
   $raw = $_FILES['file']['tmp_name'];
   $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
   $name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
   $file_name = $name . "-". time() . ".". $ext;
-  $des = $dir ."include/export/$file_name";
+  $des = DIR ."include/export/$file_name";
 
   move_uploaded_file($raw, $des);
 
@@ -352,7 +349,7 @@ function excel() {
     $x[$value] = $key;
   }
 
-  include $dir .'include/PHPExcel/IOFactory.php';
+  include DIR .'include/PHPExcel/IOFactory.php';
     
   $inputFileType = PHPExcel_IOFactory::identify($des);
   $objReader = PHPExcel_IOFactory::createReader($inputFileType);
@@ -569,10 +566,6 @@ function excel() {
         $db->query($sql);
       }
     }
-  }
-
-  if (file_exists($des)) {
-    unlink("$des");
   }
 
   $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";

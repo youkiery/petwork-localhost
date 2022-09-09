@@ -42,7 +42,7 @@ function getneed() {
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $sql = "select b.name as petname, b.name, b.phone, b.address from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $row[xrayid]";
+    $sql = "select a.petname, b.name, b.phone, b.address from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
     $list[$key]['petname'] = $info['petname'];
     $list[$key]['name'] = $info['name'];

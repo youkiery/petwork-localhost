@@ -359,7 +359,7 @@ function getList() {
     'work' => 0,
   );
 
-  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1 and userid <> 1';
+  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1';
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {

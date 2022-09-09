@@ -9,7 +9,21 @@
     $result['except'] = getExcept();
     $result['quangay'] = getoverload();
     $result['dachotlich'] = kiemtrachotlich();
+    $result['dadangky'] = kiemtradadangky();
     return $result;
+  }
+
+  function kiemtradadangky() {
+    global $data, $db, $result;
+
+    // từ $time lấy dữ liệu tháng này
+    $userid = checkuserid();
+    $batdau = strtotime(date('Y/m/1', $data->time));
+    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $sql = "select * from pet_phc_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
+    $danhsach = $db->all($sql);
+
+    return 8 - count($danhsach);
   }
 
   function thongkedangky() {
@@ -68,6 +82,7 @@
     $result['messenger'] = 'Đã đăng ký lịch';
     $result['data'] = getList($data);
     $result['quangay'] = getoverload();
+    $result['dadangky'] = kiemtradadangky();
     return $result;
   }
 
@@ -88,6 +103,7 @@
     $result['messenger'] = 'Đã đăng ký lịch';
     $result['data'] = getList($data);
     $result['quangay'] = getoverload();
+    $result['dadangky'] = kiemtradadangky();
     return $result;
   }
 
@@ -262,7 +278,7 @@
     $danhsach = array();
     $dulieu = array();
     $batdau = isodatetotime($data->filter->batdau);
-    $ketthuc = isodatetotime($data->filter->ketthuc);
+    $ketthuc = isodatetotime($data->filter->ketthuc) + 60 * 60 * 24 - 1;
     // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
     $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
 
@@ -274,21 +290,25 @@
     $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
+    $tongngaynghi = [];
 
     foreach ($danhsachnhanvien as $nhanvien) {
       $sql = "select id, type, user_id as userid, time, reg_time from pet_phc_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
       $lichnghi = $db->all($sql);
+      $tongngaynghi[$nhanvien['userid']] = 0;
 
       $dulieu[$nhanvien['userid']] = array(
         'userid' => $nhanvien['userid'],
         'tennhanvien' => $nhanvien['fullname'],
         'nghi' => 0,
         'nghiphat' => 0,
+        'nghiphat2' => 0,
         'tongnghi' => 0,
         'nghilo' => 0,
       );
 
       foreach ($lichnghi as $nghi) {
+        $tongngaynghi[$nhanvien['userid']] ++;
         $dulieu[$nhanvien['userid']]['nghi'] ++;
         $daungay = strtotime(date('Y/m/d', $nghi['time']));
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
@@ -313,10 +333,14 @@
       }
     }
 
+    // foreach ($tongngaynghi as $userid => $ngaynghi) {
+    //   $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+    // }
+
     foreach ($dulieu as $thutu => $thongtin) {
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
       $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
-      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'];
+      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
       $nghilo = $dulieu[$thutu]['tongnghi'] - $tuan;
       if ($nghilo < 0) $nghilo = 0;
       $dulieu[$thutu]['nghilo'] = $nghilo;
@@ -337,7 +361,7 @@
     $danhsach = array();
     $dulieu = array();
     $batdau = isodatetotime($data->filter->batdau);
-    $ketthuc = isodatetotime($data->filter->ketthuc);
+    $ketthuc = isodatetotime($data->filter->ketthuc) + 60 * 60 * 24 - 1;
     // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
     $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
 
@@ -349,23 +373,27 @@
     $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
+    $tongngaynghi = [];
 
     $danhsachid = array();
     foreach ($danhsachnhanvien as $nhanvien) {
       $danhsachid []= $nhanvien['userid'];
       $sql = "select id, type, user_id as userid, time, reg_time from pet_phc_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
       $lichnghi = $db->all($sql);
+      $tongngaynghi[$nhanvien['userid']] = 0;
 
       $dulieu[$nhanvien['userid']] = array(
         'userid' => $nhanvien['userid'],
         'tennhanvien' => $nhanvien['fullname'],
         'nghi' => 0,
         'nghiphat' => 0,
+        'nghiphat2' => 0,
         'tongnghi' => 0,
         'nghilo' => 0,
       );
 
       foreach ($lichnghi as $nghi) {
+        $tongngaynghi[$nhanvien['userid']] ++;
         $dulieu[$nhanvien['userid']]['nghi'] ++;
         $daungay = strtotime(date('Y/m/d', $nghi['time']));
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
@@ -390,10 +418,14 @@
       }
     }
 
+    // foreach ($tongngaynghi as $userid => $ngaynghi) {
+    //   $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+    // }
+
     foreach ($dulieu as $thutu => $thongtin) {
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
       $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
-      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'];
+      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
       $nghilo = $dulieu[$thutu]['tongnghi'] - $tuan;
       if ($nghilo < 0) $nghilo = 0;
       $dulieu[$thutu]['nghilo'] = $nghilo;
@@ -477,6 +509,26 @@
             $danhsach []= $nguoidung[$userid] ." +$nghiphat nghỉ phạt vào buổi $dulieubuoi[$buoi] ngày $ngaythang";
           }
         }
+      }
+    }
+
+    // tính tổng đăng ký tháng này
+    // từ $time lấy dữ liệu tháng này
+    $batdau = strtotime(date('Y/m/1', $data->time));
+    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $sql = "select * from pet_phc_row where (time between $batdau and $ketthuc) and type > 1";
+    $danhsachdangky = $db->all($sql);
+    $dulieu = [];
+    foreach ($danhsachdangky as $key => $dangky) {
+      if (empty($dulieu[$dangky['user_id']])) $dulieu[$dangky['user_id']] = 0;
+      $dulieu[$dangky['user_id']] ++;
+    }
+    foreach ($dulieu as $userid => $ngaynghi) {
+      if ($ngaynghi > 12) {
+        $quangay = ($ngaynghi - 12) / 2;
+        $sql = "select fullname from pet_phc_users where userid = $userid";
+        $nhanvien = $db->fetch($sql);
+        $danhsach []= "$nhanvien[fullname] nghỉ quá $quangay ngày"; 
       }
     }
 
