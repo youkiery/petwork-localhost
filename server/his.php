@@ -5,10 +5,10 @@ define('CLIENTSIDE', 1);
 function add() {
   global $data, $db, $result;
 
-  $sql = "insert into pet_phc_xray_his (petid, his, time) values($data->petid, '$data->his', ". time() .")";
+  $sql = "insert into pet_". PREFIX ."_xray_his (petid, his, time) values($data->petid, '$data->his', ". time() .")";
   $db->query($sql);
   
-  $sql = "select * from pet_phc_xray_his where petid = $data->petid";
+  $sql = "select * from pet_". PREFIX ."_xray_his where petid = $data->petid";
   $his = $db->obj($sql, 'id', 'his');
   
   $result['status'] = 1;
@@ -23,20 +23,20 @@ function add() {
 //   // thêm vào liệu trình
 //   $time = isodatetotime($data->time);
 //   if ($data->id) {
-//     $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
+//     $sql = "insert into pet_". PREFIX ."_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($data->id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
 //     $db->query($sql);
 //   }
 //   else {
 //     $petid = checkpet();
-//     $sql = "insert into pet_phc_xray(petid, doctorid, insult, time) values($petid, $data->userid, 0, $time)";
+//     $sql = "insert into pet_". PREFIX ."_xray(petid, doctorid, insult, time) values($petid, $data->userid, 0, $time)";
 //     $id = $db->insertid($sql);
     
-//     $sql = "insert into pet_phc_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
+//     $sql = "insert into pet_". PREFIX ."_xray_row (xrayid, doctorid, eye, temperate, other, treat, image, status, time) values($id, $data->userid, '$data->eye', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $time)";
 //     $db->query($sql);
 //   }
 
 //   // xóa phiếu tạm
-//   $sql = "delete from pet_phc_his_temp where id = $data->tempid";
+//   $sql = "delete from pet_". PREFIX ."_his_temp where id = $data->tempid";
 //   $db->query($sql);
 
 //   $result['status'] = 1;
@@ -48,25 +48,25 @@ function printer() {
   global $data, $db, $result;
 
   // $html = file_get_contents ( DIR. 'include/template3.php');
-  $sql = "select * from pet_phc_form where name = 'his'";
+  $sql = "select * from pet_". PREFIX ."_form where name = 'his'";
   $html = $db->fetch($sql)['value'];
 
-  $sql = "select * from pet_phc_xray_row where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_xray_row where id = $data->id";
   $detail = $db->fetch($sql);
 
-  $sql = "select * from pet_phc_xray where id = $detail[xrayid]";
+  $sql = "select * from pet_". PREFIX ."_xray where id = $detail[xrayid]";
   $xray = $db->fetch($sql);
 
-  $sql = "select * from pet_phc_users where userid = $detail[doctorid]";
+  $sql = "select * from pet_". PREFIX ."_users where userid = $detail[doctorid]";
   $doctor = $db->fetch($sql);
   $names = explode(' ', $doctor['fullname']);
   $count = count($names);
   $doctor['halfname'] = mb_strtoupper($names[$count - 2] . ' ' . $names[$count - 1]);
 
-  $sql = "select * from pet_phc_config where id = $doctor[placeid]";
+  $sql = "select * from pet_". PREFIX ."_config where id = $doctor[placeid]";
   if (empty($place = $db->fetch($sql))) $place = array('name' => '');
 
-  $sql = "select * from pet_phc_customer where id = $xray[customerid]";
+  $sql = "select * from pet_". PREFIX ."_customer where id = $xray[customerid]";
   $customer = $db->fetch($sql);
   $sex = array(0 => '', 'Đực', 'Cái');
 
@@ -113,7 +113,7 @@ function printer() {
   // if ($detail['sinhly'] != '0') $p []= '☑ Sinh lý';
   // if ($detail['sinhhoa'] != '0') $p []= '☑ Sinh hóa';
   // if ($detail['nuoctieu'] != '0') $p []= '☑ Nước tiểu';
-  // $sql = "select b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where a.treatid = $data->id";
+  // $sql = "select b.name from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_exam_type b on a.typeid = b.id where a.treatid = $data->id";
   // $list = $db->all($sql);
 
   // foreach ($list as $row) {
@@ -138,30 +138,30 @@ function printer() {
 function update() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set pos = $data->pos petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set pos = $data->pos petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_config where module = 'hisdisease' and name = $data->id";
+  $sql = "delete from pet_". PREFIX ."_config where module = 'hisdisease' and name = $data->id";
   $db->query($sql);
   
   foreach ($data->disease->list as $key => $value) {
     if ($value) {
-      $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
+      $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
       $db->query($sql);
     }
   }
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
-    $sql = "select * from pet_phc_xray_schedule where status = 0";
-    if (!empty($sc = $db->fetch($sql))) $sql = "update pet_phc_xray_schedule set time = $near where id = $sc[id]";
-    else $sql = "insert into pet_phc_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
+    $sql = "select * from pet_". PREFIX ."_xray_schedule where status = 0";
+    if (!empty($sc = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_xray_schedule set time = $near where id = $sc[id]";
+    else $sql = "insert into pet_". PREFIX ."_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
   }
-  else $sql = "delete from pet_phc_xray_schedule where status = 0 and xrayid = $data->id";
+  else $sql = "delete from pet_". PREFIX ."_xray_schedule where status = 0 and xrayid = $data->id";
   $db->query($sql);
 
   $arr = array('xquang','sinhly','sinhhoa','sieuam','nuoctieu');
-  $sql = "select * from pet_phc_xray_row where id = $data->detailid";
+  $sql = "select * from pet_". PREFIX ."_xray_row where id = $data->detailid";
   $detail = $db->fetch($sql);
   $list = array();
   $time = time();
@@ -179,14 +179,14 @@ function update() {
   $image = implode(',', $data->image);
 
   $time = isodatetotime($data->time);
-  $sql = "update pet_phc_xray_row set $xtra temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', conclude = '$data->conclude', subother = '$data->subother', time = $time where id = $data->detailid";
+  $sql = "update pet_". PREFIX ."_xray_row set $xtra temperate = '$data->temperate', other = '$data->other', treat = '$data->treat', status = '$data->status', image = '$image', conclude = '$data->conclude', subother = '$data->subother', time = $time where id = $data->detailid";
   $db->query($sql);
 
   foreach ($data->exam as $exam) {
     // kiểm tra xem có hay chưa, chưa thì insert
-    $sql = "select * from pet_phc_exam where treatid = $data->detailid and typeid = $exam->id";
+    $sql = "select * from pet_". PREFIX ."_exam where treatid = $data->detailid and typeid = $exam->id";
     if (empty($row = $db->fetch($sql))) {
-      $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $data->detailid, $exam->id, '', '', $time)";
+      $sql = "insert into pet_". PREFIX ."_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $data->detailid, $exam->id, '', '', $time)";
       $db->query($sql);
     }
   }
@@ -201,27 +201,27 @@ function getinfo() {
   
   $type = $data->typed;
   if ($type == 'xquang' || $type == 'sieuam') {
-    $sql = "select b.name, b.phone, b.address, '' as note, 1 as his from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $data->xrayid";
+    $sql = "select b.name, b.phone, b.address, '' as note, 1 as his from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $data->xrayid";
     $info = $db->fetch($sql);
     $info['image'] = array();
     $info['xrayid '] = $data->id;
   }
   else if ($type == 'physical' || $type == 'profile') {
-    $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address, a.weight, a.age, a.gender from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id where a.id = $data->xrayid";
+    $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address, a.weight, a.age, a.gender from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $data->xrayid";
     $info = $db->fetch($sql);
     // doctor, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, target
     $info['doctor'] = checkuserid();
-    $sql = "select * from pet_phc_config where module = 'profile' and name = 'serial' limit 1";
+    $sql = "select * from pet_". PREFIX ."_config where module = 'profile' and name = 'serial' limit 1";
     $serial = $db->fetch($sql)['value'];
     $info['serial'] = $serial;
-    $sql = "select id from pet_phc_config where module = 'physical' and name = 'sampletype' limit 1";
+    $sql = "select id from pet_". PREFIX ."_config where module = 'physical' and name = 'sampletype' limit 1";
     $info['sampletype'] = $db->fetch($sql)['id'];
     $info['samplenumber'] = 1;
     $info['samplesymbol'] = $serial;
     $info['samplestatus'] = '1';
     $info['symptom'] = '';
     $info['his'] = 1;
-    $sql = "select * from pet_phc_target where active = 1 and module = 'physical' order by id asc";
+    $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'physical' order by id asc";
     $list = $db->arr($sql, 'id');
     $target = array();
     foreach ($list as $value) {
@@ -254,11 +254,11 @@ function statistic() {
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
   $userid = checkuserid();
-  $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his' and type = 2";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'his' and type = 2";
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.doctorid = $userid and";
 
-  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
+  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where $xtra (a.time between $data->start and $data->end) order by id desc";
   $list = $db->all($sql);
   $data = array();
   $rev = array(0 => 'dieutri', 'xuatvien', 'dachet');
@@ -308,13 +308,13 @@ function statistic2() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where (a.time between $data->start and $data->end) order by id desc";
+  $sql = "select a.*, c.name as customer, c.phone, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where (a.time between $data->start and $data->end) order by id desc";
   $danhsach = $db->all($sql);
   $dulieu = array();
   $rev = array(0 => 'dieutri', 'xuatvien', 'dachet');
   
   foreach ($danhsach as $dieutri) {
-    $sql = "select a.value as idbenh, b.name from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = $dieutri[id]";
+    $sql = "select a.value as idbenh, b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = $dieutri[id]";
     $benh = $db->all($sql, 'value');
     foreach ($benh as $thongtin) {
       if (empty($dulieu[$thongtin['idbenh']])) $dulieu[$thongtin['idbenh']] = array(
@@ -360,7 +360,7 @@ function ratest($a, $b) {
 function returned() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set insult = 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set insult = 1 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -372,10 +372,10 @@ function returned() {
 function remove() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_xray where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_xray where id = $data->id";
   $db->query($sql);
   
-  $sql = "delete from pet_phc_xray_row where xrayid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_xray_row where xrayid = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -390,15 +390,15 @@ function savedisease() {
   global $data, $db, $result, $userid;
   
   foreach ($data->list as $row) {
-    $sql = "update pet_phc_xray_disease set name = '$row->name' where id = $row->id";
+    $sql = "update pet_". PREFIX ."_xray_disease set name = '$row->name' where id = $row->id";
     $db->query($sql);
   }
 
   if (!empty($data->key)) {
-    $sql = "insert into pet_phc_xray_disease (name) values('$data->key')";
+    $sql = "insert into pet_". PREFIX ."_xray_disease (name) values('$data->key')";
     $db->query($sql);
   }
-  // $sql = "delete fron pet_phc_xray_disease where id >= $index";
+  // $sql = "delete fron pet_". PREFIX ."_xray_disease where id >= $index";
   // $db->query($sql);
 
   $result['status'] = 1;
@@ -410,7 +410,7 @@ function savedisease() {
 function removedisease() {
   global $data, $db, $result, $userid;
   
-  $sql = "update pet_phc_xray_disease set active = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_disease set active = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -422,7 +422,7 @@ function removedisease() {
 function insertdisease() {
   global $data, $db, $result, $userid;
   
-  $sql = "insert into pet_phc_xray_disease (name) values('$data->key')";
+  $sql = "insert into pet_". PREFIX ."_xray_disease (name) values('$data->key')";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -438,7 +438,7 @@ function insert() {
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   $time = time();
-  $sql = "insert into pet_phc_xray (customerid, doctorid, insult, time, pos, petname, age, gender, species, weight) values($customerid, $userid, 0, $data->time, $data->pos, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
+  $sql = "insert into pet_". PREFIX ."_xray (customerid, doctorid, insult, time, pos, petname, age, gender, species, weight) values($customerid, $userid, 0, $data->time, $data->pos, '$data->petname', '$data->age', '$data->gender', '$data->species', '$data->weight')";
   $id = $db->insertid($sql);
   $arr = array('0' => '0', '1' => '-1');
   $data->xquang = $arr[$data->xquang];
@@ -449,21 +449,21 @@ function insert() {
   $image = implode(',', $data->image);
 
   foreach ($data->disease->list as $key => $value) {
-    $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $id, $key, 0)";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('hisdisease', $id, $key, 0)";
     $db->query($sql);
   }
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
+  $sql = "insert into pet_". PREFIX ."_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '$image', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->query($sql);
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
-    $sql = "insert into pet_phc_xray_schedule (xrayid, time, status) values($id, $near, 0)";
+    $sql = "insert into pet_". PREFIX ."_xray_schedule (xrayid, time, status) values($id, $near, 0)";
     $db->query($sql);
   }
 
   foreach ($data->exam as $exam) {
-    $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
+    $sql = "insert into pet_". PREFIX ."_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
     $db->query($sql);
   }
   
@@ -475,13 +475,13 @@ function insert() {
 function checkcustomer() {
   global $db, $data;
 
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
     $customer['id'] = $db->insertid($sql);
   }
 
@@ -501,7 +501,7 @@ function filter() {
 function getdiseaselist() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_xray_disease where active = 1 order by id asc";
+  $sql = "select * from pet_". PREFIX ."_xray_disease where active = 1 order by id asc";
   $list = $db->all($sql);
   return $list;
 }
@@ -509,7 +509,7 @@ function getdiseaselist() {
 function getdiseaseobj() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_xray_disease order by id asc";
+  $sql = "select * from pet_". PREFIX ."_xray_disease order by id asc";
   $list = $db->obj($sql, 'id', 'name');
   return $list;
 }
@@ -517,7 +517,7 @@ function getdiseaseobj() {
 function gettypelist() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_exam_type where active = 1 order by name desc";
+  $sql = "select * from pet_". PREFIX ."_exam_type where active = 1 order by name desc";
   $list = $db->all($sql);
   return $list;
 }
@@ -528,24 +528,24 @@ function detail() {
   $userid = checkuserid();
   $data->time = isodatetotime($data->time);
   
-  $sql = "update pet_phc_xray set pos = $data->pos, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set pos = $data->pos, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_config where module = 'hisdisease' and name = $data->id";
+  $sql = "delete from pet_". PREFIX ."_config where module = 'hisdisease' and name = $data->id";
   $db->query($sql);
   
   foreach ($data->disease->list as $key => $value) {
-    $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('hisdisease', $data->id, $key, 0)";
     $db->query($sql);
   }
 
   if (!empty($data->near)) {
     $near = isodatetotime($data->near);
-    $sql = "select * from pet_phc_xray_schedule where status = 0";
-    if (!empty($sc = $db->fetch($sql))) $sql = "update pet_phc_xray_schedule set time = $near where id = $sc[id]";
-    else $sql = "insert into pet_phc_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
+    $sql = "select * from pet_". PREFIX ."_xray_schedule where status = 0";
+    if (!empty($sc = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_xray_schedule set time = $near where id = $sc[id]";
+    else $sql = "insert into pet_". PREFIX ."_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
   }
-  else $sql = "delete from pet_phc_xray_schedule where status = 0 and xrayid = $data->id";
+  else $sql = "delete from pet_". PREFIX ."_xray_schedule where status = 0 and xrayid = $data->id";
   $db->query($sql);
 
   $arr = array('0' => '0', '1' => '-1');
@@ -555,18 +555,18 @@ function detail() {
   $data->sieuam = $arr[$data->sieuam];
   $data->nuoctieu = $arr[$data->nuoctieu];
 
-  $sql = "insert into pet_phc_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($data->id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
+  $sql = "insert into pet_". PREFIX ."_xray_row (xrayid, doctorid, subother, temperate, other, treat, image, status, time, xquang, sinhly, sinhhoa, sieuam, nuoctieu, conclude) values($data->id, $userid, '$data->subother', '$data->temperate', '$data->other', '$data->treat', '". implode(',', $data->image) ."', '$data->status', $data->time, $data->xquang, $data->sinhly, $data->sinhhoa, $data->sieuam, $data->nuoctieu, '$data->conclude')";
   $id = $db->insertid($sql);
 
   $customerid = checkcustomer();
   $time = time();
 
   foreach ($data->exam as $exam) {
-    $sql = "insert into pet_phc_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
+    $sql = "insert into pet_". PREFIX ."_exam (userid, customerid, treatid, typeid, image, note, time) values($userid, $customerid, $id, $exam->id, '', '', $time)";
     $db->query($sql);
   }
   
-  $sql = "select a.*, b.fullname as doctor, a.time from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.id = $id order by time asc";
+  $sql = "select a.*, b.fullname as doctor, a.time from pet_". PREFIX ."_xray_row a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.id = $id order by time asc";
   $row = $db->fetch($sql);
   $row['time'] = date('d/m/Y', $row['time']);
   
@@ -579,7 +579,7 @@ function detail() {
 function dead() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set insult = 2 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set insult = 2 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -591,7 +591,7 @@ function dead() {
 function pay() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_xray_row set pay = $data->pay where id = $data->detailid";
+  $sql = "update pet_". PREFIX ."_xray_row set pay = $data->pay where id = $data->detailid";
   $db->query($sql);
   $result['status'] = 1;
   return $result;
@@ -602,7 +602,7 @@ function move() {
   $reversal = array(0 => 1, 0);
   $rev = $reversal[$data->pos];
 
-  $sql = "update pet_phc_xray set pos = $rev where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set pos = $rev where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = getList();
@@ -613,7 +613,7 @@ function move() {
 function hopital() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_xray set insult = 0, rate = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set insult = 0, rate = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -625,7 +625,7 @@ function hopital() {
 function share() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_xray set share = ". intval(!$data->share) ." where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set share = ". intval(!$data->share) ." where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -645,16 +645,16 @@ function getlist($id = 0) {
   $userid = checkuserid();
   $xtra = array();
 
-  $sql = "select * from pet_phc_user_per where userid = $userid and module = 'his'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'his'";
   $role = $db->fetch($sql);
   
   if ($role['type'] < 2) $xtra []= " (a.doctorid = $userid or a.share = 1 or pos = 1) ";
   else if (isset($filter->{'docs'})) {
     if (empty($filter->docscover)) $filter->docscover = '';
     $docs = implode(',', $filter->docs);
-    $sql = "update pet_phc_config set value = '$docs' where module = 'docs' and name = '$userid'";
+    $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
     $db->query($sql);
-    $sql = "update pet_phc_config set value = '$filter->docscover' where module = 'docscover' and name = '$userid'";
+    $sql = "update pet_". PREFIX ."_config set value = '$filter->docscover' where module = 'docscover' and name = '$userid'";
     $db->query($sql);
     if (count($filter->docs)) $xtra []= " a.doctorid in ($docs) ";
   }
@@ -664,36 +664,36 @@ function getlist($id = 0) {
   else $xtra = "";
 
   if (!empty($filter->diseaseid)) {
-    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid inner join pet_phc_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid inner join pet_". PREFIX ."_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   else {
-    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
-    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
+    $sql = "select a.*, b.fullname as doctor from pet_". PREFIX ."_xray_row a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);
       $image = parseimage($detail['image']);
       if (count($image) == 1 && $image[0] == '') $row[$index]['image'] = array();
       else $row[$index]['image'] = $image;
-      $sql = "select a.image, a.note, a.id, a.status, b.name from pet_phc_exam a inner join pet_phc_exam_type b on a.typeid = b.id where treatid = $detail[id]";
+      $sql = "select a.image, a.note, a.id, a.status, b.name from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_exam_type b on a.typeid = b.id where treatid = $detail[id]";
       $row[$index]['exam'] = $db->all($sql);
 
       $row[$index]['sinhlyimg'] = array();
       $row[$index]['sinhhoaimg'] = array();
 
       if ($detail['sinhly'] > 0) {
-        $sql = "select image from pet_phc_physical where id = $detail[sinhly]";
+        $sql = "select image from pet_". PREFIX ."_physical where id = $detail[sinhly]";
         $d = $db->fetch($sql);
         $row[$index]['sinhlyimg'] = parseimage($d['image']);
       }
       if ($detail['sinhhoa'] > 0) {
-        $sql = "select image from pet_phc_profile where id = $detail[sinhhoa]";
+        $sql = "select image from pet_". PREFIX ."_profile where id = $detail[sinhhoa]";
         $d = $db->fetch($sql);
         $row[$index]['sinhhoaimg'] = parseimage($d['image']);
       }
@@ -705,10 +705,10 @@ function getlist($id = 0) {
       }
     }
 
-    $sql = "select b.id, b.name, 1 as done from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
+    $sql = "select b.id, b.name, 1 as done from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
     $list[$key]['disease'] = array('text' => implode(', ', $db->arr($sql, 'name')), 'list' => $db->obj($sql, 'id', 'done'));
 
-    $sql = "select * from pet_phc_xray_schedule where xrayid = $value[id] order by id desc limit 1";
+    $sql = "select * from pet_". PREFIX ."_xray_schedule where xrayid = $value[id] order by id desc limit 1";
     $list[$key]['sc'] = '';
     if (!empty($sc = $db->fetch($sql))) {
       $list[$key]['sc'] = date('d/m/Y', $sc['time']);
@@ -737,7 +737,7 @@ function changesc() {
 
   $rev = array(0 => 1, 1 => 0);
   $status = $rev[$data->status];
-  $sql = "update pet_phc_xray_schedule set status = $status where xrayid = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_schedule set status = $status where xrayid = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -749,19 +749,19 @@ function getChatList() {
   global $db, $data;
 
   $time = time();
-  $sql = "update pet_phc_xray_read set time = $time where side = 0 and postid = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_read set time = $time where side = 0 and postid = $data->id";
   $db->query($sql);
 
-  $sql = "select * from pet_phc_xray_chat where postid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_xray_chat where postid = $data->id";
   return $db->all($sql);  
 }
 
 function getReadtime($id, $side) {
   global $db;
 
-  $sql = "select * from pet_phc_xray_read where side = $side and postid = $id";
+  $sql = "select * from pet_". PREFIX ."_xray_read where side = $side and postid = $id";
   if (empty($r = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_xray_read (side, postid, time) values(0, $id, 0)";
+    $sql = "insert into pet_". PREFIX ."_xray_read (side, postid, time) values(0, $id, 0)";
     $db->query($sql);
     return 0;
   }
@@ -780,7 +780,7 @@ function postchat() {
   global $db, $data, $result;
 
   $time = time();
-  $sql = "insert into pet_phc_xray_chat (postid, side, time, text) values($data->id, 0, $time, '$data->text')";
+  $sql = "insert into pet_". PREFIX ."_xray_chat (postid, side, time, text) values($data->id, 0, $time, '$data->text')";
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = getChatList();
@@ -792,10 +792,10 @@ function schedule() {
 
   $near = isodatetotime($data->time);
   // $customerid = checkcustomer();
-  // $sql = "update pet_phc_xray set customerid = $customerid";
-  $sql = "select * from pet_phc_xray_schedule where status = 0 and id = $data->id";
-  if (!empty($sc = $db->fetch($sql))) $sql = "update pet_phc_xray_schedule set time = $near where id = $sc[id]";
-  else $sql = "insert into pet_phc_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
+  // $sql = "update pet_". PREFIX ."_xray set customerid = $customerid";
+  $sql = "select * from pet_". PREFIX ."_xray_schedule where status = 0 and id = $data->id";
+  if (!empty($sc = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_xray_schedule set time = $near where id = $sc[id]";
+  else $sql = "insert into pet_". PREFIX ."_xray_schedule (xrayid, time, status) values($data->id, $near, 0)";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -807,14 +807,14 @@ function getChatCount($id) {
   global $db, $data;
 
   $readtime = getReadtime($id, SERVERSIDE);
-  $sql = "select id from pet_phc_xray_chat where postid = $id and side = 1 and time > $readtime";
+  $sql = "select id from pet_". PREFIX ."_xray_chat where postid = $id and side = 1 and time > $readtime";
   return $db->count($sql);
 }
 
 function statrate() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray set rate = $data->rate where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set rate = $data->rate where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -826,27 +826,27 @@ function statrate() {
 
 function checkpet() {
   global $data, $db;
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
 
   if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_customer (name, phone, address) values('$data->name', '$data->phone', '')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$data->name', '$data->phone', '')";
     $c['id'] = $db->insertid($sql);
   }
   else {
-    $sql = "update pet_phc_customer set name = '$data->name' where id = $c[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$data->name' where id = $c[id]";
     $db->query($sql);
   }
 
   if (empty($data->petid)) {
-    $sql = "select * from pet_phc_pet where name = '$data->pet' and customerid = '$c[id]'";
+    $sql = "select * from pet_". PREFIX ."_pet where name = '$data->pet' and customerid = '$c[id]'";
     if (empty($p = $db->fetch($sql))) {
-      $sql = "insert into pet_phc_pet (name, customerid) values('$data->pet', $c[id])";
+      $sql = "insert into pet_". PREFIX ."_pet (name, customerid) values('$data->pet', $c[id])";
       $p['id'] = $db->insertid($sql);
     }
     return $p['id'];
   }
   else {
-    $sql = "update pet_phc_pet set name = '$data->pet' where id = $data->petid";
+    $sql = "update pet_". PREFIX ."_pet set name = '$data->pet' where id = $data->petid";
     $db->query($sql);
     return $data->petid;
   }
@@ -857,20 +857,20 @@ function xemdieutri() {
 
   $diseaseobj = getdiseaseobj();
 
-  $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_phc_xray a inner join pet_phc_customer c on a.customerid = c.id inner join pet_phc_users d on a.doctorid = d.userid where a.id in (". implode(', ', $data->danhsach) .") order by a.insult asc, id desc";
+  $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where a.id in (". implode(', ', $data->danhsach) .") order by a.insult asc, id desc";
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;
   
   foreach ($list as $key => $value) {
     $list[$key]['chat'] = getChatCount($value['id']);
-    $sql = "select a.*, b.fullname as doctor from pet_phc_xray_row a inner join pet_phc_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
+    $sql = "select a.*, b.fullname as doctor from pet_". PREFIX ."_xray_row a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.xrayid = $value[id] order by time asc";
     $row = $db->all($sql);
     foreach ($row as $index => $detail) {
       $row[$index]['time'] = date('d/m/Y', $detail['time']);
       $row[$index]['image'] = parseimage($detail['image']);
     }
 
-    $sql = "select b.id, b.name, 1 as done from pet_phc_config a inner join pet_phc_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
+    $sql = "select b.id, b.name, 1 as done from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_xray_disease b on a.value = b.id where a.module = 'hisdisease' and a.name = '$value[id]'";
     $list[$key]['disease'] = array('text' => implode(', ', $db->arr($sql, 'name')), 'list' => $db->obj($sql, 'id', 'done'));
 
     if (count($row)) {

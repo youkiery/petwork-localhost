@@ -20,7 +20,7 @@
     $userid = checkuserid();
     $batdau = strtotime(date('Y/m/1', $data->time));
     $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $sql = "select * from pet_phc_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
+    $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
     $danhsach = $db->all($sql);
 
     return 8 - count($danhsach);
@@ -31,7 +31,7 @@
 
     $start = isodatetotime($data->start);
     $end = isodatetotime($data->end);
-    $sql = "select a.time, a.reg_time, a.reg_type, a.type, b.fullname from pet_phc_row_log a inner join pet_phc_users b on a.userid = b.userid where time between $start and $end order by id desc";
+    $sql = "select a.time, a.reg_time, a.reg_type, a.type, b.fullname from pet_". PREFIX ."_row_log a inner join pet_". PREFIX ."_users b on a.userid = b.userid where time between $start and $end order by id desc";
     $danhsachdangky = $db->all($sql);
     $danhsach = [];
     $rev = [0 => 'đăng ký', 'hủy đăng ký'];
@@ -57,7 +57,7 @@
     $ngaybatdau = strtotime(date('Y', $time) .'/'. date('m', $time) .'/1');
     $ngayketthuc = strtotime(date('Y', $time) .'/'. (date('m', $time) + 1) .'/1') - 1;
 
-    $sql = "select thoigian from pet_phc_luong where thoigian between $ngaybatdau and $ngayketthuc";
+    $sql = "select thoigian from pet_". PREFIX ."_luong where thoigian between $ngaybatdau and $ngayketthuc";
     $danhsach = $db->arr($sql, 'thoigian');
 
     foreach ($danhsach as $key => $value) {
@@ -70,7 +70,7 @@
     global $data, $db, $result;
 
     $data->time /= 1000;
-    $starttime = (date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time))));
+    $starttime = strtotime(date('Y/m/1', $data->time));
     $aday = 60 * 60 * 24;
     
     foreach ($data->list as $v) {
@@ -91,7 +91,7 @@
     
     $data->time /= 1000;
     
-    $starttime = (date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time))));
+    $starttime = strtotime(date('Y/m/1', $data->time));
     $aday = 60 * 60 * 24;
     
     foreach ($data->list as $v) {
@@ -111,7 +111,7 @@
     global $db;
 
     $userid = checkuserid();
-    $sql = "select * from pet_phc_user_per where userid = $userid and module = 'schedule'";
+    $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'schedule'";
     $role = $db->fetch($sql);
     return $role['type'];
   }
@@ -125,46 +125,36 @@
 
   function userData() {
     global $db, $data;
-    $datearr = array(
-      1 => 'Thứ 2',
-      'Thứ 3',
-      'Thứ 4',
-      'Thứ 5',
-      'Thứ 6',
-      'Thứ 7',
-      'CN',
-    );
-    $checkprevent = array(
-      1 => 2, 2, 2, 2, 2, 1, 1
-    );
-    $dat = array();
     
-    $starttime = date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time)));
-    $endtime = $starttime + 60 * 60 * 24 * 7 - 1;
-    $time = strtotime(date('Y/m/d')) + (8 - date("N")) * 60 * 60 * 24 - 1;
+    $starttime = strtotime(date('Y/m/1', $data->time));
+    $endtime = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $time = strtotime(date('Y/m/t'));
 
     $userid = checkuserid();
-    $sql = "select * from pet_phc_user_per where module = 'manager' and userid = $userid";
+    $sql = "select * from pet_". PREFIX ."_user_per where module = 'manager' and userid = $userid";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
 
-    for ($i = 0; $i < 7; $i++) { 
+    for ($i = 0; $i < date('t', $data->time); $i++) { 
       $ct = $starttime + 60 * 60 * 24 * $i;
-      $ce = $starttime + 60 * 60 * 24 * ($i + 1) - 1;
+      $ce = $ct + 60 * 60 * 24 - 1;
       $temp = array(
-        'day' => $datearr[date('N', $ct)],
         'date' => date('d/m', $ct),
         'list' => array()
       );
       for ($j = 0; $j < 4; $j++) {
         // lấy danh sách nhân viên đăng ký
-        $sql = "select b.fullname as name from pet_phc_row a inner join pet_phc_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
-        $l = $db->arr($sql, 'name');
+        $sql = "select b.fullname from pet_". PREFIX ."_row a inner join pet_". PREFIX ."_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
+        $l = $db->arr($sql, 'fullname');
+        // foreach ($l as $key => $u) {
+        //   $hoten = explode(' ', $u);
+        //   $l[$key] = (count($hoten) > 1 ? $hoten[count($hoten) - 2] .' '. $hoten[count($hoten) - 1] : (count($hoten) ? $hoten[count($hoten) - 1] : ''));
+        // }
         $temp['list'] []= array(
-          'name' =>  implode(',', $l),
+          'name' =>  implode(', ', $l),
           'color' =>  'green',
         );
 
-        if ($ct < $time) $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
+        if ($ct <= $time) $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
         else if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'orange'; // nếu có tên người dùng, cho hủy đăng ký
         else {
           // kiểm tra nếu nhân viên thuộc diện cá biệt, bỏ qua
@@ -180,54 +170,58 @@
 
   function managerData() {
     global $db, $data;
-    $dat = array(
-      'list' => array(),
-      'day' => array()
+    $dulieu = array(
+      'ngay' => array(),
+      'buoi' => array(),
+      'dangky' => array()
     );
     
-    $starttime = date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time)));
-    $endtime = $starttime + 60 * 60 * 24 * 7 - 1;
-    $time = time();
+    $batdau = strtotime(date('Y/m/1', $data->time));
+    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $ngaytrongthang = date('t', $data->time);
+    $time = strtotime(date('Y/m/t'));
 
-    $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0";
-    $ul = $db->all($sql);
+    $sql = "select b.userid, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+    $danhsachnhanvien = $db->all($sql);
 
-    for ($i = 0; $i < 7; $i++) { 
-      $ct = $starttime + 60 * 60 * 24 * $i;
-      $dat['day'] []= date('d/m', $ct);
+    for ($i = 1; $i <= $ngaytrongthang; $i++) { 
+      $dulieu['ngay'] []= date('d/m', $batdau + ($i - 1) * 60 * 60 * 24);
+      $dulieu['buoi'] []= 'S';
+      $dulieu['buoi'] []= 'C';
     }
 
     // thay đổi type
     $x = $data->state * 2;
     $y = $data->state * 2 + 1;
 
-    foreach ($ul as $u) {
-      $temp = array(
-        'name' => $u['name'],
-        'uid' => $u['userid'],
-        'list' => array()
+    foreach ($danhsachnhanvien as $nhanvien) {
+      $hoten = explode(' ', $nhanvien['fullname']);
+      $tam = array(
+        'nhanvien' => count($hoten) ? $hoten[count($hoten) - 1] : '',
+        'uid' => $nhanvien['userid'],
+        'danhsach' => array()
       );
-      for ($i = 0; $i < 7; $i++) { 
-        $temp['list'] []= 'green';
-        $temp['list'] []= 'green';
-      }
-      $sql = "select * from pet_phc_row where user_id = $u[userid] and (type = $x or type = $y) and (time between $starttime and $endtime)";
-      $rl = $db->all($sql);
-
-      foreach ($rl as $r) {
-        $temp['list'][(date("N", $r['time']) - 1) * 2 + ($r['type'] - 2 * $data->state)] = 'red';
-        // echo date("N", $r['time']) . ": ". $r['type']. "<br>";
+      for ($i = 1; $i <= $ngaytrongthang; $i++) { 
+        $tam['danhsach'] []= 'green';
+        $tam['danhsach'] []= 'green';
       }
 
-      $dat['list'] []= $temp;
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (type = $x or type = $y) and (time between $batdau and $ketthuc)";
+      $danhsachdangky = $db->all($sql);
+
+      foreach ($danhsachdangky as $dangky) {
+        $tam['danhsach'][(date("d", $dangky['time']) - 1) * 2 + ($dangky['type'] - 2 * $data->state)] = 'red';
+      }
+
+      $dulieu['dangky'] []= $tam;
     }
 
-    return $dat;
+    return $dulieu;
   }
 
   function getScheduleById($id) {
     global $db;
-    $sql = 'select * from pet_phc_row where id = '. $id;
+    $sql = "select * from pet_". PREFIX ."_row where id = $id";
     if (!empty($row = $db->fetch($sql))) return $row;
     return array();
   }
@@ -239,19 +233,19 @@
     $ctime = time();
 
     if ($action == 'insert') {
-      $sql = "select * from pet_phc_row where user_id = $userid and type = $type and (time between $start and $end)";
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and type = $type and (time between $start and $end)";
       $r = $db->fetch($sql);
       if (empty($r)) {
-        $sql = 'insert into pet_phc_row (user_id, type, time, reg_time) values('. $userid .', '. $type .', '. $time .', '. $ctime .')';
+        $sql = "insert into pet_". PREFIX ."_row (user_id, type, time, reg_time) values($userid, $type, $time, $ctime)";
         $db->query($sql);
       }
-      $sql = 'insert into pet_phc_row_log (userid, type, time, reg_time, reg_type) values('. $userid .', '. $type .', '. $time .', '. $ctime .', 0)';
+      $sql = "insert into pet_". PREFIX ."_row_log (userid, type, time, reg_time, reg_type) values($userid, $type, $time, $ctime, 0)";
       $db->query($sql);
     }
     else {
-      $sql = "delete from pet_phc_row where type = $type and user_id = $userid and (time between $start and $end)";
+      $sql = "delete from pet_". PREFIX ."_row where type = $type and user_id = $userid and (time between $start and $end)";
       $db->query($sql);
-      $sql = 'insert into pet_phc_row_log (userid, type, time, reg_time, reg_type) values('. $userid .', '. $type .', '. $time .', '. $ctime .', 1)';
+      $sql = "insert into pet_". PREFIX ."_row_log (userid, type, time, reg_time, reg_type) values($userid, $type, $time, $ctime, 1)';
       $db->query($sql);
     }
   }
@@ -259,21 +253,21 @@
   function getScheduleUser() {
     global $db;
 
-    $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'doctor' and type = 1";
+    $sql = "select b.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'doctor' and type = 1";
     return $db->arr($sql, 'name');
   }
 
   function getExcept() {
     global $db;
 
-    $sql = "select b.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'except' and type = 1";
+    $sql = "select b.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'except' and type = 1";
     return $db->arr($sql, 'name');
   }
 
   function xemchotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.fullname, a.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
@@ -286,14 +280,14 @@
       0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
     );
 
-    $sql = "select b.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
     $tongngaynghi = [];
 
     foreach ($danhsachnhanvien as $nhanvien) {
-      $sql = "select id, type, user_id as userid, time, reg_time from pet_phc_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
+      $sql = "select id, type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
       $lichnghi = $db->all($sql);
       $tongngaynghi[$nhanvien['userid']] = 0;
 
@@ -316,7 +310,7 @@
         $ngaytrongtuan = date('w', $nghi['time']);
         $gioihanngay = $gioihan[$ngaytrongtuan];
         // tìm trong type cùng ngày (trừ except) có vượt limit không
-        $sql = "select user_id as userid, reg_time from pet_phc_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
+        $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
         $ngaynghi = $db->all($sql);
         foreach ($ngaynghi as $key => $row) {
           if ($row['userid'] == $nghi['userid'] && ($key >= $gioihanngay)) {
@@ -355,7 +349,7 @@
   function chotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.fullname, a.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
 
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
@@ -369,7 +363,7 @@
       0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
     );
 
-    $sql = "select b.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
@@ -378,7 +372,7 @@
     $danhsachid = array();
     foreach ($danhsachnhanvien as $nhanvien) {
       $danhsachid []= $nhanvien['userid'];
-      $sql = "select id, type, user_id as userid, time, reg_time from pet_phc_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
+      $sql = "select id, type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
       $lichnghi = $db->all($sql);
       $tongngaynghi[$nhanvien['userid']] = 0;
 
@@ -401,7 +395,7 @@
         $ngaytrongtuan = date('w', $nghi['time']);
         $gioihanngay = $gioihan[$ngaytrongtuan];
         // tìm trong type cùng ngày (trừ except) có vượt limit không
-        $sql = "select user_id as userid, reg_time from pet_phc_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
+        $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
         $ngaynghi = $db->all($sql);
         foreach ($ngaynghi as $key => $row) {
           if ($row['userid'] == $nghi['userid'] && ($key >= $gioihanngay)) {
@@ -435,24 +429,24 @@
     $tongnhanvien = count($danhsach);
     $thoigian = $data->time / 1000;
 
-    $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, $tongnhanvien, 0, $thoigian, 0)";
+    $sql = "insert into pet_". PREFIX ."_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, $tongnhanvien, 0, $thoigian, 0)";
     $id = $db->insertid($sql);
 
-    $sql = "select value as loaichi, alt as tienchi from pet_phc_config where module = 'luong' and name = 'tienchi'";
+    $sql = "select value as loaichi, alt as tienchi from pet_". PREFIX ."_config where module = 'luong' and name = 'tienchi'";
     $danhmucchi = $db->all($sql);
     
     foreach ($danhmucchi as $tienchi) {
-      $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$tienchi[loaichi]', $tienchi[tienchi])";
+      $sql = "insert into pet_". PREFIX ."_luong_tienchi (luongid, mucchi, tienchi) values($id, '$tienchi[loaichi]', $tienchi[tienchi])";
       $db->query($sql);
     }
 
-    $sql = "select userid, 0 as nghilo from pet_phc_luong_nhanvien where userid not in (". implode(', ', $danhsachid) .")";
+    $sql = "select userid, 0 as nghilo from pet_". PREFIX ."_luong_nhanvien where userid not in (". implode(', ', $danhsachid) .")";
     if (count($nhanvien = $db->all($sql))) {
       $danhsach = array_merge($danhsach, $nhanvien);
     }
 
     foreach ($danhsach as $nhanvien) {
-      $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien[userid], $id, 0, 0, 0, 0, 0, 0, 0, 0, 0, $nhanvien[nghilo], 0, 0, 0, 0, 0, 0, 0)";
+      $sql = "insert into pet_". PREFIX ."_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien[userid], $id, 0, 0, 0, 0, 0, 0, 0, 0, 0, $nhanvien[nghilo], 0, 0, 0, 0, 0, 0, 0)";
       $db->query($sql);
     }
 
@@ -465,7 +459,7 @@
   function getoverload() {
     global $data, $db;
 
-    $sql = "select b.fullname, a.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'schedule' and type > 0";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $batdau = date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time)));
@@ -475,15 +469,15 @@
       0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
     );
 
-    $sql = "select b.userid from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
 
-    $sql = "select * from pet_phc_users";
+    $sql = "select * from pet_". PREFIX ."_users";
     $nguoidung = $db->obj($sql, 'userid', 'fullname');
 
-    $sql = "select type, user_id as userid, time, reg_time from pet_phc_row where user_id not in ($ngoaile) and type > 1 and (time between $batdau and $ketthuc) order by reg_time asc";
+    $sql = "select type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type > 1 and (time between $batdau and $ketthuc) order by reg_time asc";
     $danhsachdangky = $db->all($sql);
 
     $dulieu = array(
@@ -516,7 +510,7 @@
     // từ $time lấy dữ liệu tháng này
     $batdau = strtotime(date('Y/m/1', $data->time));
     $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $sql = "select * from pet_phc_row where (time between $batdau and $ketthuc) and type > 1";
+    $sql = "select * from pet_". PREFIX ."_row where (time between $batdau and $ketthuc) and type > 1";
     $danhsachdangky = $db->all($sql);
     $dulieu = [];
     foreach ($danhsachdangky as $key => $dangky) {
@@ -526,7 +520,7 @@
     foreach ($dulieu as $userid => $ngaynghi) {
       if ($ngaynghi > 12) {
         $quangay = ($ngaynghi - 12) / 2;
-        $sql = "select fullname from pet_phc_users where userid = $userid";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $userid";
         $nhanvien = $db->fetch($sql);
         $danhsach []= "$nhanvien[fullname] nghỉ quá $quangay ngày"; 
       }

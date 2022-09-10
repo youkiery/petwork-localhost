@@ -13,7 +13,7 @@ function note() {
 
   $json = addslashes(json_encode($data->content, JSON_UNESCAPED_UNICODE));
   $time = isodatetotime($data->time);
-  $sql = "update pet_phc_account set content = '$json', time = $time where id = $data->id";
+  $sql = "update pet_". PREFIX ."_account set content = '$json', time = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -23,18 +23,18 @@ function note() {
 function init() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_accountname order by id asc";
+  $sql = "select * from pet_". PREFIX ."_accountname order by id asc";
   $result['input'] = $db->all($sql);
 
   $result['data'] = array('kiot' => array(), 'vietcom' => array());
-  $sql = "select * from pet_phc_config where module = 'kiot'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'kiot'";
   $query = $db->query($sql);
 
   while ($row = $query->fetch_assoc()) {
     $result['data']['kiot'][$row['name']] = $row['value'];
   }
   
-  $sql = "select * from pet_phc_config where module = 'vietcom'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'vietcom'";
   $query = $db->query($sql);
 
   while ($row = $query->fetch_assoc()) {
@@ -61,12 +61,12 @@ function save() {
   global $db, $data, $result;
 
   foreach ($data->data as $key => $value) {
-    $sql = "select * from pet_phc_config where module = '$data->module' and name = '$key'";
+    $sql = "select * from pet_". PREFIX ."_config where module = '$data->module' and name = '$key'";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_phc_config (module, name, value) values('$data->module', '$key', '$value')";
+      $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('$data->module', '$key', '$value')";
     }
     else {
-      $sql = "update pet_phc_config set value = '$value' where module = '$data->module' and name = '$key'";
+      $sql = "update pet_". PREFIX ."_config set value = '$value' where module = '$data->module' and name = '$key'";
     }
     $db->query($sql);
   }
@@ -136,7 +136,7 @@ function save() {
 //     'data' => $res,
 //     'total' => $total
 //   ), JSON_UNESCAPED_UNICODE));
-//   $sql = "insert into pet_phc_account (time, content, note) values ($time, '$content', '')";
+//   $sql = "insert into pet_". PREFIX ."_account (time, content, note) values ($time, '$content', '')";
 //   $id = $db->insertid($sql);
 
 //   $result['id'] = $id;
@@ -163,7 +163,7 @@ function excel() {
   // lưu dữ liệu name
   $list = array();
   if (count($data->input) == 1 && empty($data->input[0])) {
-    $sql = "update pet_phc_accountname set name = '' where id = 1";
+    $sql = "update pet_". PREFIX ."_accountname set name = '' where id = 1";
     $db->query($sql);
     $list['khác'] = array();
     foreach ($vietcomtemp as $i => $item) {
@@ -172,9 +172,9 @@ function excel() {
   } 
   else {
     foreach ($data->input as $key => $input) {
-      $sql = "select * from pet_phc_accountname where id = ". ($key+1);
-      if (empty($db->fetch($sql))) $sql = "insert into pet_phc_accountname (id, name) values(". ($key+1) .", '$input')";
-      else $sql = "update pet_phc_accountname set name = '$input' where id = ". ($key+1);
+      $sql = "select * from pet_". PREFIX ."_accountname where id = ". ($key+1);
+      if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_accountname (id, name) values(". ($key+1) .", '$input')";
+      else $sql = "update pet_". PREFIX ."_accountname set name = '$input' where id = ". ($key+1);
       $db->query($sql);
       
       // chuyển nội dung từ bank sang list các name kiot, phần còn dư chuyển vào mục khác
@@ -194,7 +194,7 @@ function excel() {
     }
   }
   // xóa những name không có trong danh sách
-  $sql = "delete from pet_phc_accountname where id > ". count($data->input);
+  $sql = "delete from pet_". PREFIX ."_accountname where id > ". count($data->input);
   $db->query($sql);
 
   // so sánh từ trong list bank với các list kiot, list khác
@@ -280,7 +280,7 @@ function excel() {
   // đóng gói dữ liệu trả về
   $time = isodatetotime($data->time);
   $json = addslashes(json_encode($content, JSON_UNESCAPED_UNICODE));
-  $sql = "insert into pet_phc_account (content, time) values ('$json', $time)";
+  $sql = "insert into pet_". PREFIX ."_account (content, time) values ('$json', $time)";
   $result['id'] = $db->insertid($sql);
   $result['data'] = $content;
   $result['messenger'] = 'Đã tải file Excel lên';
@@ -291,7 +291,7 @@ function excel() {
 function remove() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_account where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_account where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -313,7 +313,7 @@ function getOld() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_phc_account where time between $data->start and $data->end order by id desc";
+  $sql = "select * from pet_". PREFIX ."_account where time between $data->start and $data->end order by id desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {

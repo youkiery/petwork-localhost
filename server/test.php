@@ -10,7 +10,7 @@ function init() {
 function getTestList() {
   global $data, $db;
 
-  $sql = "select * from pet_phc_product where id not in (select proid from pet_phc_product_exchange) order by id desc limit 200";
+  $sql = "select * from pet_". PREFIX ."_product where id not in (select proid from pet_". PREFIX ."_product_exchange) order by id desc limit 200";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {

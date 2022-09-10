@@ -3,14 +3,14 @@
 function expire() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_item where name = '$data->name'";
+  $sql = "select * from pet_". PREFIX ."_item where name = '$data->name'";
   if (empty($item = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, 0, 10, '')";
+    $sql = "insert into pet_". PREFIX ."_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, 0, 10, '')";
     $item['id'] = $db->insertid($sql);
   }
   
   $data->expire = totime($data->expire);
-  $sql = "insert into pet_phc_item_expire (rid, number, expire, time) values($item[id], $data->number, $data->expire, ". time() .")";
+  $sql = "insert into pet_". PREFIX ."_item_expire (rid, number, expire, time) values($item[id], $data->number, $data->expire, ". time() .")";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = 'Đã thêm hạn sử dụng';
@@ -25,7 +25,7 @@ function outstocks() {
   $userid = checkuserid();
   $time = time();
   foreach ($data->data as $item) {
-    $sql = "update pet_phc_item set outstock = $item->number, recuserid = $userid, rectime = $time where id = $item->id";
+    $sql = "update pet_". PREFIX ."_item set outstock = $item->number, recuserid = $userid, rectime = $time where id = $item->id";
     $db->query($sql);
   }
 
@@ -37,11 +37,11 @@ function outstocks() {
 function expire_done() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_item_expire where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_expire where id = $data->id";
   $db->query($sql);
   
   $limit = time() * 60 * 60 * 24 * 60;
-  $sql = "select a.id, b.name, a.expire from pet_phc_item_expire a inner join pet_phc_item b on a.rid = b.id where expire < $limit";
+  $sql = "select a.id, b.name, a.expire from pet_". PREFIX ."_item_expire a inner join pet_". PREFIX ."_item b on a.rid = b.id where expire < $limit";
   $list = $db->all($sql);
   
   foreach ($list as $key => $value) {
@@ -60,7 +60,7 @@ function getpurchased() {
 function removerecommended() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_item_recommend where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_recommend where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -70,7 +70,7 @@ function removerecommended() {
 
 function getPurchasedList() {
   global $db, $data;
-  $sql = "select a.*, b.fullname as user from pet_phc_item_recommend a inner join pet_phc_users b on a.userid = b.userid where a.status = 1";
+  $sql = "select a.*, b.fullname as user from pet_". PREFIX ."_item_recommend a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.status = 1";
   
   $res = $db->all($sql);
   foreach ($res as $key => $row) {
@@ -84,7 +84,7 @@ function getPurchasedList() {
 
 function getPurchasedCount() {
   global $db, $data;
-  $sql = "select id from pet_phc_item_recommend where status = 1";
+  $sql = "select id from pet_". PREFIX ."_item_recommend where status = 1";
   $count = $db->count($sql);
   return $count;
 }
@@ -92,7 +92,7 @@ function getPurchasedCount() {
 function done() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_item_recommend set status = 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item_recommend set status = 1 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -104,7 +104,7 @@ function expired_init() {
   global $data, $db, $result;
 
   $limit = time() * 60 * 60 * 24 * 60;
-  $sql = "select a.id, b.name, a.expire from pet_phc_item_expire a inner join pet_phc_item b on a.rid = b.id where expire < $limit";
+  $sql = "select a.id, b.name, a.expire from pet_". PREFIX ."_item_expire a inner join pet_". PREFIX ."_item b on a.rid = b.id where expire < $limit";
   $list = $db->all($sql);
   
   foreach ($list as $key => $value) {
@@ -120,10 +120,10 @@ function expired_init() {
 function incat() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_item_cat where name = '$data->cat'";
+  $sql = "select * from pet_". PREFIX ."_item_cat where name = '$data->cat'";
   if (!empty($row = $db->fetch($sql))) $result['messenger'] = 'Danh mục đã tồn tại';
   else {
-    $sql = "insert into pet_phc_item_cat (name) values('$data->cat')";
+    $sql = "insert into pet_". PREFIX ."_item_cat (name) values('$data->cat')";
     $result['status'] = 1;
     $result['cat'] = $db->insertid($sql);
     $result['catlist'] = getCatList();
@@ -134,8 +134,8 @@ function incat() {
 
 function getPurchaseList() {
   global $db, $data;
-  $sql1 = "select a.image, a.id, a.name, a.outstock, a.shop + a.storage as remain, a.recuserid as userid, a.rectime as time, b.fullname as user from pet_phc_item a inner join pet_phc_users b on a.recuserid = b.userid where a.outstock > 0";
-  $sql2 = "select a.*, b.name as user from pet_phc_item_recommend a inner join pet_phc_users b on a.userid = b.userid where a.status = 0";
+  $sql1 = "select a.image, a.id, a.name, a.outstock, a.shop + a.storage as remain, a.recuserid as userid, a.rectime as time, b.fullname as user from pet_". PREFIX ."_item a inner join pet_". PREFIX ."_users b on a.recuserid = b.userid where a.outstock > 0";
+  $sql2 = "select a.*, b.name as user from pet_". PREFIX ."_item_recommend a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.status = 0";
   
   $res = array('item' => array(), 'recommend' => $db->all($sql2));
   foreach ($res['recommend'] as $key => $row) {
@@ -174,7 +174,7 @@ function insertsource() {
   global $data, $db, $result;
 
   $name = mb_strtolower($data->name);
-  $sql = "insert into pet_phc_item_source (name) values ('$name')";
+  $sql = "insert into pet_". PREFIX ."_item_source (name) values ('$name')";
   $id = $db->insertid($sql);
 
   $result['status'] = 1;
@@ -190,7 +190,7 @@ function recommend() {
   $image = implode(',', $data->image);
   $time = time();
 
-  $sql = "insert into pet_phc_item_recommend (content, number, name, phone, image, userid, time) values('$data->content', $data->number, '$data->name', '$data->phone', '$image', $userid, $time)";
+  $sql = "insert into pet_". PREFIX ."_item_recommend (content, number, name, phone, image, userid, time) values('$data->content', $data->number, '$data->name', '$data->phone', '$image', $userid, $time)";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -205,7 +205,7 @@ function updaterecommend() {
   $image = implode(',', $data->image);
   $time = time();
 
-  $sql = "update pet_phc_item_recommend set content = '$data->content', number = '$data->number', name = '$data->name', phone = '$data->phone', image = '$image' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item_recommend set content = '$data->content', number = '$data->number', name = '$data->name', phone = '$data->phone', image = '$image' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -217,12 +217,12 @@ function purchased() {
   global $data, $db, $result;
 
   foreach ($data->list->item as $id) {
-    $sql = "update pet_phc_item set outstock = 0 where id = $id";
+    $sql = "update pet_". PREFIX ."_item set outstock = 0 where id = $id";
     $db->query($sql);
   }
 
   foreach ($data->list->recommend as $id) {
-    $sql = "update pet_phc_item_recommend set status = 1 where id = $id";
+    $sql = "update pet_". PREFIX ."_item_recommend set status = 1 where id = $id";
     $db->query($sql);
   }
 
@@ -260,7 +260,7 @@ function init() {
 // function getOutstock() {
 //   global $data, $db, $result;
   
-//   $sql = "select * from pet_phc_item where shop + storage < border";
+//   $sql = "select * from pet_". PREFIX ."_item where shop + storage < border";
 //   $number = $db->count($sql);
 //   return $number;
 // }
@@ -269,7 +269,7 @@ function init() {
 //   global $data, $db, $result;
 
 //   $time = time();
-//   $sql = "select * from pet_phc_item_expire where expire < $time";
+//   $sql = "select * from pet_". PREFIX ."_item_expire where expire < $time";
 //   $number = $db->count($sql);
 //   return $number;
 // }
@@ -277,7 +277,7 @@ function init() {
 function getPosList() {
   global $db, $data;
 
-  $sql = "select id, name from pet_phc_item_pos order by name asc";
+  $sql = "select id, name from pet_". PREFIX ."_item_pos order by name asc";
   $list = $db->all($sql);
   foreach ($list as $key => $row) {
     $list[$key]['alias'] = lower($row['name']);
@@ -288,7 +288,7 @@ function getPosList() {
 function getSourceList() {
   global $db, $data;
 
-  $sql = "select id, name from pet_phc_item_source order by name asc";
+  $sql = "select id, name from pet_". PREFIX ."_item_source order by name asc";
   $list = $db->all($sql);
   foreach ($list as $key => $row) {
     $list[$key]['alias'] = lower($row['name']);
@@ -298,19 +298,19 @@ function getSourceList() {
 
 function getUserCat($userid) {
   global $db;
-  $sql = "select value from pet_phc_config where module = 'itemcat' and name = $userid";
+  $sql = "select value from pet_". PREFIX ."_config where module = 'itemcat' and name = $userid";
   return $db->arr($sql, 'value');
 }
 
 function getUserCats($userid) {
   global $db;
-  $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemcat' and a.name = $userid";
+  $sql = "select b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemcat' and a.name = $userid";
   return implode(',', $db->arr($sql, 'name'));
 }
 
 function getUserCatlist($userid) {
   global $db;
-  $sql = "select b.* from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $userid";
+  $sql = "select b.* from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $userid";
   return $db->all($sql);
 }
 
@@ -318,12 +318,12 @@ function getUserCatlist($userid) {
 function getUserList() {
   global $db;
 
-  $sql = "select a.userid, b.fullname as name, b.username, b.fullname from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'item' and a.type > 0";
+  $sql = "select a.userid, b.fullname as name, b.username, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'item' and a.type > 0";
   $list = $db->all($sql);
   foreach ($list as $key => $row) {
-    $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
+    $sql = "select b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
     $list[$key]['storage'] = implode(',', $db->arr($sql, 'name'));
-    $sql = "select b.id, b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
+    $sql = "select b.id, b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $row[userid]";
     $list[$key]['per'] = $db->all($sql);
   }
   return $list;
@@ -334,21 +334,21 @@ function per() {
 
   if (count($data->cat)) {
     $cats = implode(',', $data->cat);
-    $sql = "delete from pet_phc_config where module = 'itemper' and name = $data->userid and value not in ($cats)";
+    $sql = "delete from pet_". PREFIX ."_config where module = 'itemper' and name = $data->userid and value not in ($cats)";
   }
-  else $sql = "delete from pet_phc_config where module = 'itemper' and name = $data->userid";
+  else $sql = "delete from pet_". PREFIX ."_config where module = 'itemper' and name = $data->userid";
   $db->query($sql);
   foreach ($data->cat as $cat) {
-    $sql = "select * from pet_phc_config where module = 'itemper' and name = $data->userid and value = $cat";
+    $sql = "select * from pet_". PREFIX ."_config where module = 'itemper' and name = $data->userid and value = $cat";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_phc_config (module, name, value) values('itemper', $data->userid, $cat)";
+      $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('itemper', $data->userid, $cat)";
       $db->query($sql);
     }
   }
   
-  $sql = "select b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
+  $sql = "select b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
   $result['storage'] = implode(',', $db->arr($sql, 'name'));
-  $sql = "select b.id, b.name from pet_phc_config a inner join pet_phc_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
+  $sql = "select b.id, b.name from pet_". PREFIX ."_config a inner join pet_". PREFIX ."_item_cat b on a.value = b.id where a.module = 'itemper' and a.name = $data->userid";
   $result['per'] = $db->all($sql);
 
   $result['status'] = 1;
@@ -363,7 +363,7 @@ function inpos() {
     if (strlen($value) > 50) $image = $value;
   }
   
-  $sql = "insert into pet_phc_item_pos (name, image) values('$data->pos', '$image')";
+  $sql = "insert into pet_". PREFIX ."_item_pos (name, image) values('$data->pos', '$image')";
   
   $result['status'] = 1;
   $result['id'] = $db->insertid($sql);
@@ -376,14 +376,14 @@ function inpositem() {
   global $data, $db, $result;
 
   foreach ($data->list as $key => $value) {
-    $sql = "select * from pet_phc_item_pos_item where posid = $data->posid and itemid = $value->id";
+    $sql = "select * from pet_". PREFIX ."_item_pos_item where posid = $data->posid and itemid = $value->id";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_phc_item_pos_item (posid, itemid) values($data->posid, $value->id)";
+      $sql = "insert into pet_". PREFIX ."_item_pos_item (posid, itemid) values($data->posid, $value->id)";
       $db->query($sql);
     }
   }
   
-  $sql = "select b.*, a.name from pet_phc_item a inner join pet_phc_item_pos_item b on a.id = b.itemid where b.posid = $data->posid";
+  $sql = "select b.*, a.name from pet_". PREFIX ."_item a inner join pet_". PREFIX ."_item_pos_item b on a.id = b.itemid where b.posid = $data->posid";
   $result['list'] = $db->all($sql);
   $result['status'] = 1;
   
@@ -402,7 +402,7 @@ function filter() {
 function purchase_init() {
   global $data, $db, $result;
 
-  $sql = "select name, storage + shop as number from pet_phc_item where storage + shop < border order by name asc";
+  $sql = "select name, storage + shop as number from pet_". PREFIX ."_item where storage + shop < border order by name asc";
   $list = $db->all($sql);
 
   $result['status'] = 1;
@@ -413,20 +413,20 @@ function purchase_init() {
 function insert() {
   global $data, $db, $result;
 
-  $name_sql = "select * from pet_phc_item where name = '$data->name'";
-  $code_sql = "select * from pet_phc_item where code = '$data->code'";
+  $name_sql = "select * from pet_". PREFIX ."_item where name = '$data->name'";
+  $code_sql = "select * from pet_". PREFIX ."_item where code = '$data->code'";
   if (!empty($db->fetch($name_sql))) $result['messenger'] = 'Tên mặt hàng đã tồn tại'; 
   else if (!empty($db->fetch($code_sql))) $result['messenger'] = 'Mã mặt hàng đã tồn tại'; 
   else {
-    $sql = "insert into pet_phc_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, $data->cat, 10, '". implode(',', $data->image) ."')";
+    $sql = "insert into pet_". PREFIX ."_item (name, code, shop, storage, catid, border, image) values('$data->name', '$data->code', 0, 0, $data->cat, 10, '". implode(',', $data->image) ."')";
     $id = $db->insertid($sql);
     foreach ($data->position as $key => $row) {
-      $sql = "insert into pet_phc_item_pos_item (itemid, posid) values($id, $row->id)";
+      $sql = "insert into pet_". PREFIX ."_item_pos_item (itemid, posid) values($id, $row->id)";
       $db->query($sql);
     }
 
     foreach ($data->source as $key => $row) {
-      $sql = "insert into pet_phc_item_source_item (itemid, sourceid) values($id, $row->id)";
+      $sql = "insert into pet_". PREFIX ."_item_source_item (itemid, sourceid) values($id, $row->id)";
       $db->query($sql);
     }
   
@@ -440,11 +440,11 @@ function insert() {
 function position_init() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_item_pos order by name asc";
+  $sql = "select * from pet_". PREFIX ."_item_pos order by name asc";
   $list = $db->all($sql);
   
   foreach ($list as $key => $value) {
-    $sql = "select b.*, a.name from pet_phc_item a inner join pet_phc_item_pos_item b on a.id = b.itemid where b.posid = $value[id]";
+    $sql = "select b.*, a.name from pet_". PREFIX ."_item a inner join pet_". PREFIX ."_item_pos_item b on a.id = b.itemid where b.posid = $value[id]";
     $list[$key]['position'] = $db->all($sql);
   }
   
@@ -457,10 +457,10 @@ function position_init() {
 function position_remove() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_item_pos_item where posid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_pos_item where posid = $data->id";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_item_pos where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_pos where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -470,7 +470,7 @@ function position_remove() {
 function remove() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_item where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -480,7 +480,7 @@ function remove() {
 function removeexpire() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_item_expire where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_expire where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -490,10 +490,10 @@ function removeexpire() {
 function repos() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_item_pos_item where posid = $data->posid and itemid = $data->itemid";
+  $sql = "delete from pet_". PREFIX ."_item_pos_item where posid = $data->posid and itemid = $data->itemid";
   $db->query($sql);
   
-  $sql = "select b.*, a.name from pet_phc_item a inner join pet_phc_item_pos_item b on a.id = b.itemid where b.posid = $data->posid";
+  $sql = "select b.*, a.name from pet_". PREFIX ."_item a inner join pet_". PREFIX ."_item_pos_item b on a.id = b.itemid where b.posid = $data->posid";
   $result['list'] = $db->all($sql);
   $result['status'] = 1;
   
@@ -503,7 +503,7 @@ function repos() {
 function search() {
   global $data, $db, $result;
 
-  $sql = "select name, code from pet_phc_item where name like '%$data->key%'";
+  $sql = "select name, code from pet_". PREFIX ."_item where name like '%$data->key%'";
   
   $result['status'] = 1;
   $result['list'] = $db->all($sql);
@@ -514,7 +514,7 @@ function search() {
 function transfer_init() {
   global $data, $db, $result;
 
-  $sql = "select name, storage, shop from pet_phc_item where shop < border and storage > 0 order by name asc";
+  $sql = "select name, storage, shop from pet_". PREFIX ."_item where shop < border and storage > 0 order by name asc";
   $list = $db->all($sql);
   
   $result['status'] = 1;
@@ -526,32 +526,32 @@ function transfer_init() {
 function update() {
   global $data, $db, $result;
 
-  $name_sql = "select * from pet_phc_item where name = '$data->name' and id <> $data->id";
-  $code_sql = "select * from pet_phc_item where code = '$data->code' and id <> $data->id";
+  $name_sql = "select * from pet_". PREFIX ."_item where name = '$data->name' and id <> $data->id";
+  $code_sql = "select * from pet_". PREFIX ."_item where code = '$data->code' and id <> $data->id";
   if (!empty($db->fetch($name_sql))) $result['messenger'] = 'Tên mặt hàng đã tồn tại'; 
   else if (!empty($db->fetch($code_sql))) $result['messenger'] = 'Mã mặt hàng đã tồn tại'; 
   else {
-    $sql = "update pet_phc_item set catid = $data->cat, name = '$data->name', code = '$data->code', border = '$data->border', image = '". implode(',', $data->image) ."' where id = $data->id";
+    $sql = "update pet_". PREFIX ."_item set catid = $data->cat, name = '$data->name', code = '$data->code', border = '$data->border', image = '". implode(',', $data->image) ."' where id = $data->id";
     $db->query($sql);
   
     $poslist = array();
     foreach ($data->position as $key => $row) {
       $poslist []= $row->id;
-      $sql = "insert into pet_phc_item_pos_item (itemid, posid) values ($data->id, $row->id) on duplicate key update itemid = $data->id and posid = $row->id";
+      $sql = "insert into pet_". PREFIX ."_item_pos_item (itemid, posid) values ($data->id, $row->id) on duplicate key update itemid = $data->id and posid = $row->id";
       $db->query($sql);
     }
     // xóa những vị trí không có trong danh sách
-    $sql = "delete from pet_phc_item_pos_item where itemid = $data->id and posid not in (". implode(',', $poslist) .")";
+    $sql = "delete from pet_". PREFIX ."_item_pos_item where itemid = $data->id and posid not in (". implode(',', $poslist) .")";
     $db->query($sql);
 
     $sourcelist = array();
     foreach ($data->source as $key => $row) {
       $sourcelist []= $row->id;
-      $sql = "insert into pet_phc_item_source_item (itemid, sourceid) values ($data->id, $row->id) on duplicate key update itemid = $data->id and sourceid = $row->id";
+      $sql = "insert into pet_". PREFIX ."_item_source_item (itemid, sourceid) values ($data->id, $row->id) on duplicate key update itemid = $data->id and sourceid = $row->id";
       $db->query($sql);
     }
     // xóa những vị trí không có trong danh sách
-    $sql = "delete from pet_phc_item_source_item where itemid = $data->id and sourceid not in (". implode(',', $poslist) .")";
+    $sql = "delete from pet_". PREFIX ."_item_source_item where itemid = $data->id and sourceid not in (". implode(',', $poslist) .")";
     $db->query($sql);
 
     $result['status'] = 1;
@@ -564,13 +564,13 @@ function update() {
 function getItemInfo($id) {
   global $db;
 
-  $sql = "select * from pet_phc_item where id = $id";
+  $sql = "select * from pet_". PREFIX ."_item where id = $id";
   $row = $db->fetch($sql);
 
   $row['alias'] = lower($row['name']);
   $row['image'] = explode(', ', $row['image']);
   $row['expired'] = checkExpire($row['id']);
-  $sql = "select a.id, a.name from pet_phc_item_pos a inner join pet_phc_item_pos_item b on a.id = b.posid where b.itemid = $id";
+  $sql = "select a.id, a.name from pet_". PREFIX ."_item_pos a inner join pet_". PREFIX ."_item_pos_item b on a.id = b.posid where b.itemid = $id";
   $row['position'] = $db->all($sql);
   return $row;
 }
@@ -582,7 +582,7 @@ function uppos() {
     if (strlen($value) > 50) $image = $value;
   }
 
-  $sql = "update pet_phc_item_pos set name = '$data->pos', image = '$image' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item_pos set name = '$data->pos', image = '$image' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -605,26 +605,26 @@ function getList() {
   // if (isset($data->cat) && !empty($data->cat)) {
   //   // lọc danh loại hàng từ config
   //   $cat = implode(',', $data->cat);
-  //   $sql = "select * from pet_phc_config where module = 'itemper' and name = $userid and value in ($cat)";
+  //   $sql = "select * from pet_". PREFIX ."_config where module = 'itemper' and name = $userid and value in ($cat)";
   //   $cat = $db->arr($sql, 'value');
   //   if (count($cat)) {
   //     // có danh sách, hiển thị & cập nhật
   //     $check = false;
   //     $cats = implode(',', $cat);
   //     $xtra = " a.catid in ($cats)";
-  //     $sql = "update pet_phc_config set value = '$cats'";
+  //     $sql = "update pet_". PREFIX ."_config set value = '$cats'";
   //     $db->query($sql);
   //   }
   // }
   // if ($check) {
   //   // không có, lấy từ csdl
-  //   $sql = "select * from pet_phc_config where module = 'itemper' and name = $userid";
+  //   $sql = "select * from pet_". PREFIX ."_config where module = 'itemper' and name = $userid";
   //   $cat = $db->arr($sql, 'value');
   //   if (count($cat)) $xtra = ' a.catid in ('. implode(',', $cat) .')';
   //   else $xtra = ' 0 ';
   // }
 
-  $sql = "select a.*, b.name as cat from pet_phc_item a inner join pet_phc_item_cat b on a.catid = b.id order by a.name asc";
+  $sql = "select a.*, b.name as cat from pet_". PREFIX ."_item a inner join pet_". PREFIX ."_item_cat b on a.catid = b.id order by a.name asc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $value) {
@@ -632,10 +632,10 @@ function getList() {
     $list[$key]['image'] = explode(', ', $value['image']);
     $list[$key]['expired'] = checkExpire($value['id']);
 
-    $sql = "select a.id, a.name from pet_phc_item_pos a inner join pet_phc_item_pos_item b on a.id = b.posid where b.itemid = $value[id]";
+    $sql = "select a.id, a.name from pet_". PREFIX ."_item_pos a inner join pet_". PREFIX ."_item_pos_item b on a.id = b.posid where b.itemid = $value[id]";
     $list[$key]['position'] = $db->all($sql);
 
-    $sql = "select a.id, a.name from pet_phc_item_source a inner join pet_phc_item_source_item b on a.id = b.sourceid where b.itemid = $value[id]";
+    $sql = "select a.id, a.name from pet_". PREFIX ."_item_source a inner join pet_". PREFIX ."_item_source_item b on a.id = b.sourceid where b.itemid = $value[id]";
     $list[$key]['source'] = $db->all($sql);
   }
 
@@ -645,7 +645,7 @@ function getList() {
 function removerecommend() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_item_recommend where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_item_recommend where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -658,7 +658,7 @@ function outstock() {
  
   $userid = checkuserid();
   $time = time();
-  $sql = "update pet_phc_item set outstock = $data->number, recuserid = $userid, rectime = $time where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item set outstock = $data->number, recuserid = $userid, rectime = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -669,7 +669,7 @@ function outstock() {
 function updateoutstock() {
   global $db, $data, $result;
  
-  $sql = "update pet_phc_item set outstock = $data->number where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item set outstock = $data->number where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -680,7 +680,7 @@ function updateoutstock() {
 function removestock() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_item set outstock = 0, recuserid = 0, rectime = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item set outstock = 0, recuserid = 0, rectime = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -693,7 +693,7 @@ function changeover() {
   
   $userid = checkuserid();
   $time = time();
-  $sql = "update pet_phc_item set outstock = 0, recuserid = 0, rectime = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_item set outstock = 0, recuserid = 0, rectime = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -704,7 +704,7 @@ function changeover() {
 function checkExpire($itemid) {
   global $db, $data;
 
-  $sql = "select id, time as name from pet_phc_item_expire where rid = $itemid";
+  $sql = "select id, time as name from pet_". PREFIX ."_item_expire where rid = $itemid";
   $list = $db->all($sql);
 
   foreach ($list as $key => $value) {
@@ -716,7 +716,7 @@ function checkExpire($itemid) {
 function getPurchase() {
   global $data, $db;
 
-  $sql = "select count(*) as number from pet_phc_item where storage + shop < border";
+  $sql = "select count(*) as number from pet_". PREFIX ."_item where storage + shop < border";
   $number = $db->fetch($sql);
   return $number['number'];
 }
@@ -724,7 +724,7 @@ function getPurchase() {
 function getTransfer() {
   global $data, $db;
 
-  $sql = "select count(*) as number from pet_phc_item where shop < border and storage > 0";
+  $sql = "select count(*) as number from pet_". PREFIX ."_item where shop < border and storage > 0";
   $number = $db->fetch($sql);
   return $number['number'];
 }
@@ -733,7 +733,7 @@ function getExpire() {
   global $data, $db;
 
   $limit = time() * 60 * 60 * 24 * 60;
-  $sql = "select count(*) as number from pet_phc_item_expire where expire < $limit";
+  $sql = "select count(*) as number from pet_". PREFIX ."_item_expire where expire < $limit";
   $number = $db->fetch($sql);
   return $number['number'];
 }
@@ -742,14 +742,14 @@ function getCatList() {
   global $data, $db;
   
   $userid = checkuserid();
-  $sql = "select * from pet_phc_item_cat order by id asc";
+  $sql = "select * from pet_". PREFIX ."_item_cat order by id asc";
   return $db->all($sql);
 }
 
 function getSuggestList() {
   global $data, $db;
   
-  $sql = "select id, name from pet_phc_item order by name asc";
+  $sql = "select id, name from pet_". PREFIX ."_item order by name asc";
   $list = $db->all($sql);
   foreach ($list as $key => $value) {
     $list[$key]['alias'] = lower($value['name']);
@@ -760,7 +760,7 @@ function getSuggestList() {
 function getImagePos() {
   global $data, $db;
   
-  $sql = "select id, image from pet_phc_item_pos order by name asc";
+  $sql = "select id, image from pet_". PREFIX ."_item_pos order by name asc";
   return $db->obj($sql, 'id', 'image');
 }
 
@@ -825,7 +825,7 @@ function excel() {
   );
   $l = array();
 
-  $sql = "select * from pet_phc_item";
+  $sql = "select * from pet_". PREFIX ."_item";
   $item = $db->all($sql);
   foreach ($exdata as $row) {
     foreach ($item as $i) {
@@ -841,11 +841,11 @@ function excel() {
     $xtra = '';
     if (!empty($row[3])) $xtra = ", image = '$row[3]'";
     $n = $row[1] + $row[2];
-    $sql = "update pet_phc_item set lowonnumber = 1 where $n >= border";
+    $sql = "update pet_". PREFIX ."_item set lowonnumber = 1 where $n >= border";
     $db->query($sql);
-    $sql = "update pet_phc_item set lowonnumber = 0 where $n < border";
+    $sql = "update pet_". PREFIX ."_item set lowonnumber = 0 where $n < border";
     $db->query($sql);
-    $sql = "update pet_phc_item set shop = $row[1], storage = $row[2] $xtra where code = '$row[0]'";
+    $sql = "update pet_". PREFIX ."_item set shop = $row[1], storage = $row[2] $xtra where code = '$row[0]'";
     if ($db->query($sql)) $res['insert'] ++;
   }
 
@@ -924,7 +924,7 @@ function excel() {
     $exdata []= $temp;
   }
 
-  $sql = "select * from pet_phc_storage_exchange";
+  $sql = "select * from pet_". PREFIX ."_storage_exchange";
   $category = $db->obj($sql, 'exchange', 'storageid');
   $list = array();
   $res = array(
@@ -938,11 +938,11 @@ function excel() {
     // lọc những trường có trong category
     if (!empty($category[$row[0]])) {
       // kiểm tra có mã chưa, nếu có thì thêm vào
-      $sql = "select a.id from pet_phc_product a inner join pet_phc_product_code b on b.code = '$row[1]' and a.id = b.proid";
+      $sql = "select a.id from pet_". PREFIX ."_product a inner join pet_". PREFIX ."_product_code b on b.code = '$row[1]' and a.id = b.proid";
       if (empty($product = $db->fetch($sql))) {
-        $sql = "insert into pet_phc_product (name, image, shop, storage, outstock) values('$row[2]', '$row[5]', 0, 0, 0)";
+        $sql = "insert into pet_". PREFIX ."_product (name, image, shop, storage, outstock) values('$row[2]', '$row[5]', 0, 0, 0)";
         $product = array('id' => $db->insertid($sql));
-        $sql = "insert into pet_phc_product_code (proid, code) values($product[id], '$row[1]')";
+        $sql = "insert into pet_". PREFIX ."_product_code (proid, code) values($product[id], '$row[1]')";
         $db->query($sql);
       }
       // nếu chưa có trong list thì push, có rồi thì sum
@@ -955,7 +955,7 @@ function excel() {
   }
 
   // mã exchange 
-  $sql = "select * from pet_phc_product_exchange";
+  $sql = "select * from pet_". PREFIX ."_product_exchange";
   $exchange = $db->all($sql);
   foreach ($exchange as $row) {
     if (!empty($list[$row['proid']]) && !empty($list[$row['targetid']])) {
@@ -967,11 +967,11 @@ function excel() {
   }
 
   foreach ($list as $id => $row) {
-    $sql = "update pet_phc_product set shop = $row[3], storage = $row[4], image = '$row[5]' where id = $id";
+    $sql = "update pet_". PREFIX ."_product set shop = $row[3], storage = $row[4], image = '$row[5]' where id = $id";
     if ($db->query($sql)) $res['insert'] ++;
   }
 
-  // $sql = "select * from pet_phc_item";
+  // $sql = "select * from pet_". PREFIX ."_item";
   // $item = $db->all($sql);
   // foreach ($exdata as $row) {
   //   foreach ($item as $i) {
@@ -982,7 +982,7 @@ function excel() {
   //     }
   //     else if ($row['3'] > 0 && $i['code'] != $row[0]) {
   //       // không có trong danh sách nhưng kho có hàng thì thêm vào
-  //       $sql = "insert into pet_phc_item (catid, name, code, shop, storage, border, image, outstock, recuserid, rectime, lowonnumber) values(1, '$row[1]', '$row[0]', $row[2], $row[3], 0, '', 0, 0, 0, 0)";
+  //       $sql = "insert into pet_". PREFIX ."_item (catid, name, code, shop, storage, border, image, outstock, recuserid, rectime, lowonnumber) values(1, '$row[1]', '$row[0]', $row[2], $row[3], 0, '', 0, 0, 0, 0)";
   //       $db->query($sql);
   //       $l []= $row;
   //     }
@@ -993,11 +993,11 @@ function excel() {
   //   $res['total'] ++;
   //   $xtra = '';
   //   $n = $row[2] + $row[3];
-  //   $sql = "update pet_phc_item set lowonnumber = 1 where $n >= border";
+  //   $sql = "update pet_". PREFIX ."_item set lowonnumber = 1 where $n >= border";
   //   $db->query($sql);
-  //   $sql = "update pet_phc_item set lowonnumber = 0 where $n < border";
+  //   $sql = "update pet_". PREFIX ."_item set lowonnumber = 0 where $n < border";
   //   $db->query($sql);
-  //   $sql = "update pet_phc_item set shop = $row[2], storage = $row[3] $xtra where code = '$row[0]'";
+  //   $sql = "update pet_". PREFIX ."_item set shop = $row[2], storage = $row[3] $xtra where code = '$row[0]'";
   //   if ($db->query($sql)) $res['insert'] ++;
   // }
 

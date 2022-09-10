@@ -13,7 +13,7 @@ function getlist() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end) + 60 * 60 * 24 -1;
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_xquang a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.time between $start and $end order by id desc";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_". PREFIX ."_xquang a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid where a.time between $start and $end order by id desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -27,7 +27,7 @@ function getlist() {
 function removeneed() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_xray_row set xquang = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_row set xquang = 0 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -38,11 +38,11 @@ function removeneed() {
 function getneed() {
   global $data, $db, $result;
     
-  $sql = "select id, xrayid, image from pet_phc_xray_row where xquang < 0 order by time desc";
+  $sql = "select id, xrayid, image from pet_". PREFIX ."_xray_row where xquang < 0 order by time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $sql = "select a.petname, b.name, b.phone, b.address from pet_phc_xray a inner join pet_phc_customer b on a.customerid = b.id where a.id = $row[xrayid]";
+    $sql = "select a.petname, b.name, b.phone, b.address from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
     $list[$key]['petname'] = $info['petname'];
     $list[$key]['name'] = $info['name'];
@@ -61,11 +61,11 @@ function insert() {
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
   $time = time();
-  $sql = "insert into pet_phc_xquang (userid, customerid, image, note, time) values($userid, $customerid, '$image', '$data->note', $time)";
+  $sql = "insert into pet_". PREFIX ."_xquang (userid, customerid, image, note, time) values($userid, $customerid, '$image', '$data->note', $time)";
   $id = $db->insertid($sql);
 
   if (isset($data->xrayid)) {
-    $sql = "update pet_phc_xray_row set xquang = $id where id = $data->xrayid";
+    $sql = "update pet_". PREFIX ."_xray_row set xquang = $id where id = $data->xrayid";
     $db->query($sql);
   }
 
@@ -83,7 +83,7 @@ function update() {
   $userid = checkuserid();
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
-  $sql = "update pet_phc_xquang set customerid = $customerid, image = '$image', note = '$data->note' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xquang set customerid = $customerid, image = '$image', note = '$data->note' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -94,10 +94,10 @@ function update() {
 function remove() {
   global $data, $db, $result, $userid;
   
-  $sql = "delete from pet_phc_xquang where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_xquang where id = $data->id";
   $db->query($sql);
 
-  $sql = "update pet_phc_xray_row set xquang = -1 where xquang = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_row set xquang = -1 where xquang = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -108,7 +108,7 @@ function remove() {
 function getinfo() {
   global $data, $db, $result, $userid;
   
-  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_xquang a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.id = $data->id";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_". PREFIX ."_xquang a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid where a.id = $data->id";
   $data = $db->fetch($sql);
   $data['time'] = date('d/m/Y', $data['time']);
   $data['image'] = parseimage($data['image']);
@@ -121,13 +121,13 @@ function getinfo() {
 function checkcustomer() {
   global $db, $data;
 
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
     $customer['id'] = $db->insertid($sql);
   }
 

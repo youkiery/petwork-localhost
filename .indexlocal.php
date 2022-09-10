@@ -9,11 +9,11 @@ include_once(ROOTDIR . '/server/db.php');
 include_once(ROOTDIR . '/server/global.php');
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
-// $sql = "select * from pet_phc_xray";
+// $sql = "select * from pet_". PREFIX ."_xray";
 // $danhsach = $db->all($sql);
 
 // foreach ($danhsach as $key => $his) {
-//   $sql = "insert into pet_phc_config (module, name, value, alt) values('hisdisease', $his[id], $his[diseaseid], 0)";
+//   $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('hisdisease', $his[id], $his[diseaseid], 0)";
 //   $db->query($sql);
 // }
 
@@ -23,27 +23,27 @@ $db = new database($config['servername'], $config['username'], $config['password
 //   echo date('w', $hientai) . ": ". date('d/m/Y', $hientai) . "<br>";
 // }
 
-// $sql = "select a.id, b.value from pet_phc_profile a inner join pet_phc_config b on a.species = b.id";
+// $sql = "select a.id, b.value from pet_". PREFIX ."_profile a inner join pet_". PREFIX ."_config b on a.species = b.id";
 // $list = $db->all($sql);
 
 // foreach ($list as $row) {
-//   $sql = "update pet_phc_profile set species = '$row[value]' where id = $row[id]";
+//   $sql = "update pet_". PREFIX ."_profile set species = '$row[value]' where id = $row[id]";
 //   $db->query($sql);
 // }
 
-// $sql = "select a.id, b.value from pet_phc_physical a inner join pet_phc_config b on a.species = b.id";
+// $sql = "select a.id, b.value from pet_". PREFIX ."_physical a inner join pet_". PREFIX ."_config b on a.species = b.id";
 // $list = $db->all($sql);
 
 // foreach ($list as $row) {
-//   $sql = "update pet_phc_physical set species = '$row[value]' where id = $row[id]";
+//   $sql = "update pet_". PREFIX ."_physical set species = '$row[value]' where id = $row[id]";
 //   $db->query($sql);
 // }
 
-// $sql = "select a.*, b.name, b.customerid as cid from pet_phc_xray a inner join pet_phc_pet b on a.petid = b.id";
+// $sql = "select a.*, b.name, b.customerid as cid from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_pet b on a.petid = b.id";
 // $list = $db->all($sql);
 
 // foreach ($list as $key => $row) {
-//   $sql = "update pet_phc_xray set customerid = $row[cid], petname = '$row[name]' where id = $row[id]";
+//   $sql = "update pet_". PREFIX ."_xray set customerid = $row[cid], petname = '$row[name]' where id = $row[id]";
 //   $db->query($sql);
 // }
 

@@ -29,11 +29,11 @@ function nhanvien() {
 function danhsachluong() {
   global $db;
 
-  $sql = "select * from pet_phc_luong order by id desc limit 20";
+  $sql = "select * from pet_". PREFIX ."_luong order by id desc limit 20";
   $luongthang = $db->all($sql);
   
   foreach ($luongthang as $key => $row) {
-    $sql = "select * from pet_phc_luong_tra where luongid = $row[id]";
+    $sql = "select * from pet_". PREFIX ."_luong_tra where luongid = $row[id]";
     $luong = $db->all($sql);
     $luongthang[$key]['tietkiem'] = 0;
     $luongthang[$key]['tongluong'] = 0;
@@ -58,10 +58,10 @@ function chuy() {
   $dauthanglenluong = strtotime(date('Y/m/1'));
   $dencamket = time() + 30 * 24 * 60 * 60;
 
-  $sql = "select * from pet_phc_luong_nhanvien where lenluong < $dauthanglenluong";
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien where lenluong < $dauthanglenluong";
   $tong += $db->count($sql);
 
-  $sql = "select * from pet_phc_luong_nhanvien where camket < $dencamket";
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien where camket < $dencamket";
   $tong += $db->count($sql);
 
   return $tong;
@@ -70,14 +70,14 @@ function chuy() {
 function danhsachnhanvien() {
   global $db;
   
-  $sql = "select * from pet_phc_luong_nhanvien order by userid";
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien order by userid";
   $list = $db->all($sql);
   $homnay = time();
 
   foreach ($list as $key => $row) {
-    $sql = "select * from pet_phc_users where userid = $row[userid]";
+    $sql = "select * from pet_". PREFIX ."_users where userid = $row[userid]";
     $user = $db->fetch($sql);
-    $sql = "select sum(tietkiem) as tietkiem from pet_phc_luong_tra where userid = $row[userid] and nhantietkiem = 0";
+    $sql = "select sum(tietkiem) as tietkiem from pet_". PREFIX ."_luong_tra where userid = $row[userid] and nhantietkiem = 0";
     $luong = $db->fetch($sql);
 
     $dauthanglenluong = strtotime(date('Y/m/1', $row['lenluong']));
@@ -117,12 +117,12 @@ function timthemnhanvien() {
 function danhsachtimthemnhanvien() {
   global $db;
   
-  $sql = "select * from pet_phc_luong_nhanvien";
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien";
   $danhsachidnhanvien = $db->arr($sql, 'userid');
   if (count($danhsachidnhanvien)) $query = "where userid not in (". implode(',', $danhsachidnhanvien) .")";
   else $query = "";
   
-  $sql = "select * from pet_phc_users ". $query;
+  $sql = "select * from pet_". PREFIX ."_users ". $query;
   $users = $db->all($sql);
   
   $list = array();
@@ -148,11 +148,11 @@ function themnhanvien2() {
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 
-  $sql = 'select userid, password from `pet_phc_users` where LOWER(username) = "'. $username .'"';
+  $sql = "select userid, password from `pet_". PREFIX ."_users` where LOWER(username) = '$username'";
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_phc_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
     $userid = $db->insertid($sql);
     
     $data->luongcoban = str_replace(',', '', $data->luongcoban);
@@ -162,7 +162,7 @@ function themnhanvien2() {
     $data->camket = isodatetotime($data->camket);
     $lenluong = strtotime("+12 months ". date('Y-m-d', $data->hopdong));
   
-    $sql = "insert into pet_phc_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan, phucap, phucap2) values($userid, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan, $data->phucap, $data->phucap2)";
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan, phucap, phucap2) values($userid, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan, $data->phucap, $data->phucap2)";
     $result['messenger'] = 'Đã thêm nhân viên';
     $db->query($sql);
   
@@ -183,13 +183,13 @@ function themnhanvien() {
   $data->camket = isodatetotime($data->camket);
   $lenluong = strtotime("+12 months ". date('Y-m-d', $data->hopdong));
 
-  $sql = "select * from pet_phc_luong_nhanvien where userid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $data->id";
   if (empty($nhanvien = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan, phucap, phucap2) values($data->id, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan, $data->phucap, $data->phucap2)";
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, tile, luongcoban, lenluong, hopdong, camket, cophan, phucap, phucap2) values($data->id, $data->tile, $data->luongcoban, $lenluong, $data->hopdong, $data->camket, $data->cophan, $data->phucap, $data->phucap2)";
     $result['messenger'] = 'Đã thêm nhân viên';
   }
   else {
-    $sql = "update pet_phc_luong_nhanvien set luongcoban = $data->luongcoban, lenluong = $lenluong, hopdong = $data->hopdong, camket = $data->camket, cophan = $data->cophan, tile = $data->tile, phucap = $data->phucap, phucap2 = $data->phucap2 where userid = $data->id";
+    $sql = "update pet_". PREFIX ."_luong_nhanvien set luongcoban = $data->luongcoban, lenluong = $lenluong, hopdong = $data->hopdong, camket = $data->camket, cophan = $data->cophan, tile = $data->tile, phucap = $data->phucap, phucap2 = $data->phucap2 where userid = $data->id";
     $result['messenger'] = 'Đã cập nhật nhân viên';
   }
   $db->query($sql);
@@ -202,13 +202,13 @@ function themnhanvien() {
 function xoaluong() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_luong where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_luong where id = $data->id";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_luong_thuchi where luongid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_luong_thuchi where luongid = $data->id";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_luong_tra where luongid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_luong_tra where luongid = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -220,7 +220,7 @@ function xoaluong() {
 function xoanhanvien() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_luong_nhanvien where userid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_luong_nhanvien where userid = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -234,17 +234,17 @@ function lenluong() {
 
   if (isset($data->lenluong)) {
     $lenluong = isodatetotime($data->lenluong);
-    $sql = "update pet_phc_luong_nhanvien set lenluong = $lenluong where userid = $data->userid";
+    $sql = "update pet_". PREFIX ."_luong_nhanvien set lenluong = $lenluong where userid = $data->userid";
     $result['messenger'] = 'Đã xác nhận lên lương';
   }
   else if (isset($data->hopdong)) {
     $hopdong = isodatetotime($data->hopdong);
-    $sql = "update pet_phc_luong_nhanvien set hopdong = $hopdong where userid = $data->userid";
+    $sql = "update pet_". PREFIX ."_luong_nhanvien set hopdong = $hopdong where userid = $data->userid";
     $result['messenger'] = 'Đã xác nhận hạn hợp đồng';
   }
   else if (isset($data->camket)) {
     $camket = isodatetotime($data->camket);
-    $sql = "update pet_phc_luong_nhanvien set camket = $camket where userid = $data->userid";
+    $sql = "update pet_". PREFIX ."_luong_nhanvien set camket = $camket where userid = $data->userid";
     $result['messenger'] = 'Đã xác nhận hạn cam kết';
   }
   $db->query($sql);
@@ -258,7 +258,7 @@ function khoitaoluongthang() {
   global $data, $db, $result;
 
   $excel = array('nhanvien' => 'A1', 'doanhthu' => 'B1', 'loinhuan' => 'C1');
-  $sql = "select * from pet_phc_config where module = 'luongthang'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'luongthang'";
   $cauhinh = $db->obj($sql, 'name', 'value');
   if (isset($cauhinh['nhanvien'])) $excel['nhanvien'] = $cauhinh['nhanvien'];
   if (isset($cauhinh['doanhthu'])) $excel['doanhthu'] = $cauhinh['doanhthu'];
@@ -274,9 +274,9 @@ function luuexcel() {
   global $data, $db, $result;
 
   foreach ($data->excel as $name => $value) {
-    $sql = "select * from pet_phc_config where module = 'luongthang' and name = '$name'";
-    if (!empty($cauhinh = $db->fetch($sql))) $sql = "update pet_phc_config set value = '$value' where id = $cauhinh[id]";
-    else $sql = "insert into pet_phc_config (module, name, value, alt) values('luongthang', '$name', '$value', 0)";
+    $sql = "select * from pet_". PREFIX ."_config where module = 'luongthang' and name = '$name'";
+    if (!empty($cauhinh = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_config set value = '$value' where id = $cauhinh[id]";
+    else $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('luongthang', '$name', '$value', 0)";
     $db->query($sql);
   }
 
@@ -325,7 +325,7 @@ function chotluongthang() {
 
   chotluong();
   $thoigian = isodatetotime($data->thoigian);
-  $sql = "update pet_phc_luong set trangthai = 1, thoigian = $thoigian where id = $data->id";
+  $sql = "update pet_". PREFIX ."_luong set trangthai = 1, thoigian = $thoigian where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -359,18 +359,18 @@ function chitietluongthang() {
     $tungay = strtotime(date($namnay .'/2/1'));
   }
 
-  $sql = "select * from pet_phc_luong where (thoigian between $tungay and $denngay) order by id desc";
+  $sql = "select * from pet_". PREFIX ."_luong where (thoigian between $tungay and $denngay) order by id desc";
   $danhsach = $db->all($sql);
   
   $thutu = 0;
   $chitietnhanvien = array();
   foreach ($danhsach as $luong) {
     // chỉ tính lương tháng này
-    $sql = "select * from pet_phc_luong_tra where luongid = $luong[id]";
+    $sql = "select * from pet_". PREFIX ."_luong_tra where luongid = $luong[id]";
     $danhsachnhanvien = $db->all($sql);
     foreach ($danhsachnhanvien as $nhanvien) {
       if (!$thutu) {
-        $sql = "select fullname from pet_phc_users where userid = $nhanvien[userid]";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $nhanvien[userid]";
         $nguoidung = $db->fetch($sql);
 
         
@@ -448,17 +448,17 @@ function dulieuluongtheoid() {
     'thoigian' => 0,
   );
 
-  $sql = "select * from pet_phc_luong where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_luong where id = $data->id";
   $luong = $db->fetch($sql);
 
-  $sql = "select * from pet_phc_luong_tra where luongid = $data->id order by userid";
+  $sql = "select * from pet_". PREFIX ."_luong_tra where luongid = $data->id order by userid";
   $danhsachnhanvien = $db->all($sql);
 
-  $sql = "select * from pet_phc_luong_tienchi where luongid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_luong_tienchi where luongid = $data->id";
   $danhsachthuchi = $db->all($sql);
 
   foreach ($danhsachnhanvien as $nhanvien) {
-    $sql = "select fullname as tennhanvien from pet_phc_users where userid = $nhanvien[userid]";
+    $sql = "select fullname as tennhanvien from pet_". PREFIX ."_users where userid = $nhanvien[userid]";
     $nguoidung = $db->fetch($sql);
 
     $dulieu['nhanvien'] []= array(
@@ -513,13 +513,13 @@ function luungaynghi() {
   if (isset($data->id)) {
     $id = $data->id;
     // xóa thu chi để thêm lại
-    $sql = "delete from pet_phc_luong_tienchi where luongid = $id";
+    $sql = "delete from pet_". PREFIX ."_luong_tienchi where luongid = $id";
     $db->query($sql);
     // thêm thu chi
     $tongchi = 0;
     foreach ($data->thuchi as $thuchi) {
       $tienchi = str_replace(',', '', $thuchi->tienchi);
-      $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $tienchi)";
+      $sql = "insert into pet_". PREFIX ."_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $tienchi)";
       $db->query($sql);
       $tongchi += $tienchi;
     }
@@ -542,11 +542,11 @@ function luungaynghi() {
     // $luongphucap = ($luongphucap > 0 ? $luongphucap : 0);
     $tongluong = $luongcung + $luongthuong + $luongphucap - $nghiphep;
     $thucnhan = $luongcung + $luongthuong + $luongphucap - $nghiphep - $tietkiem;
-    $sql = "update pet_phc_luong_tra set luongphucap = $luongphucap, cophan = $luongcophan, tong = $tongluong, thucnhan = $thucnhan where userid = $nhanvien->userid and luongid = $data->id";
+    $sql = "update pet_". PREFIX ."_luong_tra set luongphucap = $luongphucap, cophan = $luongcophan, tong = $tongluong, thucnhan = $thucnhan where userid = $nhanvien->userid and luongid = $data->id";
     $db->query($sql);
   }
 
-  $sql = "update pet_phc_luong set thoigian = $thoigian, tienchi = $tongchi, lairong = $data->tongcodong where id = $data->id";
+  $sql = "update pet_". PREFIX ."_luong set thoigian = $thoigian, tienchi = $tongchi, lairong = $data->tongcodong where id = $data->id";
   $db->query($sql);
 
   foreach ($data->ngaynghi as $tt => $nhanvien) {
@@ -560,7 +560,7 @@ function luungaynghi() {
     $tongluong = $luongcung + $luongthuong + $luongphucap - $nghiphep;
     $thucnhan = $luongcung + $luongthuong + $luongphucap - $nghiphep - $tietkiem;
 
-    $sql = "update pet_phc_luong_tra set ngaynghi = $nhanvien->ngaynghi, nghiphep = $nghiphep, tong = $tongluong, thucnhan = $thucnhan where luongid = $data->id and userid = $userid";
+    $sql = "update pet_". PREFIX ."_luong_tra set ngaynghi = $nhanvien->ngaynghi, nghiphep = $nghiphep, tong = $tongluong, thucnhan = $thucnhan where luongid = $data->id and userid = $userid";
     $db->query($sql);
   }
 
@@ -609,7 +609,7 @@ function excelluongthang() {
   }
 
   // lấy danh sách nhân viên
-  $sql = "select a.userid, a.fullname as tennhanvien, b.luongcoban, b.hopdong, b.tile, b.cophan, b.phucap, b.phucap2 from pet_phc_users a inner join pet_phc_luong_nhanvien b on a.userid = b.userid";
+  $sql = "select a.userid, a.fullname as tennhanvien, b.luongcoban, b.hopdong, b.tile, b.cophan, b.phucap, b.phucap2 from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_luong_nhanvien b on a.userid = b.userid";
   $danhsachnhanvien = $db->all($sql);
   $nhanvien = array();
   $homnay = time();
@@ -721,26 +721,26 @@ function chotluong() {
 
   // nếu có id, cập nhật, nếu không thêm chốt lương
   if (!empty($id = $data->id)) {
-    $sql = "update pet_phc_luong set doanhthu = $tongdoanhthu, loinhuan = $tongloinhuan, tienchi = $tongchi, luongnhanvien = $tongnhanvien, lairong = $tongcodong, thoigian = $thoigian where id = $id";
+    $sql = "update pet_". PREFIX ."_luong set doanhthu = $tongdoanhthu, loinhuan = $tongloinhuan, tienchi = $tongchi, luongnhanvien = $tongnhanvien, lairong = $tongcodong, thoigian = $thoigian where id = $id";
     $db->query($sql);
 
     // xóa thu chi để thêm lại
-    $sql = "delete from pet_phc_luong_tienchi where luongid = $id";
+    $sql = "delete from pet_". PREFIX ."_luong_tienchi where luongid = $id";
     $db->query($sql);
 
     // xóa lương nhân viên để thêm lại
-    $sql = "delete from pet_phc_luong_tra where luongid = $id";
+    $sql = "delete from pet_". PREFIX ."_luong_tra where luongid = $id";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values($tongdoanhthu, $tongloinhuan, $tongchi, $tongnhanvien, $tongcodong, $thoigian, 0)";
+    $sql = "insert into pet_". PREFIX ."_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values($tongdoanhthu, $tongloinhuan, $tongchi, $tongnhanvien, $tongcodong, $thoigian, 0)";
     $id = $db->insertid($sql);
   }
 
   // thêm thu chi
   foreach ($data->thuchi as $thuchi) {
     $tienchi = str_replace(',', '', $thuchi->tienchi);
-    $sql = "insert into pet_phc_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $tienchi)";
+    $sql = "insert into pet_". PREFIX ."_luong_tienchi (luongid, mucchi, tienchi) values($id, '$thuchi->loaichi', $tienchi)";
     $db->query($sql);
   }
 
@@ -758,7 +758,7 @@ function chotluong() {
     $tongluong = str_replace(',', '', $nhanvien->tongluong);
     $thucnhan = str_replace(',', '', $nhanvien->thucnhan);
     $phucap2 = str_replace(',', '', $nhanvien->phucap2);
-    $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien->userid, $id, $doanhthu, $loinhuan, $luongcung, $nhanvien->tile, $tilethuong, $luongthuong, $luongphucap, $phucap2, $nhanvien->phucap, $nhanvien->ngaynghi, $nghiphep, $tietkiem, 0, $nhanvien->cophan, $luongcophan, $tongluong, $thucnhan)";
+    $sql = "insert into pet_". PREFIX ."_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien->userid, $id, $doanhthu, $loinhuan, $luongcung, $nhanvien->tile, $tilethuong, $luongthuong, $luongphucap, $phucap2, $nhanvien->phucap, $nhanvien->ngaynghi, $nghiphep, $tietkiem, 0, $nhanvien->cophan, $luongcophan, $tongluong, $thucnhan)";
     $db->query($sql);
   }
 
@@ -769,18 +769,18 @@ function capnhatnhanvien() {
   global $data, $db;
 
   $data->phucap2 = str_replace(',', '', $data->phucap2);
-  $sql = "update pet_phc_luong_nhanvien set tile = '$data->tile', phucap = $data->phucap, phucap2 = $data->phucap2 where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_luong_nhanvien set tile = '$data->tile', phucap = $data->phucap, phucap2 = $data->phucap2 where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "select * from pet_phc_luong where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_luong where id = $data->id";
   $luong = $db->fetch($sql);
   
-  $sql = "select * from pet_phc_luong_tra where userid = $data->userid and luongid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_luong_tra where userid = $data->userid and luongid = $data->id";
   $nhanvien = $db->fetch($sql);
   
   $tilethuong = $nhanvien['loinhuan'] * $data->tile / 100;
   $luongphucap = $data->phucap2 + $luong['lairong'] * $data->phucap / 100;
-  $sql = "update pet_phc_luong_tra set tile = $data->tile, tilethuong = $tilethuong, phucap = $data->phucap, phucap2 = $data->phucap2, luongphucap = $luongphucap where userid = $data->userid and luongid = $data->id";
+  $sql = "update pet_". PREFIX ."_luong_tra set tile = $data->tile, tilethuong = $tilethuong, phucap = $data->phucap, phucap2 = $data->phucap2, luongphucap = $luongphucap where userid = $data->userid and luongid = $data->id";
   $db->query($sql);
 
   $result['dulieu'] = dulieuluongtheoid();
@@ -792,7 +792,7 @@ function capnhatnhanvien() {
 function nhanvienthemtay() {
   global $data, $db;
 
-  $sql = "select b.userid, b.fullname as tennhanvien from pet_phc_luong_nhanvien a inner join pet_phc_users b on a.userid = b.userid order by a.userid";
+  $sql = "select b.userid, b.fullname as tennhanvien from pet_". PREFIX ."_luong_nhanvien a inner join pet_". PREFIX ."_users b on a.userid = b.userid order by a.userid";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $nhanvien) {
@@ -830,18 +830,18 @@ function luumucchi() {
   foreach ($data->danhsach as $mucchi) {
     $tienchi = str_replace(',', '', $mucchi->tienchi);
     if (!empty($mucchi->id)) {
-      $sql = "update pet_phc_config set value = '$mucchi->loaichi', alt = '$tienchi' where id = $mucchi->id";
+      $sql = "update pet_". PREFIX ."_config set value = '$mucchi->loaichi', alt = '$tienchi' where id = $mucchi->id";
       $db->query($sql);
       $danhsach []= $mucchi->id;
     }
     else {
-      $sql = "insert into pet_phc_config (module, name, value, alt) values('luong', 'tienchi', '$mucchi->loaichi', '$tienchi')";
+      $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('luong', 'tienchi', '$mucchi->loaichi', '$tienchi')";
       $danhsach []= $db->insertid($sql);
     }
   }
 
   if (count($danhsach)) {
-    $sql = "delete from pet_phc_config where module = 'luong' and name = 'tienchi' and id not in (". implode(', ', $danhsach) .")";
+    $sql = "delete from pet_". PREFIX ."_config where module = 'luong' and name = 'tienchi' and id not in (". implode(', ', $danhsach) .")";
     $db->query($sql);
   }
 
@@ -853,7 +853,7 @@ function luumucchi() {
 function danhsachmucchi() {
   global $db, $data, $result;
 
-  $sql = "select id, value as loaichi, alt as tienchi from pet_phc_config where module = 'luong' and name = 'tienchi'";
+  $sql = "select id, value as loaichi, alt as tienchi from pet_". PREFIX ."_config where module = 'luong' and name = 'tienchi'";
   $danhsachmucchi = $db->all($sql);
 
   foreach ($danhsachmucchi as $key => $mucchi) {
@@ -866,7 +866,7 @@ function themtay() {
   global $data, $db;
 
   $thoigian = isodatetotime($data->thoigian);
-  $sql = "insert into pet_phc_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, 0, 0, $thoigian, 1)";
+  $sql = "insert into pet_". PREFIX ."_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, 0, 0, $thoigian, 1)";
   $id = $db->insertid($sql);
 
   foreach ($data->danhsach as $danhsach) {
@@ -882,7 +882,7 @@ function themtay() {
     $tongluong = str_replace(',', '', $danhsach->tongluong);
     $thucnhan = str_replace(',', '', $danhsach->thucnhan);
     
-    $sql = "insert into pet_phc_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($danhsach->userid, $id, $doanhthu, 0, $luong, 0, $luongthuong, $thuong, $phucap, 0, 0, 0, $nghiphep, $tietkiem, 0, 0, $cophan, $tongluong, $thucnhan)";
+    $sql = "insert into pet_". PREFIX ."_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($danhsach->userid, $id, $doanhthu, 0, $luong, 0, $luongthuong, $thuong, $phucap, 0, 0, 0, $nghiphep, $tietkiem, 0, 0, $cophan, $tongluong, $thucnhan)";
     $db->query($sql);
   }
 
@@ -894,7 +894,7 @@ function themtay() {
 function sosanh() {
   global $data, $db;
 
-  $sql = "select b.userid, b.fullname as tennhanvien from pet_phc_luong_nhanvien a inner join pet_phc_users b on a.userid = b.userid order by a.userid";
+  $sql = "select b.userid, b.fullname as tennhanvien from pet_". PREFIX ."_luong_nhanvien a inner join pet_". PREFIX ."_users b on a.userid = b.userid order by a.userid";
   $danhsachnhanvien = $db->all($sql);
 
   $thoigian = isodatetotime($data->thoigian);
@@ -918,7 +918,7 @@ function sosanh() {
       $danhsachnhanvien[$thutu]['danhsach']['luongphucap'][$i] = 0;
     }
 
-    $sql = "select a.thoigian, b.* from pet_phc_luong a inner join pet_phc_luong_tra b on a.id = b.luongid where b.userid = $nhanvien[userid] and (a.thoigian between $tungay and $denngay) order by id desc";
+    $sql = "select a.thoigian, b.* from pet_". PREFIX ."_luong a inner join pet_". PREFIX ."_luong_tra b on a.id = b.luongid where b.userid = $nhanvien[userid] and (a.thoigian between $tungay and $denngay) order by id desc";
     $danhsachluong = $db->all($sql);
 
     foreach ($danhsachluong as $luong) {

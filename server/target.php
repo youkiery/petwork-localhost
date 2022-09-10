@@ -11,13 +11,13 @@ function init() {
 function insert() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_target where name = '$data->name' and module = '$data->module'";
+  $sql = "select * from pet_". PREFIX ."_target where name = '$data->name' and module = '$data->module'";
   if (empty($row = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_target (name, number, active, unit, intro, flag, up, down, disease, aim, module) values('$data->name', 0, 1, '$data->unit', '$data->intro', '$data->flag', '$data->up', '$data->down', '$data->disease', '$data->aim', '$data->module')";
+    $sql = "insert into pet_". PREFIX ."_target (name, number, active, unit, intro, flag, up, down, disease, aim, module) values('$data->name', 0, 1, '$data->unit', '$data->intro', '$data->flag', '$data->up', '$data->down', '$data->disease', '$data->aim', '$data->module')";
     $query = $db->query($sql);
   }
   else {
-    // $sql = "update pet_phc_target set name = '$data->name', active = 1, unit = '$data->unit', intro = '$data->intro', flag = '$data->flag', up = '$data->up', down = '$data->down', disease = '$data->disease', aim = '$data->aim' where id = $row->id";
+    // $sql = "update pet_". PREFIX ."_target set name = '$data->name', active = 1, unit = '$data->unit', intro = '$data->intro', flag = '$data->flag', up = '$data->up', down = '$data->down', disease = '$data->disease', aim = '$data->aim' where id = $row->id";
     $result['messenger'] = 'Chỉ tiêu đã tồn tại';
   }
 
@@ -30,7 +30,7 @@ function insert() {
 function remove() {
   global $data, $db, $result;
       
-  $sql = 'update pet_phc_target set active = 0 where id = '. $data->id;
+  $sql = "update pet_". PREFIX ."_target set active = 0 where id = $data->id";
   $query = $db->query($sql);
   $result['status'] = 1;
   $result['list'] = getlist();
@@ -41,7 +41,7 @@ function remove() {
 function res() {
   global $data, $db, $result;
 
-  $sql = 'update pet_phc_target set number = 0 where id = '. $data->id;
+  $sql = "update pet_". PREFIX ."_target set number = 0 where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
 
@@ -60,7 +60,7 @@ function search() {
 function updateinfo() {
   global $data, $db, $result;
       
-  $sql = "update pet_phc_target set name = '$data->name', intro = '$data->intro', unit = '$data->unit', flag = '$data->flag', up = '$data->up', down = '$data->down', disease = '$data->disease', aim = '$data->aim' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_target set name = '$data->name', intro = '$data->intro', unit = '$data->unit', flag = '$data->flag', up = '$data->up', down = '$data->down', disease = '$data->disease', aim = '$data->aim' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -72,7 +72,7 @@ function updateinfo() {
 function update() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_target set number = number + 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_target set number = number + 1 where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
 
@@ -81,6 +81,6 @@ function update() {
 
 function getlist() {
   global $db, $data;
-  $sql = "select * from pet_phc_target where active = 1 and module = '$data->module' and name like '%$data->key%' order by id asc ";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = '$data->module' and name like '%$data->key%' order by id asc ";
   return $db->all($sql);
 }

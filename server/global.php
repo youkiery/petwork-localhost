@@ -2,7 +2,7 @@
 function checkuserid() {
   global $db, $data;
 
-  $sql = "select * from pet_phc_session where session = '$data->session'";
+  $sql = "select * from pet_". PREFIX ."_session where session = '$data->session'";
   $user = $db->fetch($sql);
   return $user['userid'];
 }
@@ -31,14 +31,14 @@ function purenumber($number) {
 function getcustomer($id) {
   global $db;
 
-  $sql = "select id, name, phone from pet_phc_customer where id = $id";
+  $sql = "select id, name, phone from pet_". PREFIX ."_customer where id = $id";
   return $db->fetch($sql);
 }
 
 function checkUserById($userid) {
   global $db;
 
-  $sql = "select * from pet_phc_users where userid = $userid";
+  $sql = "select * from pet_". PREFIX ."_users where userid = $userid";
   return $db->fetch($sql);
 }
 

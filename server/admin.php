@@ -16,7 +16,7 @@ function auto() {
 function getform() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_form where name = '$data->form'";
+  $sql = "select * from pet_". PREFIX ."_form where name = '$data->form'";
   $form = $db->fetch($sql);
   if (empty($form['value'])) $form['value'] = '';
   $result['status'] = 1;
@@ -27,9 +27,9 @@ function getform() {
 function reduce() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_vaccine set status = 4 where calltime < $data->date and status < 3";
+  $sql = "update pet_". PREFIX ."_vaccine set status = 4 where calltime < $data->date and status < 3";
   $db->query($sql);
-  $sql = "update pet_phc_usg set status = 8 where calltime < $data->date and status < 7";
+  $sql = "update pet_". PREFIX ."_usg set status = 8 where calltime < $data->date and status < 7";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -39,11 +39,11 @@ function reduce() {
 function configform() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_form where name = '$data->form'";
+  $sql = "select * from pet_". PREFIX ."_form where name = '$data->form'";
   $form = $db->fetch($sql);
 
-  if (empty($form)) $sql = "insert into pet_phc_form (name, value) values('$data->form', '$data->html')";
-  else $sql = "update pet_phc_form set value = '$data->html' where id = $form[id]";
+  if (empty($form)) $sql = "insert into pet_". PREFIX ."_form (name, value) values('$data->form', '$data->html')";
+  else $sql = "update pet_". PREFIX ."_form set value = '$data->html' where id = $form[id]";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -55,9 +55,9 @@ function config() {
   global $db, $data, $result;
 
   foreach ($data->config as $name => $value) {
-    $sql = "select * from pet_phc_config where module = 'site' and name = '$name'";
-    if (empty($r = $db->fetch($sql))) $sql = "insert into pet_phc_config (module, name, value, alt) values ('site', '$name', '$value', 0)";
-    else $sql = "update pet_phc_config set value = '$value' where id = $r[id]";
+    $sql = "select * from pet_". PREFIX ."_config where module = 'site' and name = '$name'";
+    if (empty($r = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values ('site', '$name', '$value', 0)";
+    else $sql = "update pet_". PREFIX ."_config set value = '$value' where id = $r[id]";
     $db->query($sql);
   }
 
@@ -71,17 +71,17 @@ function recycle() {
 
   // foreach data->option
   // lấy danh sách data->doctor + db(user not in doctor), chuyển cho danh sách db(doctor - data->doctor)
-  $sql = "select userid from pet_phc_users where userid not in (select userid from pet_phc_user_per where module = 'doctor' and type = 1)";
+  $sql = "select userid from pet_". PREFIX ."_users where userid not in (select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1)";
   $doctor = array_merge($data->doctor, $db->arr($sql, 'userid'));
-  $sql = "select userid from pet_phc_user_per where module = 'doctor' and type = 1 and userid not in (". implode(',', $data->doctor) .")";
+  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid not in (". implode(',', $data->doctor) .")";
   $target = $db->arr($sql, 'userid');
 
     if (!empty($data->userid)) {
-      $sql = "update pet_phc_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
+      $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
       $db->query($sql);
     }
     else {
-      $sql = "select a.id, b.fullname as name from pet_phc_vaccine a inner join pet_phc_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
+      $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
       $list = $db->all($sql);
 
       $l = count($list);
@@ -91,21 +91,21 @@ function recycle() {
       $c = 0;
       for ($i = 0; $i < $l; $i++) { 
         if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-        $sql = "update pet_phc_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
+        $sql = "update pet_". PREFIX ."_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
         $db->query($sql);
       }
     }
 
   $t = time() - 60 * 60 * 24 * 90; 
-  $sql = "update pet_phc_vaccine status = 4 where status < 3 and calltime < $t"; // đã trôi qua 3 tháng không nhắc nữa
+  $sql = "update pet_". PREFIX ."_vaccine status = 4 where status < 3 and calltime < $t"; // đã trôi qua 3 tháng không nhắc nữa
   $db->query($sql);
 
   if (!empty($data->userid)) {
-    $sql = "update pet_phc_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
+    $sql = "update pet_". PREFIX ."_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
     $db->query($sql);
   }
   else {
-    $sql = "select a.id, b.fullname as name from pet_phc_usg a inner join pet_phc_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
     $list = $db->all($sql);
     $l = count($list);
     $d = count($target);
@@ -113,17 +113,17 @@ function recycle() {
     $c = 0;
     for ($i = 0; $i < $l; $i++) { 
       if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_phc_usg set userid = $target[$c] where id = ". $list[$i]['id'];
+      $sql = "update pet_". PREFIX ."_usg set userid = $target[$c] where id = ". $list[$i]['id'];
       $db->query($sql);
     }
   }
   
   if (!empty($data->userid)) {
-    $sql = "update pet_phc_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
+    $sql = "update pet_". PREFIX ."_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
     $db->query($sql);
   }
   else {
-    $sql = "select a.id, b.fullname as name from pet_phc_xray a inner join pet_phc_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
     $list = $db->all($sql);
     $l = count($list);
     $d = count($target);
@@ -131,7 +131,7 @@ function recycle() {
     $c = 0;
     for ($i = 0; $i < $l; $i++) { 
       if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_phc_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
+      $sql = "update pet_". PREFIX ."_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
       $db->query($sql);
     }
   }
@@ -143,9 +143,9 @@ function recycle() {
 function vaccine() {
   global $db, $data, $result;
   
-  $sql = "select * from pet_phc_config where name = 'vaccine-comma'";
+  $sql = "select * from pet_". PREFIX ."_config where name = 'vaccine-comma'";
   if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_config (module, name, value) values ('vaccine', 'vaccine-comma', ';')";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values ('vaccine', 'vaccine-comma', ';')";
     $db->query($sql);
     $c['value'] = '-';
   }
@@ -158,7 +158,7 @@ function vaccine() {
 function savevaccine() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_config set value = '$data->comma' where name = 'vaccine-comma'";
+  $sql = "update pet_". PREFIX ."_config set value = '$data->comma' where name = 'vaccine-comma'";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -167,7 +167,7 @@ function savevaccine() {
 
 function spa() {
   global $db, $data, $result;
-  $sql = "select id, name, value, alt from pet_phc_config where module = 'spa' order by value asc";
+  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
   $result['status'] = 1;
   $result['list'] = $db->all($sql);
   return $result;
@@ -175,7 +175,7 @@ function spa() {
 
 function type() {
   global $db, $data, $result;
-  $sql = "select * from pet_phc_type where active = 1";
+  $sql = "select * from pet_". PREFIX ."_type where active = 1";
   $result['status'] = 1;
   $result['list'] = $db->all($sql);
   return $result;
@@ -183,7 +183,7 @@ function type() {
 
 function usg() {
   global $db, $data, $result;
-  $sql = "select id, name from pet_phc_config where module = 'usg'";
+  $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
   $result['status'] = 1;
   $result['list'] = $db->all($sql);
   return $result;
@@ -200,13 +200,13 @@ function filter() {
 function toggle() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_user_per where userid = $data->userid and module = '$data->per'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = '$data->per'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_phc_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
+    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_phc_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
@@ -220,14 +220,14 @@ function change() {
   global $db, $data, $result;
 
   $reversal = array(0 => 1, 2, 0);
-  $sql = "select * from pet_phc_user_per where userid = $data->userid and module = '$data->per'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = '$data->per'";
   if (empty($p = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
+    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
     $db->query($sql);
   }
   else {
     $rev = $reversal[$p['type']];
-    $sql = "update pet_phc_user_per set type = $rev where id = $p[id]";
+    $sql = "update pet_". PREFIX ."_user_per set type = $rev where id = $p[id]";
     $db->query($sql);
   }
 
@@ -240,13 +240,13 @@ function change() {
 function manager() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_user_per where userid = $data->userid and module = 'manager'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = 'manager'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_phc_user_per (userid, module, type) values ($data->userid, 'manager', 1)";
+    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, 'manager', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_phc_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
@@ -259,13 +259,13 @@ function manager() {
 function admin() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_user_per where userid = $data->userid and module = 'admin'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = 'admin'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_phc_user_per (userid, module, type) values ($data->userid, 'admin', 1)";
+    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, 'admin', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_phc_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
@@ -278,7 +278,7 @@ function admin() {
 function insert() {
   global $db, $data, $result;
 
-  $sql = "update pet_phc_users set active = 1 where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set active = 1 where userid = $data->userid";
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = filterUser();
@@ -291,18 +291,18 @@ function insert() {
 function update() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_users set fullname = '$data->fullname', name = '$data->fullname' where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set fullname = '$data->fullname', name = '$data->fullname' where userid = $data->userid";
   $db->query($sql);
 
   foreach ($data->module as $name => $value) {
-    $sql = "select * from pet_phc_user_per where module = '$name' and userid = $data->userid";
+    $sql = "select * from pet_". PREFIX ."_user_per where module = '$name' and userid = $data->userid";
     $userinfo = $db->fetch($sql);
   
     if (empty($userinfo)) {
-      $sql = "insert into pet_phc_user_per (userid, module, type) values ($data->userid, '$name', '$value')";
+      $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$name', '$value')";
     }
     else {
-      $sql = "update pet_phc_user_per set type = '$value' where module = '$name' and userid = $data->userid";
+      $sql = "update pet_". PREFIX ."_user_per set type = '$value' where module = '$name' and userid = $data->userid";
     }
     $db->query($sql);
   }
@@ -316,16 +316,16 @@ function update() {
 function remove() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_users set active = 0 where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set active = 0 where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_user_per where userid = $data->userid";
+  $sql = "delete from pet_". PREFIX ."_user_per where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_session where userid = $data->userid";
+  $sql = "delete from pet_". PREFIX ."_session where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_phc_row where user_id = $data->userid";
+  $sql = "delete from pet_". PREFIX ."_row where user_id = $data->userid";
   $db->query($sql);
     
   $result['status'] = 1;
@@ -359,15 +359,15 @@ function getList() {
     'work' => 0,
   );
 
-  $sql = 'select name, username, fullname, userid, placeid from pet_phc_users where active = 1';
+  $sql = "select name, username, fullname, userid, placeid from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
-    $sql = "select * from pet_phc_config where id = $row[placeid]";
+    $sql = "select * from pet_". PREFIX ."_config where id = $row[placeid]";
     if (empty($place = $db->fetch($sql))) $place = array('name' => 'Chưa chọn');
     $list[$index]['place'] = $place['name'];
 
-    $sql = 'select * from pet_phc_user_per where userid = '. $row['userid'];
+    $sql = "select * from pet_". PREFIX ."_user_per where userid = $row[userid]";
     $query = $db->query($sql);
     $temp = $module;
     while ($info = $query->fetch_assoc()) {
@@ -381,7 +381,7 @@ function getList() {
 function getPer() {
   global $db;
 
-  $sql = "select name, 0 as per from pet_phc_config where module = 'setting'";
+  $sql = "select name, 0 as per from pet_". PREFIX ."_config where module = 'setting'";
   $c = $db->obj($sql, 'name', 'per');
   return $c;
 }
@@ -390,17 +390,17 @@ function getConfig() {
   global $db;
   
   $userid = checkuserid();
-  $sql = 'select * from pet_phc_user_per where userid = '. $userid;
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid";
   return $db->obj($sql, 'module', 'type');
 }
 
 function filterUser() {
   global $db, $data;
   
-  $sql = 'select userid from pet_phc_users';
+  $sql = "select userid from pet_". PREFIX ."_users";
   $list = $db->obj($sql, 'userid', 'userid');
   
-  $sql = "select userid, fullname, username from pet_phc_users where active = 0 and (username like '%$data->key%' or fullname like '%$data->key%')";
+  $sql = "select userid, fullname, username from pet_". PREFIX ."_users where active = 0 and (username like '%$data->key%' or fullname like '%$data->key%')";
 
   return $db->all($sql);
 }
@@ -414,11 +414,11 @@ function signup() {
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 
-  $sql = 'select userid, password from `pet_phc_users` where LOWER(username) = "'. $username .'"';
+  $sql = "select userid, password from `pet_". PREFIX ."_users` where LOWER(username) = '$username'";
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_phc_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -436,7 +436,7 @@ function updateuser() {
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
   
-  $sql = "update pet_phc_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
@@ -449,7 +449,7 @@ function customercell() {
   global $db, $result;
 
   $arr = array('name' => 'A2', 'phone' => 'B2', 'address' => 'C2');
-  $sql = "select * from pet_phc_config where module = 'customer-config'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'customer-config'";
   $c = $db->obj($sql, 'name', 'value');
   foreach ($arr as $key => $value) {
     if (!empty($c[$key])) $arr[$key] = $c[$key];
@@ -463,9 +463,9 @@ function customersave() {
   global $db, $data, $result;
 
   foreach ($data as $key => $value) {
-    $sql = "select * from pet_phc_config where name = '$key' and module = 'customer-config'";
-    if (!empty($d = $db->fetch($sql))) $sql = "update pet_phc_config set value = '$value' where name = '$key' and module = 'customer-config'";
-    else $sql = "insert into pet_phc_config (module, name, value, alt) values('customer-config', '$key', '$value', 0)";
+    $sql = "select * from pet_". PREFIX ."_config where name = '$key' and module = 'customer-config'";
+    if (!empty($d = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_config set value = '$value' where name = '$key' and module = 'customer-config'";
+    else $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('customer-config', '$key', '$value', 0)";
     $db->query($sql);
   }
   $result['status'] = 1;
@@ -502,9 +502,9 @@ function customer() {
       'address' => $sheet->getCell($address . $j)->getValue(),
     );
     if (!empty($x['phone'])) {
-      $sql = "select * from pet_phc_customer where phone = '$x[phone]'";
-      if (!empty($c = $db->fetch($sql))) $sql = "update pet_phc_customer set name = '$x[name]', address = '$x[address]' where id = $c[id]";
-      else $sql = "insert into pet_phc_customer (name, phone, address) values('$x[name]', '$x[phone]', '$x[address]')";
+      $sql = "select * from pet_". PREFIX ."_customer where phone = '$x[phone]'";
+      if (!empty($c = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_customer set name = '$x[name]', address = '$x[address]' where id = $c[id]";
+      else $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$x[name]', '$x[phone]', '$x[address]')";
       $db->query($sql);
     }
   }
@@ -525,7 +525,7 @@ function placeinit() {
 function placelist() {
   global $db, $result, $data;
 
-  $sql = "select id, name from pet_phc_config where module = 'place' and alt = 1";
+  $sql = "select id, name from pet_". PREFIX ."_config where module = 'place' and alt = 1";
   $list = $db->all($sql);
   return $list;
 }
@@ -533,7 +533,7 @@ function placelist() {
 function placeremove() {
   global $db, $result, $data;
 
-  $sql = "update pet_phc_config where set alt = 0 where id = $data->placeid";
+  $sql = "update pet_". PREFIX ."_config where set alt = 0 where id = $data->placeid";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -544,10 +544,10 @@ function placeremove() {
 function placeupdate() {
   global $db, $result, $data;
 
-  $sql = "update pet_phc_config set name = '$data->name' where id = $data->placeid";
+  $sql = "update pet_". PREFIX ."_config set name = '$data->name' where id = $data->placeid";
   $db->query($sql);
 
-  $sql = "update pet_phc_users set placeid = $data->placeid where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set placeid = $data->placeid where userid = $data->userid";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -559,10 +559,10 @@ function placeupdate() {
 function placeinsert() {
   global $db, $result, $data;
 
-  $sql = "insert into pet_phc_config (module, name, value, alt) values('place', '$data->name', '', 1)";
+  $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('place', '$data->name', '', 1)";
   $id = $db->insertid($sql);
 
-  $sql = "update pet_phc_users set placeid = $id where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set placeid = $id where userid = $data->userid";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -574,7 +574,7 @@ function placeinsert() {
 function placeselect() {
   global $db, $result, $data;
 
-  $sql = "update pet_phc_users set placeid = $data->placeid where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set placeid = $data->placeid where userid = $data->userid";
   $db->query($sql);
 
   $result['status'] = 1;

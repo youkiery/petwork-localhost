@@ -10,10 +10,10 @@ include_once('db.php');
 
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
-$sql = "select a.id, c.id as customerid from pet_phc_vaccine a inner join pet_phc_pet b on a.petid = b.id inner join pet_phc_customer c on b.customerid = c.id";
+$sql = "select a.id, c.id as customerid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id";
 $list = $db->all($sql);
 foreach ($list as $row) {
-  $sql = "update pet_phc_vaccine set customerid = $row[customerid] where id = $row[id]";
+  $sql = "update pet_". PREFIX ."_vaccine set customerid = $row[customerid] where id = $row[id]";
   $db->query($sql);
 }
 */
@@ -37,6 +37,7 @@ else {
   include_once('db.php');
   include_once('global.php');
   include_once(ROOTDIR. "/$data->type.php");
+  define('PREFIX', $config['prefix']);
 
   $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
   $allow = array('session', 'login', 'signip');
@@ -50,9 +51,9 @@ else {
     // }
   }
 
-  $sql = "select * from pet_phc_config where module = 'version'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'version'";
   if (empty($v = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_config (module, name, value) values('version', '$data->version', '')";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('version', '$data->version', '')";
     $db->query($sql);
     $v = array('name' => $data->version);
   }

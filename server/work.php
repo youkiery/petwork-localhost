@@ -23,12 +23,12 @@ function danhsachlaplai() {
 
   // lấy danh sách công việc lặp lại do người dùng tạo
   $userid = checkuserid();
-  $sql = "select a.*, b.type, b.time as rtime, b.list from pet_phc_work a inner join pet_phc_work_repeat b on a.id = b.workid and a.userid = $userid order by id desc";
+  $sql = "select a.*, b.type, b.time as rtime, b.list from pet_". PREFIX ."_work a inner join pet_". PREFIX ."_work_repeat b on a.id = b.workid and a.userid = $userid order by id desc";
   $danhsachcongviec = $db->all($sql);
   $time = time();
 
   foreach ($danhsachcongviec as $thutu => $congviec) {
-    $sql = "select a.userid, b.fullname from pet_phc_work_follow a inner join pet_phc_users b on a.userid = b.userid where a.workid = $congviec[id]";
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
     $danhsachcongviec[$thutu]['follow'] = $db->obj($sql, 'userid', 'fullname');
     $danhsachcongviec[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
 
@@ -39,7 +39,7 @@ function danhsachlaplai() {
     $danhsachcongviec[$thutu]['expire'] = 0;
     $danhmuc = '';
     if ($congviec['departid'] > 0) {
-      $sql = "select * from pet_phc_work_depart where id = $congviec[departid]";
+      $sql = "select * from pet_". PREFIX ."_work_depart where id = $congviec[departid]";
       if (!empty($depart = $db->fetch($sql))) $danhmuc = $depart['name'];
     }
 
@@ -58,7 +58,7 @@ function danhsachlaplai() {
 function xoa() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_work where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -70,7 +70,7 @@ function xoa() {
 function xoalaplai() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_work_repeat where workid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_repeat where workid = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -82,7 +82,7 @@ function xoalaplai() {
 function danhsachnhanvien() {
   global $db, $data;
 
-  $sql = "select userid, fullname from pet_phc_users where active = 1";
+  $sql = "select userid, fullname from pet_". PREFIX ."_users where active = 1";
   return $db->all($sql);
 }
 
@@ -99,36 +99,36 @@ function themcongviec() {
   if (empty($expiretime)) $expiretime = 0;
 
   if (empty($data->id)) {
-    $sql = "insert into pet_phc_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($userid, $data->departid, '$data->title', '$data->content', '$file', $time, $createtime, $expiretime, $time, 0)";
+    $sql = "insert into pet_". PREFIX ."_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($userid, $data->departid, '$data->title', '$data->content', '$file', $time, $createtime, $expiretime, $time, 0)";
     $data->id = $db->insertid($sql);
   }
   else {
-    $sql = "update pet_phc_work set departid = $data->departid, title = '$data->title', content = '$data->content', file = '$file', time = $time, createtime = $createtime, expiretime = $expiretime where id = $data->id";
+    $sql = "update pet_". PREFIX ."_work set departid = $data->departid, title = '$data->title', content = '$data->content', file = '$file', time = $time, createtime = $createtime, expiretime = $expiretime where id = $data->id";
     $db->query($sql);
   }
 
-  $sql = "delete from pet_phc_work_follow where workid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_follow where workid = $data->id";
   $db->query($sql);
-  $sql = "delete from pet_phc_work_assign where workid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_assign where workid = $data->id";
   $db->query($sql);
-  $sql = "delete from pet_phc_work_repeat where workid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_repeat where workid = $data->id";
   $db->query($sql);
 
   foreach ($data->follow->list as $nhanvien) {
     if ($nhanvien->value == 'true') {
-      $sql = "insert into pet_phc_work_follow (workid, userid) values($data->id, $nhanvien->userid)";
+      $sql = "insert into pet_". PREFIX ."_work_follow (workid, userid) values($data->id, $nhanvien->userid)";
       $db->query($sql);
     } 
   }
   foreach ($data->assign->list as $nhanvien) {
     if ($nhanvien->value == 'true') {
-      $sql = "insert into pet_phc_work_assign (workid, userid) values($data->id, $nhanvien->userid)";
+      $sql = "insert into pet_". PREFIX ."_work_assign (workid, userid) values($data->id, $nhanvien->userid)";
       $db->query($sql);
     } 
   }
 
   // repeat
-  $sql = "delete from pet_phc_work_repeat where workid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_repeat where workid = $data->id";
   $db->query($sql);
 
   if (isset($repeat)) {
@@ -138,7 +138,7 @@ function themcongviec() {
       if (empty($repeat->time)) $repeat->time = 0;
       $list = array();
       $repeat->list = implode(',', $repeat->list);
-      $sql = "insert into pet_phc_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
+      $sql = "insert into pet_". PREFIX ."_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
       $db->query($sql);
     }
   }
@@ -156,20 +156,20 @@ function themnhanvien() {
   else $parent = 0;
 
   if (!isset($data->id)) {
-    $sql = "insert into pet_phc_work_depart (name, parentid) values('$data->name', $parent)";
+    $sql = "insert into pet_". PREFIX ."_work_depart (name, parentid) values('$data->name', $parent)";
     $data->id = $db->insertid($sql);
   }
   else {
-    $sql = "update pet_phc_work_depart set name = '$data->name' where id = $data->id";
+    $sql = "update pet_". PREFIX ."_work_depart set name = '$data->name' where id = $data->id";
     $db->query($sql);
   }
 
-  $sql = "delete from pet_phc_work_depart_user where departid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_work_depart_user where departid = $data->id";
   $db->query($sql);
 
   foreach ($data->list as $nhanvien) {
     if ($nhanvien->value == 'true') {
-      $sql = "insert into pet_phc_work_depart_user (departid, userid) values($data->id, $nhanvien->userid)";
+      $sql = "insert into pet_". PREFIX ."_work_depart_user (departid, userid) values($data->id, $nhanvien->userid)";
       $db->query($sql);
     } 
   }
@@ -199,7 +199,7 @@ function danhmuc() {
 function xoadanhmuc() {
   global $db, $data, $result;
   
-  $sql = "update pet_phc_work_depart set active = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_work_depart set active = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -210,22 +210,22 @@ function xoadanhmuc() {
 function danhsachdanhmuc() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_work_depart where active = 1 and parentid = 0 order by name asc";
+  $sql = "select * from pet_". PREFIX ."_work_depart where active = 1 and parentid = 0 order by name asc";
   $danhsach = $db->all($sql);
   $list = array();
 
   foreach ($danhsach as $thutu => $danhmuc) {
-    $sql = "select a.userid, b.fullname from pet_phc_work_depart_user a inner join pet_phc_users b on a.userid = b.userid where a.departid = $danhmuc[id]";
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_depart_user a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.departid = $danhmuc[id]";
     $danhsach[$thutu]['list'] = $db->obj($sql, 'userid', 'fullname');
     $danhsach[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
-    $sql = "select * from pet_phc_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
+    $sql = "select * from pet_". PREFIX ."_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
 
     $child = $db->all($sql);
     if (count($child)) {
       $danhsach[$thutu]['child'] = $child;
 
       foreach ($danhsach[$thutu]['child'] as $thutuchild => $c) {
-        $sql = "select a.userid, b.fullname from pet_phc_work_depart_user a inner join pet_phc_users b on a.userid = b.userid where a.departid = $c[id]";
+        $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_depart_user a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.departid = $c[id]";
         $danhsach[$thutu]['child'][$thutuchild]['list'] = $db->obj($sql, 'userid', 'fullname');
         $danhsach[$thutu]['child'][$thutuchild]['text'] = implode(', ', $db->arr($sql, 'fullname'));
       }
@@ -252,7 +252,7 @@ function danhsachcongviec() {
   $xtra = array();
   if (!empty($filter->tukhoa)) $xtra []= "(title like '%$filter->tukhoa%' or content like '%$filter->tukhoa%')";
   if (!empty($filter->danhmuc)) {
-    $sql = "select * from pet_phc_work_depart where parentid = $filter->danhmuc";
+    $sql = "select * from pet_". PREFIX ."_work_depart where parentid = $filter->danhmuc";
     $danhmuc = $db->arr($sql, 'id');
     $xtra []= "(departid = $filter->danhmuc". (count($danhmuc) ? ' or departid in (' .implode(', ', $danhmuc). ')' : '') . ")";
   }
@@ -283,16 +283,16 @@ function danhsachcongviec() {
   switch ($data->chedo) {
     case '0':
       // công việc, lấy userid = userid, depart in (user depart), workid in assign
-      $sql = "select a.id from pet_phc_work_depart a inner join pet_phc_work_depart_user b on a.id = b.departid where b.userid = $userid";
+      $sql = "select a.id from pet_". PREFIX ."_work_depart a inner join pet_". PREFIX ."_work_depart_user b on a.id = b.departid where b.userid = $userid";
       $chuyenmuc = $db->arr($sql, 'id');
       if (count($chuyenmuc)) $xtra2 = 'or departid in ('. implode(', ', $chuyenmuc) .')';
       else $xtra2 = '';
-      $sql = "select * from pet_phc_work where ((userid = $userid $xtra2) or id in (select workid as id from pet_phc_work_assign where userid = $userid)) $xtra order by time desc, updatetime desc limit 50";
+      $sql = "select * from pet_". PREFIX ."_work where ((userid = $userid $xtra2) or id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid)) $xtra order by time desc, updatetime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
     case '1':
       // workin in follow
-      $sql = "select * from pet_phc_work where id in (select workid as id from pet_phc_work_follow where userid = $userid) $xtra order by time desc, updatetime desc limit 50";
+      $sql = "select * from pet_". PREFIX ."_work where id in (select workid as id from pet_". PREFIX ."_work_follow where userid = $userid) $xtra order by time desc, updatetime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
   }
@@ -301,7 +301,7 @@ function danhsachcongviec() {
   // tìm trong follow
 
   foreach ($danhsachcongviec as $thutu => $congviec) {
-    $sql = "select a.userid, b.fullname from pet_phc_work_follow a inner join pet_phc_users b on a.userid = b.userid where a.workid = $congviec[id]";
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
     $danhsachcongviec[$thutu]['follow'] = $db->obj($sql, 'userid', 'fullname');
     $danhsachcongviec[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
 
@@ -312,11 +312,11 @@ function danhsachcongviec() {
     $danhsachcongviec[$thutu]['expire'] = 0;
     $danhmuc = '';
     if ($congviec['departid'] > 0) {
-      $sql = "select * from pet_phc_work_depart where id = $congviec[departid]";
+      $sql = "select * from pet_". PREFIX ."_work_depart where id = $congviec[departid]";
       if (!empty($depart = $db->fetch($sql))) {
         $danhmuc = $depart['name'];        
         if ($depart['parentid']) {
-          $sql = "select * from pet_phc_work_depart where id = $depart[parentid]";
+          $sql = "select * from pet_". PREFIX ."_work_depart where id = $depart[parentid]";
           if (!empty($depart = $db->fetch($sql))) {
             $danhmuc = $depart['name'] .'/'. $danhmuc;
           }
@@ -357,7 +357,7 @@ function chuyentrangthai() {
   $utime = time();
   if ($status == 2) $time = 0;
   else $time = time();
-  $sql = "update pet_phc_work set status = $status, updatetime = $utime, time = $time where id = $data->id";
+  $sql = "update pet_". PREFIX ."_work set status = $status, updatetime = $utime, time = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -369,13 +369,13 @@ function chuyentrangthai() {
 function laythongtin() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_phc_work where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_work where id = $data->id";
   $congviec = $db->fetch($sql);
 
-  $sql = "select * from pet_phc_users where active = 1";
+  $sql = "select * from pet_". PREFIX ."_users where active = 1";
   $nhanvien = $db->obj($sql, 'userid');
 
-  $sql = "select * from pet_phc_work_follow where workid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_work_follow where workid = $data->id";
   $theodoi = $db->all($sql);
   $follow = array('text' => array(), 'list' => array());
   foreach ($theodoi as $dulieu) {
@@ -393,7 +393,7 @@ function laythongtin() {
     );
   }
 
-  $sql = "select * from pet_phc_work_assign where workid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_work_assign where workid = $data->id";
   $giaoviec = $db->all($sql);
   $assign = array('text' => array(), 'list' => array());
   foreach ($giaoviec as $dulieu) {
@@ -411,7 +411,7 @@ function laythongtin() {
     );
   }
 
-  $sql = "select * from pet_phc_work_repeat where workid = $data->id";
+  $sql = "select * from pet_". PREFIX ."_work_repeat where workid = $data->id";
   if (empty($laplai = $db->fetch($sql))) $repeat = array(
     'type' => '0',
     'time' => '',
@@ -456,7 +456,7 @@ function laybinhluan() {
 function xoabinhluan() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_phc_work_comment where id = $data->commentid";
+  $sql = "delete from pet_". PREFIX ."_work_comment where id = $data->commentid";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -471,7 +471,7 @@ function thongke() {
   $batdau = isodatetotime($data->batdau);
   $ketthuc = isodatetotime($data->ketthuc);
   $time = time();
-  $sql = "select userid, fullname as ten from pet_phc_users where active = 1 order by userid asc";
+  $sql = "select userid, fullname as ten from pet_". PREFIX ."_users where active = 1 order by userid asc";
   $danhsachnhanvien = $db->all($sql);
 
   foreach ($danhsachnhanvien as $key => $nhanvien) {
@@ -480,7 +480,7 @@ function thongke() {
     $danhsachnhanvien[$key]['conlai'] = 0;
     $danhsachnhanvien[$key]['hoanthanhquahan'] = 0;
     $danhsachnhanvien[$key]['conlaiquahan'] = 0;
-    $sql = "select * from pet_phc_work where ((createtime between $batdau and $ketthuc) or (createtime < $batdau and status = 0)) and userid = $nhanvien[userid]";
+    $sql = "select * from pet_". PREFIX ."_work where ((createtime between $batdau and $ketthuc) or (createtime < $batdau and status = 0)) and userid = $nhanvien[userid]";
     $danhsachcongviec = $db->all($sql);
     foreach ($danhsachcongviec as $congviec) {
       $danhsachnhanvien[$key]['tong'] ++;
@@ -511,8 +511,8 @@ function nhantin() {
 
   $userid = checkuserid();
   $time = time();
-  if (empty($data->commentid)) $sql = "insert into pet_phc_work_comment (workid, userid, comment, file, time) values($data->id  , $userid, '$data->chat', '$data->image', $time)";
-  else $sql = "update pet_phc_work_comment set comment = '$data->chat', file = '$data->image' where id = $data->commentid";
+  if (empty($data->commentid)) $sql = "insert into pet_". PREFIX ."_work_comment (workid, userid, comment, file, time) values($data->id  , $userid, '$data->chat', '$data->image', $time)";
+  else $sql = "update pet_". PREFIX ."_work_comment set comment = '$data->chat', file = '$data->image' where id = $data->commentid";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -523,7 +523,7 @@ function nhantin() {
 function danhsachbinhluan() {
   global $db, $data, $result;
 
-  $sql = "select a.*, b.fullname from pet_phc_work_comment a inner join pet_phc_users b on a.userid = b.userid where a.workid = $data->id order by time asc";
+  $sql = "select a.*, b.fullname from pet_". PREFIX ."_work_comment a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $data->id order by time asc";
   $danhsachbinhluan = $db->all($sql);
   foreach ($danhsachbinhluan as $key => $binhluan) {
     $danhsachbinhluan[$key]['time'] = date('d/m/Y h:i', $binhluan['time']);

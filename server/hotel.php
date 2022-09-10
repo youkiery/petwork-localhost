@@ -11,7 +11,7 @@ function init() {
 function getcatobj() {
   global $data, $db;
 
-  $sql = "select * from pet_phc_hotel_cat";
+  $sql = "select * from pet_". PREFIX ."_hotel_cat";
   return $db->obj($sql, 'id', 'price');
 }
 
@@ -25,12 +25,12 @@ function getlist() {
   $list = array(0 => array(), array());
   $xtra = array(0 => "", "and (cometime between $start and $end)");
   foreach ($list as $key => $row) {
-    $sql = "select a.*, b.name, b.phone, b.address from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id where status = $key $xtra[$key]";
+    $sql = "select a.*, b.name, b.phone, b.address from pet_". PREFIX ."_hotel a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where status = $key $xtra[$key]";
     $list[$key] = $db->all($sql);
 
     foreach ($list[$key] as $k => $r) {
       if ($r['status']) {
-        $sql = "select fullname from pet_phc_users where userid = $r[returnuserid]";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $r[returnuserid]";
         $u = $db->fetch($sql);
         $list[$key][$k]['fullname'] = $u['fullname'];
       }
@@ -57,7 +57,7 @@ function insert() {
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
   $time = time();
-  $sql = "insert into pet_phc_hotel (customerid, catid, health, cometime, calltime, returntime, image, returnimage, returnuserid, status) values($customerid, $data->catid, '$data->health', $cometime, $calltime, 0, '$image', '', 0, 0)";
+  $sql = "insert into pet_". PREFIX ."_hotel (customerid, catid, health, cometime, calltime, returntime, image, returnimage, returnuserid, status) values($customerid, $data->catid, '$data->health', $cometime, $calltime, 0, '$image', '', 0, 0)";
   $id = $db->insertid($sql);
 
   $result['status'] = 1;
@@ -72,7 +72,7 @@ function update() {
   $calltime = isodatetotime($data->calltime);
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
-  $sql = "update pet_phc_hotel set customerid = $customerid, health = '$data->health', cometime = '$cometime', calltime = '$calltime', image = '$image' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hotel set customerid = $customerid, health = '$data->health', cometime = '$cometime', calltime = '$calltime', image = '$image' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -86,7 +86,7 @@ function returning() {
   $returntime = isodatetotime($data->returntime) + 60 * 60 * 24 - 1;
   $customerid = checkcustomer();
   $returnimage = implode(',', $data->image);
-  $sql = "update pet_phc_hotel set customerid = $customerid, health = '$data->health', returntime = $returntime, returnimage = '$returnimage', returnuserid = '$data->returnuserid', status = 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hotel set customerid = $customerid, health = '$data->health', returntime = $returntime, returnimage = '$returnimage', returnuserid = '$data->returnuserid', status = 1 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -97,7 +97,7 @@ function returning() {
 function hopital() {
   global $data, $db, $result, $userid;
   
-  $sql = "update pet_phc_hotel set status = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hotel set status = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -108,7 +108,7 @@ function hopital() {
 function remove() {
   global $data, $db, $result, $userid;
   
-  $sql = "delete from pet_phc_hotel where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_hotel where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -121,7 +121,7 @@ function savecatlist() {
   
   foreach ($data->list as $row) {
     $price = str_replace(',', '', $row->price);
-    $sql = "update pet_phc_hotel_cat set name = '$row->name', price = '$price' where id = $row->id";
+    $sql = "update pet_". PREFIX ."_hotel_cat set name = '$row->name', price = '$price' where id = $row->id";
     $db->query($sql);
   }
 
@@ -134,7 +134,7 @@ function savecatlist() {
 function removecat() {
   global $data, $db, $result, $userid;
   
-  $sql = "update pet_phc_hotel_cat set active = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hotel_cat set active = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -147,7 +147,7 @@ function insertcat() {
   global $data, $db, $result, $userid;
   
   $price = str_replace(',', '', $data->price);
-  $sql = "insert into pet_phc_hotel_cat (name, price) values('$data->name', '$data->price')";
+  $sql = "insert into pet_". PREFIX ."_hotel_cat (name, price) values('$data->name', '$data->price')";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -159,7 +159,7 @@ function insertcat() {
 // function getinfo() {
 //   global $data, $db, $result, $userid;
   
-//   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_phc_hotel a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.userid = c.userid where a.id = $data->id";
+//   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_". PREFIX ."_hotel a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid where a.id = $data->id";
 //   $data = $db->fetch($sql);
 //   $data['time'] = date('d/m/Y', $data['time']);
 //   $data['image'] = explode(',', $data['image']);
@@ -181,7 +181,7 @@ function catlist() {
 function getcatlist() {
   global $db;
 
-  $sql = "select * from pet_phc_hotel_cat where active = 1 order by id asc";
+  $sql = "select * from pet_". PREFIX ."_hotel_cat where active = 1 order by id asc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -193,13 +193,13 @@ function getcatlist() {
 function checkcustomer() {
   global $db, $data;
 
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
     $customer['id'] = $db->insertid($sql);
   }
 

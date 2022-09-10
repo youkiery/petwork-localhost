@@ -11,8 +11,8 @@ function init() {
 function remove() {
   global $data, $db, $result;
 
-  if ($data->segment == '0') $sql = "delete from pet_phc_ride where id = $data->id";
-  else $sql = "delete from pet_phc_import where id = $data->id";
+  if ($data->segment == '0') $sql = "delete from pet_". PREFIX ."_ride where id = $data->id";
+  else $sql = "delete from pet_". PREFIX ."_import where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -26,10 +26,10 @@ function cole() {
   $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
-  $sql = "insert into pet_phc_ride (userid, clockf, clocke, money, destination, note, time) values($userid, $data->clockf, $data->clocke, $money, '$data->destination', '$data->note', $time)";
+  $sql = "insert into pet_". PREFIX ."_ride (userid, clockf, clocke, money, destination, note, time) values($userid, $data->clockf, $data->clocke, $money, '$data->destination', '$data->note', $time)";
   $db->query($sql);
 
-  $sql = "update pet_phc_config set name = '$data->clocke' where module = 'clock'";
+  $sql = "update pet_". PREFIX ."_config set name = '$data->clocke' where module = 'clock'";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -43,7 +43,7 @@ function pay() {
   $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
-  $sql = "insert into pet_phc_import (userid, price, module, note, time) values($userid, $money, 'ride', '$data->note', $time)";
+  $sql = "insert into pet_". PREFIX ."_import (userid, price, module, note, time) values($userid, $money, 'ride', '$data->note', $time)";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -54,9 +54,9 @@ function pay() {
 function getclock() {
   global $db, $data;
 
-  $sql = "select * from pet_phc_config where module = 'clock'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'clock'";
   if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_phc_config (module, name, value) values ('clock', '0','')";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values ('clock', '0','')";
     $db->query($sql);
     return 0;
   }
@@ -68,8 +68,8 @@ function getlist($today = false) {
 
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end);
-  $ride = "select a.*, b.fullname as user from pet_phc_ride a inner join pet_phc_users b on a.userid = b.userid where (a.time between $data->start and $data->end)";
-  $pay = "select a.*, b.fullname as user from pet_phc_import a inner join pet_phc_users b on a.userid = b.userid where a.module = 'ride' and (a.time between $data->start and $data->end)";
+  $ride = "select a.*, b.fullname as user from pet_". PREFIX ."_ride a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.time between $data->start and $data->end)";
+  $pay = "select a.*, b.fullname as user from pet_". PREFIX ."_import a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'ride' and (a.time between $data->start and $data->end)";
 
   return array(
     0 => $db->all($ride),
@@ -84,13 +84,13 @@ function statistic() {
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
   $userid = checkuserid();
-  $sql = "select * from pet_phc_user_per where userid = $userid and module = 'ride' and type = 2";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'ride' and type = 2";
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.userid = $userid and";
 
-  $sql = "select * from pet_phc_ride where $xtra (time between $data->start and $data->end) order by id desc";
+  $sql = "select * from pet_". PREFIX ."_ride where $xtra (time between $data->start and $data->end) order by id desc";
   $cole = $db->all($sql);
-  $sql = "select * from pet_phc_import where $xtra module = 'ride' and (time between $data->start and $data->end) order by id desc";
+  $sql = "select * from pet_". PREFIX ."_import where $xtra module = 'ride' and (time between $data->start and $data->end) order by id desc";
   $pay = $db->all($sql);
   $data = array(
     'cole' => 0, 'pay' => 0, 'count' => 0, 'list' => array()
@@ -101,7 +101,7 @@ function statistic() {
     $data['cole'] += $row['money'];
     $data['count'] ++;
     if (empty($temp[$row['userid']])) {
-      $sql = "select fullname from pet_phc_users where userid = $row[userid]";
+      $sql = "select fullname from pet_". PREFIX ."_users where userid = $row[userid]";
       $u = $db->fetch($sql);
       $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
@@ -113,7 +113,7 @@ function statistic() {
   foreach ($pay as $row) {
     $data['pay'] += $row['price'];
     if (empty($temp[$row['userid']])) {
-      $sql = "select fullname from pet_phc_users where userid = $row[userid]";
+      $sql = "select fullname from pet_". PREFIX ."_users where userid = $row[userid]";
       $u = $db->fetch($sql);
       $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }

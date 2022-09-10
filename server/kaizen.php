@@ -73,7 +73,7 @@ function initList() {
   if (count($xtra)) $xtra = ' and ' . implode(' and ', $xtra);
   else $xtra = '';
   
-  $sql = "select * from pet_phc_kaizen where active = 1 $xtra and done = 0 order by edit_time desc";
+  $sql = "select * from pet_". PREFIX ."_kaizen where active = 1 $xtra and done = 0 order by edit_time desc";
   $danhsach = $db->all($sql);
   
   foreach ($danhsach as $row) {
@@ -98,7 +98,7 @@ function initList() {
     $list['undone'] []= $data;
   }
   
-  $sql = 'select * from pet_phc_kaizen where active = 1 ' . $xtra . ' and done = 1 and (edit_time between '. $filter->starttime .' and '. $filter->endtime .') order by edit_time desc';
+  $sql = "select * from pet_". PREFIX ."_kaizen where active = 1 $xtra and done = 1 and (edit_time between $filter->starttime and  $filter->endtime) order by edit_time desc";
   $query = $db->query($sql);
   
   while ($row = $query->fetch_assoc()) {
@@ -127,7 +127,7 @@ function initList() {
 
 function getKaizenById($id) {
   global $db;
-  $sql = 'select * from pet_phc_kaizen where id = ' . $id;
+  $sql = "select * from pet_". PREFIX ."_kaizen where id = $id";
   $query = $db->query($sql);
   return $query->fetch_assoc();
 }
@@ -141,7 +141,7 @@ function insertData() {
   $hinhanhtugiac = implode(',', $data->hinhanhtugiac);
   $hinhanhdongdoi = implode(',', $data->hinhanhdongdoi);
 
-  $sql = "insert into pet_phc_kaizen (userid, problem, solution, result, post_time, edit_time, image, noidungdongdoi, hinhanhdongdoi, noidungtugiac, hinhanhtugiac) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image', '$data->noidungdongdoi', '$hinhanhdongdoi', '$data->noidungtugiac', '$hinhanhtugiac')";
+  $sql = "insert into pet_". PREFIX ."_kaizen (userid, problem, solution, result, post_time, edit_time, image, noidungdongdoi, hinhanhdongdoi, noidungtugiac, hinhanhtugiac) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image', '$data->noidungdongdoi', '$hinhanhdongdoi', '$data->noidungtugiac', '$hinhanhtugiac')";
   $db->query($sql);
 }
 
@@ -151,20 +151,20 @@ function updateData() {
   $time = time();
   $image = implode(',', $data->image);
 
-  $sql = "update pet_phc_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image', noidungdongdoi = '$noidungdongdoi', noidungtugiac = '$noidungtugiac', hinhanhdongdoi = '$hinhanhdongdoi', hinhanhtugiac = '$hinhanhtugiac' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image', noidungdongdoi = '$noidungdongdoi', noidungtugiac = '$noidungtugiac', hinhanhdongdoi = '$hinhanhdongdoi', hinhanhtugiac = '$hinhanhtugiac' where id = $data->id";
   $db->query($sql);
 }
 
 function removeData() {
   global $db, $data;
-  $sql = 'update pet_phc_kaizen set active = 0 where id = '. $data->id;
+  $sql = "update pet_". PREFIX ."_kaizen set active = 0 where id = $data->id";
   $db->query($sql);
 }
 
 function checkData() {
   global $db, $data;
   $time = time();
-  $sql = "update pet_phc_kaizen set done = 1, edit_time = $time where id = $data->id";
+  $sql = "update pet_". PREFIX ."_kaizen set done = 1, edit_time = $time where id = $data->id";
   $db->query($sql);
 }
 
@@ -172,7 +172,7 @@ function checkRole() {
   global $db;
 
   $userid = checkuserid();
-  $sql = "select * from pet_phc_user_per where module = 'kaizen' and userid = $userid";
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'kaizen' and userid = $userid";
   if (!empty($p = $db->fetch($sql))) return $p['type'];
   return 0;
 }

@@ -87,20 +87,20 @@ function getlist() {
 // function insert() {
 //   global $data, $db, $result;
 
-//   $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+//   $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
 //   if (!empty($customer = $db->fetch($sql))) {
-//     $sql = "update pet_phc_customer set name = '$data->name' where id = $customer[id]";
+//     $sql = "update pet_". PREFIX ."_customer set name = '$data->name' where id = $customer[id]";
 //     $db->query($sql);
 //   }
 //   else {
-//     $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
+//     $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
 //     $customer['id'] = $db->insertid($sql);
 //   }
 
 //   $data->cometime = totime($data->cometime);
 //   $data->calltime = totime($data->calltime);
 //   $userid = checkuserid();
-//   $sql = "insert into pet_phc_usg2 (customerid, userid, cometime, calltime, called, recall, number, status, note, time) values ($customer[id], $userid, $data->cometime, $data->calltime, 0, $data->calltime, $data->number, 0, '', ". time() .")";
+//   $sql = "insert into pet_". PREFIX ."_usg2 (customerid, userid, cometime, calltime, called, recall, number, status, note, time) values ($customer[id], $userid, $data->cometime, $data->calltime, 0, $data->calltime, $data->number, 0, '', ". time() .")";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['new'] = getlist(true);
@@ -114,7 +114,7 @@ function getlist() {
 //   $data->cometime = totime($data->cometime);
 //   $data->calltime = totime($data->calltime);
 //   $userid = checkuserid();
-//   $sql = "update pet_phc_usg2 set number = $data->number, cometime = $data->cometime, calltime = $data->calltime where id = $data->id";
+//   $sql = "update pet_". PREFIX ."_usg2 set number = $data->number, cometime = $data->cometime, calltime = $data->calltime where id = $data->id";
 //   // die($sql);
 //   $db->query($sql);
 //   $result['status'] = 1;
@@ -126,7 +126,7 @@ function getlist() {
 // function remove() {
 //   global $data, $db, $result;
 
-//   $sql = "delete from pet_phc_usg2 where id = $data->id";
+//   $sql = "delete from pet_". PREFIX ."_usg2 where id = $data->id";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['new'] = getlist(true);
@@ -136,7 +136,7 @@ function getlist() {
 // function done() {
 //   global $data, $db, $result;
 
-//   $sql = "update pet_phc_usg2 set status = 2, recall = ". time() ." where id = $data->id";
+//   $sql = "update pet_". PREFIX ."_usg2 set status = 2, recall = ". time() ." where id = $data->id";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['list'] = getlist();
@@ -147,7 +147,7 @@ function getlist() {
 // function called() {
 //   global $data, $db, $result;
 
-//   $sql = "update pet_phc_usg2 set status = 1, note = '". $data->note ."', called = ". time() .", recall = ". (time() + 60 * 60 * 24 * 7) ." where id = $data->id";
+//   $sql = "update pet_". PREFIX ."_usg2 set status = 1, note = '". $data->note ."', called = ". time() .", recall = ". (time() + 60 * 60 * 24 * 7) ." where id = $data->id";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['list'] = getlist();
@@ -157,7 +157,7 @@ function getlist() {
 // function uncalled() {
 //   global $data, $db, $result;
 
-//   $sql = "update pet_phc_usg2 set status = 1, note = '". $data->note ."', called = ". time() .", recall = ". (time() + 60 * 60 * 24) ." where id = $data->id";
+//   $sql = "update pet_". PREFIX ."_usg2 set status = 1, note = '". $data->note ."', called = ". time() .", recall = ". (time() + 60 * 60 * 24) ." where id = $data->id";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['list'] = getlist();
@@ -167,7 +167,7 @@ function getlist() {
 // function dead() {
 //   global $data, $db, $result;
 
-//   $sql = "update pet_phc_usg2 set status = 2, recall = ". time() .", number = '". $data->number ."' where id = $data->id";
+//   $sql = "update pet_". PREFIX ."_usg2 set status = 2, recall = ". time() .", number = '". $data->number ."' where id = $data->id";
 //   $db->query($sql);
 //   $result['status'] = 1;
 //   $result['list'] = getlist();
@@ -186,7 +186,7 @@ function getlist() {
 // function getOlder($customerid) {
 //   global $db;
 
-//   $sql = "select * from pet_phc_usg2 where status < 2 and customerid = $customerid order by id asc";
+//   $sql = "select * from pet_". PREFIX ."_usg2 where status < 2 and customerid = $customerid order by id asc";
 //   $list = $db->all($sql);
 //   $query = $db->query($sql);
 //   foreach ($list as $index => $row) {

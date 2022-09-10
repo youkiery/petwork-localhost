@@ -13,9 +13,9 @@ function init() {
 
   $userid = checkuserid();
 
-  $sql = "select * from pet_phc_user_per where module = 'spa' and type = 2 and userid = $userid";
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'spa' and type = 2 and userid = $userid";
   if (!empty($db->fetch($sql))) {
-    $sql = "select a.userid, b.fullname as name from pet_phc_user_per a inner join pet_phc_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
+    $sql = "select a.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
     $result['doctor'] = $db->all($sql);
   }
   else $result['doctor'] = array();
@@ -40,7 +40,7 @@ function init() {
 //     $result['list'] = getList();
 //   }
 //   else {
-//     $sql = "select id from pet_phc_spa where utime > $data->ctime";
+//     $sql = "select id from pet_". PREFIX ."_spa where utime > $data->ctime";
 //     $result['status'] = 1;
   
 //     if (!empty($db->fetch($sql))) {
@@ -62,7 +62,7 @@ function updatesc() {
   $time = isodatetotime($data->time);
   $ctime = time();
   
-  $sql = "update pet_phc_spa_schedule set customerid = $customerid, note = '$data->note', image = '$image', time = $time where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa_schedule set customerid = $customerid, note = '$data->note', image = '$image', time = $time where id = $data->id";
   $db->query($sql);
 
   $result['list'] = nearlist();
@@ -74,7 +74,7 @@ function updatesc() {
 function removesc() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_spa_schedule where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_spa_schedule where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -88,7 +88,7 @@ function removesc() {
 function toggle() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_config set module = 'spa-deleted' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set module = 'spa-deleted' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -99,7 +99,7 @@ function toggle() {
 function removetype() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_config set module = 'spa-deleted' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set module = 'spa-deleted' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -110,7 +110,7 @@ function removetype() {
 function updatetype() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_config set name = '$data->name' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set name = '$data->name' where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -121,10 +121,10 @@ function updatetype() {
 function inserttype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_config order by value desc limit 1";
+  $sql = "select * from pet_". PREFIX ."_config order by value desc limit 1";
   $c = $db->fetch($sql);
 
-  $sql = "insert into pet_phc_config (module, name, value) values('spa', '$data->name', ". (intval($c['value'] + 1)) .")";
+  $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('spa', '$data->name', ". (intval($c['value'] + 1)) .")";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -135,17 +135,17 @@ function inserttype() {
 function uptype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_config where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_config where id = $data->id";
   $c = $db->fetch($sql);
-  $sql = "select * from pet_phc_config where id = $data->id2";
+  $sql = "select * from pet_". PREFIX ."_config where id = $data->id2";
   $c2 = $db->fetch($sql);
 
-  $sql = "update pet_phc_config set value = $c[value] where id = $data->id2";
+  $sql = "update pet_". PREFIX ."_config set value = $c[value] where id = $data->id2";
   $db->query($sql);
-  $sql = "update pet_phc_config set value = $c2[value] where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set value = $c2[value] where id = $data->id";
   $db->query($sql);
 
-  $sql = "select id, name, value, alt from pet_phc_config where module = 'spa' order by value asc";
+  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
   $spa = $db->all($sql);
   $ds = array();
 
@@ -163,17 +163,17 @@ function uptype() {
 function downtype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_config where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_config where id = $data->id";
   $c = $db->fetch($sql);
-  $sql = "select * from pet_phc_config where id = $data->id2";
+  $sql = "select * from pet_". PREFIX ."_config where id = $data->id2";
   $c2 = $db->fetch($sql);
 
-  $sql = "update pet_phc_config set value = $c[value] where id = $data->id2";
+  $sql = "update pet_". PREFIX ."_config set value = $c[value] where id = $data->id2";
   $db->query($sql);
-  $sql = "update pet_phc_config set value = $c2[value] where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set value = $c2[value] where id = $data->id";
   $db->query($sql);
 
-  $sql = "select id, name, value, alt from pet_phc_config where module = 'spa' order by value asc";
+  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
   $spa = $db->all($sql);
   $ds = array();
 
@@ -191,10 +191,10 @@ function downtype() {
 function toggletype() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_config set alt = '". (intval(!$data->alt) ? 1 : '') ."' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_config set alt = '". (intval(!$data->alt) ? 1 : '') ."' where id = $data->id";
   $db->query($sql);
 
-  $sql = "select id, name, value, alt from pet_phc_config where module = 'spa' order by value asc";
+  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
   $spa = $db->all($sql);
   $ds = array();
 
@@ -212,7 +212,7 @@ function toggletype() {
 function remove() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_phc_spa where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_spa where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -225,15 +225,15 @@ function remove() {
 function done() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_phc_spa set utime = ". time() .", duser = $data->uid, status = 1 where id = $data->id";
+  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 1 where id = $data->id";
   else {
-    $sql = "select * from pet_phc_spa where id = $data->id";
+    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
     $s = $db->fetch($sql);
     if (!$s['duser']) {
       $userid = checkuserid();
-      $sql = "update pet_phc_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
+      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
     }
-    else $sql = "update pet_phc_spa set utime = ". time() .", status = 1 where id = $data->id";
+    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1 where id = $data->id";
   } 
   $db->query($sql);
   
@@ -248,7 +248,7 @@ function pick() {
   global $data, $db, $result;
 
   $userid = checkuserid();
-  $sql = "update pet_phc_spa set duser = $userid where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set duser = $userid where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -260,7 +260,7 @@ function picktrans() {
   global $data, $db, $result;
 
   $userid = checkuserid();
-  $sql = "update pet_phc_spa set duser = $data->uid where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set duser = $data->uid where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -271,15 +271,15 @@ function picktrans() {
 function called() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_phc_spa set utime = ". time() .", duser = $data->uid, status = 2 where id = $data->id";
+  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 2 where id = $data->id";
   else {
-    $sql = "select * from pet_phc_spa where id = $data->id";
+    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
     $s = $db->fetch($sql);
     if (!$s['duser']) {
       $userid = checkuserid();
-      $sql = "update pet_phc_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
+      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
     }
-    else $sql = "update pet_phc_spa set utime = ". time() .", status = 2 where id = $data->id";
+    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 2 where id = $data->id";
   }
   $db->query($sql);
   
@@ -293,15 +293,15 @@ function called() {
 function returned() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_phc_spa set utime = ". time() .", duser = $data->uid, status = 3 where id = $data->id";
+  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 3 where id = $data->id";
   else {
-    $sql = "select * from pet_phc_spa where id = $data->id";
+    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
     $s = $db->fetch($sql);
     if (!$s['duser']) {
       $userid = checkuserid();
-      $sql = "update pet_phc_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
+      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
     }
-    else $sql = "update pet_phc_spa set utime = ". time() .", status = 3 where id = $data->id";
+    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 3 where id = $data->id";
   }
   $db->query($sql);
   
@@ -317,7 +317,7 @@ function report() {
 
   $xtra = '';
   if ($data->status == 0) $xtra = 'status = 1,';
-  $sql = "update pet_phc_spa set $xtra duser = $data->uid, dimage = '". implode(',', $data->image) ."' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set $xtra duser = $data->uid, dimage = '". implode(',', $data->image) ."' where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -329,10 +329,10 @@ function coverData($data) {
 
   $list = array();
   foreach ($data as $key => $row) {
-    $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
     $service = $db->arr($sql, 'name');
   
-    $sql = "select fullname as name from pet_phc_users where userid = $row[duser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
   
     $image = parseimage($row['image']);
@@ -358,7 +358,7 @@ function coverData($data) {
 function search() {
   global $data, $db, $result;
 
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -369,10 +369,10 @@ function search() {
 function rate() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_spa set rate = $data->rate where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set rate = $data->rate where id = $data->id";
   $db->query($sql);
 
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -383,13 +383,13 @@ function rate() {
 function statrate() {
   global $data, $db, $result;
 
-  $sql = "update pet_phc_spa set rate = $data->rate where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set rate = $data->rate where id = $data->id";
   $db->query($sql);
 
   $data->start = totime($data->start);
   $data->end = totime($data->end) + 60 * 60 * 24 - 1;
   
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -402,7 +402,7 @@ function statistic() {
 
   $data->start = totime($data->start);
   $data->end = totime($data->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -413,13 +413,13 @@ function statistic() {
 function checkcustomer($phone, $name) {
   global $db;
 
-  $sql = "select * from pet_phc_customer where phone = '$phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$name' where id = $customer[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$name' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$name', '$phone', '')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$name', '$phone', '')";
     $customer['id'] = $db->insertid($sql);
   }
   return $customer['id'];
@@ -429,7 +429,7 @@ function nearchange() {
   global $data, $db, $result;
 
   $status = intval(!$data->status);
-  $sql = "update pet_phc_spa_schedule set status = $status where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa_schedule set status = $status where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -453,7 +453,7 @@ function nearcount() {
   $start = strtotime(date('Y/m/d'));
   $end = $start + 60 * 60 * 24 * 2 - 1;
 
-  $sql = "select id from pet_phc_spa_schedule where ((time between $start and $end) and status = 0) or status = 0";
+  $sql = "select id from pet_". PREFIX ."_spa_schedule where ((time between $start and $end) and status = 0) or status = 0";
   return $db->count($sql);
 }
 
@@ -464,7 +464,7 @@ function nearlist() {
   $start = strtotime(date('Y/m/d'));
   $end = $start + 60 * 60 * 24 * 2 - 1;
 
-  $sql = "select a.*, b.name, b.phone from pet_phc_spa_schedule a inner join pet_phc_customer b on a.customerid = b.id where (time between $start and $end) or status = 0 order by time asc, ctime asc";
+  $sql = "select a.*, b.name, b.phone from pet_". PREFIX ."_spa_schedule a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (time between $start and $end) or status = 0 order by time asc, ctime asc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -484,7 +484,7 @@ function schedule() {
   $time = isodatetotime($data->time);
   $ctime = time();
   
-  $sql = "insert into pet_phc_spa_schedule (customerid, note, image, time) values($customerid, '$data->note', '$image', $time)";
+  $sql = "insert into pet_". PREFIX ."_spa_schedule (customerid, note, image, time) values($customerid, '$data->note', '$image', $time)";
   $db->query($sql);
 
   $result['list'] = nearlist();
@@ -505,12 +505,12 @@ function insert() {
   if ($data->did) $duser = $userid;
   else $duser = 0;
   
-  $sql = "insert into pet_phc_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number)";
+  $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number)";
   $id = $db->insertid($sql);
 
   if (!$data->treat) {
     foreach ($data->option as $value) {
-      $sql = "insert into pet_phc_spa_row (spaid, typeid) values($id, $value)";
+      $sql = "insert into pet_". PREFIX ."_spa_row (spaid, typeid) values($id, $value)";
       $db->query($sql);
     }
   }
@@ -525,25 +525,25 @@ function insert() {
 function update() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_phc_customer where phone = '$data->phone'";
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
   if (!empty($customer = $db->fetch($sql))) {
-    $sql = "update pet_phc_customer set name = '$data->name' where id = $customer[id]";
+    $sql = "update pet_". PREFIX ."_customer set name = '$data->name' where id = $customer[id]";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '')";
     $customer['id'] = $db->insertid($sql);
   }
   
   $customer2 = array('id' => 0);
   if (!empty($data->phone2) && !empty($data->name2)) {
-    $sql = "select * from pet_phc_customer where phone = '$data->phone2'";
+    $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone2'";
     if (!empty($customer2 = $db->fetch($sql))) {
-      $sql = "update pet_phc_customer set name = '$data->name2' where id = $customer2[id]";
+      $sql = "update pet_". PREFIX ."_customer set name = '$data->name2' where id = $customer2[id]";
       $db->query($sql);
     }
     else {
-      $sql = "insert into pet_phc_customer (name, phone, address) values ('$data->name2', '$data->phone2', '')";
+      $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name2', '$data->phone2', '')";
       $customer2['id'] = $db->insertid($sql);
     }
   }
@@ -551,14 +551,14 @@ function update() {
   $userid = checkuserid();
   $data->treat = intval($data->treat);
 
-  $sql = "update pet_phc_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
-  $sql = "delete from pet_phc_spa_row where spaid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_spa_row where spaid = $data->id";
   $db->query($sql);
   
   foreach ($data->option as $value) {
-    $sql = "insert into pet_phc_spa_row (spaid, typeid) values($data->id, $value)";
+    $sql = "insert into pet_". PREFIX ."_spa_row (spaid, typeid) values($data->id, $value)";
     $db->query($sql);
   }
   
@@ -573,14 +573,14 @@ function work() {
 
   $start = strtotime(date('Y/m/d'));
   $end = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_phc_spa where time between $start and $end";
+  $sql = "select * from pet_". PREFIX ."_spa where time between $start and $end";
   $list = $db->all($sql);
   $data = getuserobj();
   foreach ($list as $row) {
     // kiêm tra xong chưa, nếu rồi đẩy vào data
     // nễu chưa đẩy vào 0
     $row['customer'] = getcustomer($row['customerid']);
-    $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
     $row['option'] = implode(',', $db->arr($sql, 'name'));
     $row['image'] = parseimage($row['image']);
 
@@ -607,7 +607,7 @@ function work() {
 function getuserobj() {
   global $db;
 
-  $sql = "select a.userid, a.fullname as name from pet_phc_users a inner join pet_phc_user_per b on a.userid = b.userid and b.module = 'doctor'";
+  $sql = "select a.userid, a.fullname as name from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_user_per b on a.userid = b.userid and b.module = 'doctor'";
   $list = $db->all($sql);
 
   $data = array();
@@ -634,35 +634,35 @@ function getList() {
   $filter = $data->filter;
   $start = isodatetotime($filter->start);
   $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
   $spa = $db->all($sql);
   
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_phc_spa a inner join pet_phc_customer b on a.customerid = b.id inner join pet_phc_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
   $spa = array_merge($spa, $db->all($sql));
 
-  $sql = "select * from pet_phc_config where module = 'spa'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'spa'";
   $option_list = $db->obj($sql, 'name');
 
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
   $list = array();
   foreach ($spa as $row) {
-    $sql = "select b.name from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
     $service = $db->arr($sql, 'name');
 
-    $sql = "select b.id from pet_phc_spa_row a inner join pet_phc_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.id from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
     $option = $db->arr($sql, 'id');
 
-    $sql = "select name, phone from pet_phc_customer where id = $row[customerid2]";
+    $sql = "select name, phone from pet_". PREFIX ."_customer where id = $row[customerid2]";
     $c = $db->fetch($sql);
 
-    $sql = "select fullname as name from pet_phc_users where userid = $row[luser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[luser]";
     $u = $db->fetch($sql);
 
-    $sql = "select fullname as name from pet_phc_users where userid = $row[duser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
 
-    $sql = "select * from pet_phc_spa_schedule where customerid = $row[customerid] and time > $time";
+    $sql = "select * from pet_". PREFIX ."_spa_schedule where customerid = $row[customerid] and time > $time";
     $near = $db->count($sql);
 
     $image = parseimage($row['image']);
@@ -699,7 +699,7 @@ function getList() {
 function gettypelist() {
   global $db;
 
-  $sql = "select id, name, value, alt from pet_phc_config where module = 'spa' order by value asc";
+  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
   $spa = $db->all($sql);
 
   foreach ($spa as $key => $s) {
