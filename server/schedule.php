@@ -133,12 +133,14 @@
     $userid = checkuserid();
     $sql = "select * from pet_". PREFIX ."_user_per where module = 'manager' and userid = $userid";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
-
+    $checkprevent = [0, 2, 2, 2, 2, 2, 1, 1];
+    $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     for ($i = 0; $i < date('t', $data->time); $i++) { 
       $ct = $starttime + 60 * 60 * 24 * $i;
       $ce = $ct + 60 * 60 * 24 - 1;
       $temp = array(
         'date' => date('d/m', $ct),
+        'day' => $convert[date('N', $ct)],
         'list' => array()
       );
       for ($j = 0; $j < 4; $j++) {
@@ -245,7 +247,7 @@
     else {
       $sql = "delete from pet_". PREFIX ."_row where type = $type and user_id = $userid and (time between $start and $end)";
       $db->query($sql);
-      $sql = "insert into pet_". PREFIX ."_row_log (userid, type, time, reg_time, reg_type) values($userid, $type, $time, $ctime, 1)';
+      $sql = "insert into pet_". PREFIX ."_row_log (userid, type, time, reg_time, reg_type) values($userid, $type, $time, $ctime, 1)";
       $db->query($sql);
     }
   }

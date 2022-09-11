@@ -126,8 +126,19 @@ function getinitdata($userid) {
   $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
   $usgcode = $db->all($sql);
 
+  $batdau = strtotime(date('Y/m/d')) - 60 * 60 * 24;
+  $ketthuc = $batdau + 60 * 60 * 24 * 2;
+
+  $sql = "select birthday, fullname from pet_". PREFIX ."_users where birthday between $batdau and $ketthuc";
+  $birthday = $db->all($sql);
+  foreach ($birthday as $key => $row) {
+    $birthday[$key]['birthday'] = date('d/m/Y', $row['birthday']);
+  }
+
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
+    'prefix' => PREFIX,
+    'branch' => BRANCH,
     'userid' => $userid,
     'username' => $userinfo['username'],
     'name' => $userinfo['name'],
@@ -136,6 +147,7 @@ function getinitdata($userid) {
     'doctor' => $doctor,
     'type' => $type,
     'spa' => $spa,
+    'birthday' => $birthday,
     'his' => getHisChatCount($userid),
     'usgcode' => $usgcode,
     'today' => date('d/m/Y'),

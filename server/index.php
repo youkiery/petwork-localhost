@@ -38,6 +38,7 @@ else {
   include_once('global.php');
   include_once(ROOTDIR. "/$data->type.php");
   define('PREFIX', $config['prefix']);
+  define('BRANCH', $config['branch']);
 
   $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
   $allow = array('session', 'login', 'signip');

@@ -315,19 +315,104 @@ function update() {
 
 function remove() {
   global $db, $data, $result;
+
+  $time = time();
+  // chuyển sang cho del
+  $sql = "select * from pet_". PREFIX ."_users where userid = 0";
+  if (empty($user = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_users (userid, username, name, fullname, password, photo, regdate, birthday, active) values (0, '', 'del', 'del', '', '', $time, $time, 0)";
+    $db->query($sql);
+  }
+
+  $sql = "update pet_". PREFIX ."_spa where doctorid = 0 where doctorid = $data->userid";
+  $db->query($sql);
+
+  $sql = "update pet_". PREFIX ."_hotel where returnuserid = 0 where returnuserid = $data->userid";
+  $db->query($sql);
+
+  $sql = "update pet_". PREFIX ."_xray where doctorid = 0 where doctorid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_xray_read where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_xray_row where doctorid = 0 where doctorid = $data->userid";
+  $db->query($sql);
+
+  $sql = "update pet_". PREFIX ."_kaizen where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_profile where doctor = 0 where doctor = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_physical where doctor = 0 where doctor = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_xquang where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_sieuam where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_exam where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_ride where userid = 0 where userid = $data->userid";
+  $db->query($sql);
+
+  // chuyển sang cho nhân viên khác
+  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid <> $data->userid)";
+  $target = $db->arr($sql, 'userid');
+
+  if (!empty($data->userid)) {
+    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_". PREFIX ."_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
+
+  if (!empty($data->userid)) {
+    $sql = "update pet_". PREFIX ."_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_". PREFIX ."_usg set userid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
   
-  $sql = "update pet_". PREFIX ."_users set active = 0 where userid = $data->userid";
+  // xóa đăng ký lịch
+  $sql = "delete from pet_". PREFIX ."_row where user_id = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_". PREFIX ."_user_per where userid = $data->userid";
+  $sql = "delete from pet_". PREFIX ."_luong_nhanvien where userid = $data->userid";
+  $db->query($sql);
+  $sql = "delete from pet_". PREFIX ."_luong_tra where userid = $data->userid";
   $db->query($sql);
 
+  // xóa đăng nhập
   $sql = "delete from pet_". PREFIX ."_session where userid = $data->userid";
   $db->query($sql);
 
-  $sql = "delete from pet_". PREFIX ."_row where user_id = $data->userid";
+  // xóa quyền
+  $sql = "delete from pet_". PREFIX ."_user_per where userid = $data->userid";
   $db->query($sql);
-    
+
+  // xóa người dùng
+  $sql = "delete from pet_". PREFIX ."_users where userid = $data->userid";
+  $db->query($sql);
+
   $result['status'] = 1;
   $result['list'] = getList();
   return $result;
@@ -359,7 +444,7 @@ function getList() {
     'work' => 0,
   );
 
-  $sql = "select name, username, fullname, userid, placeid from pet_". PREFIX ."_users where active = 1";
+  $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
@@ -413,12 +498,14 @@ function signup() {
   include_once('Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
+  $birthday = 0;
+  if (isset($data->birthday)) $birthday = isodatetotime($data->birthday);
 
   $sql = "select userid, password from `pet_". PREFIX ."_users` where LOWER(username) = '$username'";
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, $birthday, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -435,8 +522,9 @@ function updateuser() {
   include_once('Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
+  $birthday = isodatetotime($data->birthday);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."' where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;

@@ -287,7 +287,10 @@ function danhsachcongviec() {
       $chuyenmuc = $db->arr($sql, 'id');
       if (count($chuyenmuc)) $xtra2 = 'or departid in ('. implode(', ', $chuyenmuc) .')';
       else $xtra2 = '';
-      $sql = "select * from pet_". PREFIX ."_work where ((userid = $userid $xtra2) or id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid)) $xtra order by time desc, updatetime desc limit 50";
+      // phân quyền công việc chưa được phân => tất cả thấy
+      // 	công việc đã phân chỉ có người đó thấy
+
+      $sql = "select * from pet_". PREFIX ."_work where ((userid = $userid $xtra2) and (id not in (select workid as id from pet_". PREFIX ."_work_assign) or id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by time desc, updatetime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
     case '1':
@@ -303,7 +306,13 @@ function danhsachcongviec() {
   foreach ($danhsachcongviec as $thutu => $congviec) {
     $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
     $danhsachcongviec[$thutu]['follow'] = $db->obj($sql, 'userid', 'fullname');
-    $danhsachcongviec[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
+    $danhsachcongviec[$thutu]['followtext'] = implode(', ', $db->arr($sql, 'fullname'));
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_assign a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
+    $danhsachcongviec[$thutu]['assign'] = $db->obj($sql, 'userid', 'fullname');
+    $danhsachcongviec[$thutu]['assigntext'] = implode(', ', $db->arr($sql, 'fullname'));
+
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $congviec[userid]";
+    $danhsachcongviec[$thutu]['usertext'] = $db->fetch($sql)['fullname'];
 
     $danhsachcongviec[$thutu]['time'] = date('d/m/Y', $congviec['time']);
     $danhsachcongviec[$thutu]['createtime'] = date('d/m/Y', $congviec['createtime']);
