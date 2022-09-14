@@ -126,13 +126,15 @@ function getinitdata($userid) {
   $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
   $usgcode = $db->all($sql);
 
-  $batdau = strtotime(date('Y/m/d')) - 60 * 60 * 24;
-  $ketthuc = $batdau + 60 * 60 * 24 * 2;
+  $homnay = date('d/m');
+  $ngaymai = date('d/m', time() + 60 * 60 * 24);
 
-  $sql = "select birthday, fullname from pet_". PREFIX ."_users where birthday between $batdau and $ketthuc";
-  $birthday = $db->all($sql);
-  foreach ($birthday as $key => $row) {
-    $birthday[$key]['birthday'] = date('d/m/Y', $row['birthday']);
+  $sql = "select birthday, fullname from pet_". PREFIX ."_users where birthday > 0";
+  $danhsachsinhnhat = $db->all($sql);
+  $sinhnhat = [];
+  foreach ($danhsachsinhnhat as $key => $ngaysinh) {
+    $ngaythangsinh = date('d/m', $ngaysinh['birthday']);
+    if ($ngaythangsinh == $homnay || $ngaythangsinh == $ngaymai) $sinhnhat []= ['fullname' => $ngaysinh['fullname'], 'birthday' => date('d/m/Y', $ngaysinh['birthday'])];
   }
 
   return array(
@@ -147,7 +149,7 @@ function getinitdata($userid) {
     'doctor' => $doctor,
     'type' => $type,
     'spa' => $spa,
-    'birthday' => $birthday,
+    'birthday' => $sinhnhat,
     'his' => getHisChatCount($userid),
     'usgcode' => $usgcode,
     'today' => date('d/m/Y'),

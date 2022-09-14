@@ -664,10 +664,10 @@ function getlist($id = 0) {
   else $xtra = "";
 
   if (!empty($filter->diseaseid)) {
-    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid inner join pet_". PREFIX ."_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid inner join pet_". PREFIX ."_config e on (e.name = a.id and e.module = 'hisdisease' and e.value = $filter->diseaseid) where $xtra (a.time between $filter->start and $filter->end) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   else {
-    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where $xtra ((a.time between $filter->start and $filter->end) or (a.time < $filter->start and a.insult = 0)) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
+    $sql = "select a.*, c.name as customer, c.phone, c.address, d.fullname as doctor from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id inner join pet_". PREFIX ."_users d on a.doctorid = d.userid where $xtra (a.time between $filter->start and $filter->end) ". ($id ? " and a.id = $id " : '') ." and (c.phone like '%$filter->keyword%' or c.name like '%$filter->keyword%') order by a.insult asc, id desc";
   }
   $list = $db->all($sql);
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24;

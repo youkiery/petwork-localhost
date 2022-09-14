@@ -451,6 +451,7 @@ function getList() {
     $sql = "select * from pet_". PREFIX ."_config where id = $row[placeid]";
     if (empty($place = $db->fetch($sql))) $place = array('name' => 'Chưa chọn');
     $list[$index]['place'] = $place['name'];
+    $list[$index]['birthday'] = date(DATE_ISO8601, $row['birthday']);
 
     $sql = "select * from pet_". PREFIX ."_user_per where userid = $row[userid]";
     $query = $db->query($sql);

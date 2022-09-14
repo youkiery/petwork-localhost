@@ -156,7 +156,10 @@
           'color' =>  'green',
         );
 
-        if ($ct <= $time) $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
+        if ($ct <= $time) {
+          $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
+          if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'cyan'; // hiển thị đã đăng ký
+        } 
         else if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'orange'; // nếu có tên người dùng, cho hủy đăng ký
         else {
           // kiểm tra nếu nhân viên thuộc diện cá biệt, bỏ qua
@@ -174,6 +177,7 @@
     global $db, $data;
     $dulieu = array(
       'ngay' => array(),
+      'thu' => array(),
       'buoi' => array(),
       'dangky' => array()
     );
@@ -186,8 +190,11 @@
     $sql = "select b.userid, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
     $danhsachnhanvien = $db->all($sql);
 
+    $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
     for ($i = 1; $i <= $ngaytrongthang; $i++) { 
-      $dulieu['ngay'] []= date('d/m', $batdau + ($i - 1) * 60 * 60 * 24);
+      $thoigian = $batdau + ($i - 1) * 60 * 60 * 24;
+      $dulieu['ngay'] []= date('d/m', $thoigian);
+      $dulieu['thu'] []= $convert[date('N', $thoigian)];
       $dulieu['buoi'] []= 'S';
       $dulieu['buoi'] []= 'C';
     }
@@ -269,18 +276,14 @@
   function xemchotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
-    $batdau = isodatetotime($data->filter->batdau);
-    $ketthuc = isodatetotime($data->filter->ketthuc) + 60 * 60 * 24 - 1;
-    // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
-    $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
-
-    $gioihan = array(
-      0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
-    );
+    $thoigian = $data->time / 1000;
+    $batdau = strtotime(date('Y/m/1', $thoigian));
+    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -309,7 +312,7 @@
         $daungay = strtotime(date('Y/m/d', $nghi['time']));
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
         $dangky = $nghi['reg_time'];
-        $ngaytrongtuan = date('w', $nghi['time']);
+        $ngaytrongtuan = date('N', $nghi['time']);
         $gioihanngay = $gioihan[$ngaytrongtuan];
         // tìm trong type cùng ngày (trừ except) có vượt limit không
         $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
@@ -337,7 +340,7 @@
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
       $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
       $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
-      $nghilo = $dulieu[$thutu]['tongnghi'] - $tuan;
+      $nghilo = $dulieu[$thutu]['tongnghi'] - 4;
       if ($nghilo < 0) $nghilo = 0;
       $dulieu[$thutu]['nghilo'] = $nghilo;
       $danhsach []= $dulieu[$thutu];
@@ -352,18 +355,14 @@
     global $db, $data, $result;
 
     $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+    $thoigian = $data->time / 1000;
 
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
-    $batdau = isodatetotime($data->filter->batdau);
-    $ketthuc = isodatetotime($data->filter->ketthuc) + 60 * 60 * 24 - 1;
-    // $tuan = floor(($ketthuc - $batdau + 1) / 7 / 24 / 60 / 60);
-    $tuan = floor(((($ketthuc - $batdau) / 24 / 60 / 60) + 1) / 7);
-
-    $gioihan = array(
-      0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
-    );
+    $batdau = strtotime(date('Y/m/1', $thoigian));
+    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -394,7 +393,7 @@
         $daungay = strtotime(date('Y/m/d', $nghi['time']));
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
         $dangky = $nghi['reg_time'];
-        $ngaytrongtuan = date('w', $nghi['time']);
+        $ngaytrongtuan = date('N', $nghi['time']);
         $gioihanngay = $gioihan[$ngaytrongtuan];
         // tìm trong type cùng ngày (trừ except) có vượt limit không
         $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
@@ -422,14 +421,13 @@
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
       $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
       $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
-      $nghilo = $dulieu[$thutu]['tongnghi'] - $tuan;
+      $nghilo = $dulieu[$thutu]['tongnghi'] - 4;
       if ($nghilo < 0) $nghilo = 0;
       $dulieu[$thutu]['nghilo'] = $nghilo;
       $danhsach []= $dulieu[$thutu];
     }
 
     $tongnhanvien = count($danhsach);
-    $thoigian = $data->time / 1000;
 
     $sql = "insert into pet_". PREFIX ."_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, $tongnhanvien, 0, $thoigian, 0)";
     $id = $db->insertid($sql);
@@ -464,12 +462,10 @@
     $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
-    $batdau = date("N", $data->time) == 1 ? strtotime(date("Y-m-d", $data->time)) : strtotime(date("Y-m-d", strtotime('last monday', $data->time)));
-    $ketthuc = $batdau + 60 * 60 * 24 * 7 - 1;
 
-    $gioihan = array(
-      0 => 1, 2, 2, 2, 2, 2, 1, // Bắt đầu bằng chủ nhật, kết thúc bằng thứ 7
-    );
+    $batdau = strtotime(date('Y/m/1', $data->time));
+    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -482,24 +478,23 @@
     $sql = "select type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type > 1 and (time between $batdau and $ketthuc) order by reg_time asc";
     $danhsachdangky = $db->all($sql);
 
-    $dulieu = array(
-      2 => array( array(), array(), array(), array(), array(), array(), array(), array() ),
-      array( array(), array(), array(), array(), array(), array(), array(), array() )
-    );
-
+    $dulieu = [[], []];
     foreach ($danhsachdangky as $dangky) {
-      $dulieu[$dangky['type']][date('w', $dangky['time'])] []= $dangky['userid'];
+      if (empty($dulieu[$dangky['type'] - 2][date('d', $dangky['time'])])) $dulieu[$dangky['type'] - 2][date('d', $dangky['time'])] = [];
+      $dulieu[$dangky['type'] - 2][date('d', $dangky['time'])] []= $dangky['userid'];
     }
-    $dulieubuoi = array(2 => 'sáng', 'chiều');
+    $dulieubuoi = array('sáng', 'chiều');
 
     foreach ($dulieu as $buoi => $ngay) {
-      foreach ($ngay as $thutungay => $dsdk) {
-        $ngaythang = date('d/m/Y', ($thutungay == 0 ? 6 : $thutungay - 1) * 60 * 60 * 24 + $batdau);
+      foreach ($ngay as $songay => $dsdk) {
+        $thoigian = ($songay - 1) * 60 * 60 * 24 + $batdau;
+        $ngaythang = date('d/m/Y', $thoigian);
+        $thutungay = date('N', $thoigian);
         foreach ($dsdk as $thutu => $userid) {
           if ($thutu >= $gioihan[$thutungay]) {
             if ($gioihan[$thutungay] == 1) {
-            $thutuphat = $thutu - $gioihan[$thutungay];
-            $nghiphat = (1 + $thutuphat) / 2;
+              $thutuphat = $thutu - $gioihan[$thutungay];
+              $nghiphat = (1 + $thutuphat) / 2;
             }
             else $nghiphat = 0.5;
             $danhsach []= $nguoidung[$userid] ." +$nghiphat nghỉ phạt vào buổi $dulieubuoi[$buoi] ngày $ngaythang";
