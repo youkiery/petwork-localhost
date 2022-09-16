@@ -2,7 +2,7 @@
   function init() {
     global $data, $db, $result;
     $data->time /= 1000;
-    
+
     $result['status'] = 1;
     $result['data'] = getList($data);
     $result['list'] = getScheduleUser();
@@ -128,14 +128,15 @@
     
     $starttime = strtotime(date('Y/m/1', $data->time));
     $endtime = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    $daysofmonth = date('t', $data->time);
     $time = strtotime(date('Y/m/t'));
 
     $userid = checkuserid();
     $sql = "select * from pet_". PREFIX ."_user_per where module = 'manager' and userid = $userid";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
-    $checkprevent = [0, 2, 2, 2, 2, 2, 1, 1];
+    $checkprevent = [0, 3, 3, 3, 3, 3, 2, 1];
     $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
-    for ($i = 0; $i < date('t', $data->time); $i++) { 
+    for ($i = 0; $i < $daysofmonth; $i++) { 
       $ct = $starttime + 60 * 60 * 24 * $i;
       $ce = $ct + 60 * 60 * 24 - 1;
       $temp = array(
@@ -157,8 +158,12 @@
         );
 
         if ($ct <= $time) {
-          $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
-          if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'cyan'; // hiển thị đã đăng ký
+          if ($ct >= $starttime && $j < 2) $temp['list'][$j]['color'] = 'green';
+          else $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
+          if (strpos($temp['list'][$j]['name'], $data->name) !== false) {
+            if ($ct >= $starttime && $j < 2) $temp['list'][$j]['color'] = 'orange'; // hiển thị đã đăng ký 
+            else $temp['list'][$j]['color'] = 'cyan'; // hiển thị đã đăng ký
+          }
         } 
         else if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'orange'; // nếu có tên người dùng, cho hủy đăng ký
         else {
@@ -283,7 +288,9 @@
     $thoigian = $data->time / 1000;
     $batdau = strtotime(date('Y/m/1', $thoigian));
     $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+    $config = $db->fetch($sql);
+    $config = json_decode($config['value']);  
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -313,16 +320,16 @@
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
         $dangky = $nghi['reg_time'];
         $ngaytrongtuan = date('N', $nghi['time']);
-        $gioihanngay = $gioihan[$ngaytrongtuan];
+        $gioihanngay = $config[$ngaytrongtuan]->gioihan;
         // tìm trong type cùng ngày (trừ except) có vượt limit không
         $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
         $ngaynghi = $db->all($sql);
-        foreach ($ngaynghi as $key => $row) {
-          if ($row['userid'] == $nghi['userid'] && ($key >= $gioihanngay)) {
+        foreach ($ngaynghi as $thutungay => $row) {
+          if ($row['userid'] == $nghi['userid'] && ($thutungay >= $gioihanngay)) {
             $dulieu[$nhanvien['userid']]['nghiphat'] ++;
             $dulieu[$nhanvien['userid']]['tongnghi'] ++;
-            $thutuphat = $key - $gioihanngay;
-            if ($gioihanngay == 1) {
+            $thutuphat = $thutungay - $gioihanngay;
+            if ($config[$ngaytrongtuan]->phat) {
               // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
               $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
               $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
@@ -362,7 +369,9 @@
     $dulieu = array();
     $batdau = strtotime(date('Y/m/1', $thoigian));
     $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+    $config = $db->fetch($sql);
+    $config = json_decode($config['value']);  
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -394,16 +403,16 @@
         $cuoingay = $daungay + 24 * 60 * 60 - 1;
         $dangky = $nghi['reg_time'];
         $ngaytrongtuan = date('N', $nghi['time']);
-        $gioihanngay = $gioihan[$ngaytrongtuan];
+        $gioihanngay = $config[$ngaytrongtuan]->gioihan;
         // tìm trong type cùng ngày (trừ except) có vượt limit không
         $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
         $ngaynghi = $db->all($sql);
-        foreach ($ngaynghi as $key => $row) {
-          if ($row['userid'] == $nghi['userid'] && ($key >= $gioihanngay)) {
+        foreach ($ngaynghi as $thutungay => $row) {
+          if ($row['userid'] == $nghi['userid'] && ($thutungay >= $gioihanngay)) {
             $dulieu[$nhanvien['userid']]['nghiphat'] ++;
             $dulieu[$nhanvien['userid']]['tongnghi'] ++;
-            $thutuphat = $key - $gioihanngay;
-            if ($gioihanngay == 1) {
+            $thutuphat = $thutungay - $gioihanngay;
+            if ($config[$ngaytrongtuan]->phat) {
               // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
               $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
               $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
@@ -465,7 +474,9 @@
 
     $batdau = strtotime(date('Y/m/1', $data->time));
     $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $gioihan = [0, 2, 2, 2, 2, 2, 1, 1];
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+    $config = $db->fetch($sql);
+    $config = json_decode($config['value']);  
 
     $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'userid');
@@ -490,10 +501,11 @@
         $thoigian = ($songay - 1) * 60 * 60 * 24 + $batdau;
         $ngaythang = date('d/m/Y', $thoigian);
         $thutungay = date('N', $thoigian);
+        $gioihanngay = $config[$thutungay]->gioihan;
         foreach ($dsdk as $thutu => $userid) {
-          if ($thutu >= $gioihan[$thutungay]) {
-            if ($gioihan[$thutungay] == 1) {
-              $thutuphat = $thutu - $gioihan[$thutungay];
+          if ($thutu >= $gioihanngay) {
+            if ($config[$thutungay]->phat == 1) {
+              $thutuphat = $thutu - $gioihanngay;
               $nghiphat = (1 + $thutuphat) / 2;
             }
             else $nghiphat = 0.5;

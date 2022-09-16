@@ -670,3 +670,41 @@ function placeselect() {
   $result['adminlist'] = getlist();
   return $result;
 }
+
+function cauhinhlich() {
+  global $db, $result, $data;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+  if (empty($config = $db->fetch($sql))) {
+    $config = [
+      ['thu' => '', 'gioihan' => 0, 'phat' => 0],
+      ['thu' => 'T2', 'gioihan' => 3, 'phat' => 0],
+      ['thu' => 'T3', 'gioihan' => 3, 'phat' => 0],
+      ['thu' => 'T4', 'gioihan' => 3, 'phat' => 0],
+      ['thu' => 'T5', 'gioihan' => 3, 'phat' => 0],
+      ['thu' => 'T6', 'gioihan' => 3, 'phat' => 0],
+      ['thu' => 'T7', 'gioihan' => 2, 'phat' => 1],
+      ['thu' => 'CN', 'gioihan' => 1, 'phat' => 1],
+    ];
+    $json = json_encode($config);
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'schedule-config', '$json', '')";
+    $db->query($sql);
+  }
+  else $config = json_decode($config['value']);
+
+  $result['status'] = 1;
+  $result['dulieu'] = $config;
+  return $result;
+}
+
+function luucauhinhlich() {
+  global $db, $result, $data;
+
+  $json = json_encode($data->dulieu);
+  $sql = "update pet_". PREFIX ."_config set value = '$json' where module = 'config' and name = 'schedule-config'";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}
