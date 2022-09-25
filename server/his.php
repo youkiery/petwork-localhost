@@ -138,7 +138,7 @@ function printer() {
 function update() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_xray set pos = $data->pos petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray set pos = $data->pos, petname = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species' where id = $data->id";
   $db->query($sql);
 
   $sql = "delete from pet_". PREFIX ."_config where module = 'hisdisease' and name = $data->id";
