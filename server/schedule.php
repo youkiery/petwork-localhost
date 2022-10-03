@@ -339,9 +339,9 @@
       }
     }
 
-    // foreach ($tongngaynghi as $userid => $ngaynghi) {
-    //   $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
-    // }
+    foreach ($tongngaynghi as $userid => $ngaynghi) {
+      $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+    }
 
     foreach ($dulieu as $thutu => $thongtin) {
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
@@ -422,9 +422,9 @@
       }
     }
 
-    // foreach ($tongngaynghi as $userid => $ngaynghi) {
-    //   $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
-    // }
+    foreach ($tongngaynghi as $userid => $ngaynghi) {
+      $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+    }
 
     foreach ($dulieu as $thutu => $thongtin) {
       $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
@@ -471,6 +471,7 @@
     $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
+    $danhsachchuasapxep = array();
 
     $batdau = strtotime(date('Y/m/1', $data->time));
     $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
@@ -500,6 +501,7 @@
       foreach ($ngay as $songay => $dsdk) {
         $thoigian = ($songay - 1) * 60 * 60 * 24 + $batdau;
         $ngaythang = date('d/m/Y', $thoigian);
+        $ngay = date('d', $thoigian);
         $thutungay = date('N', $thoigian);
         $gioihanngay = $config[$thutungay]->gioihan;
         foreach ($dsdk as $thutu => $userid) {
@@ -509,9 +511,23 @@
               $nghiphat = (1 + $thutuphat) / 2;
             }
             else $nghiphat = 0.5;
-            $danhsach []= $nguoidung[$userid] ." +$nghiphat nghỉ phạt vào buổi $dulieubuoi[$buoi] ngày $ngaythang";
+            if (empty($danhsachchuasapxep[$ngay])) $danhsachchuasapxep[$ngay] = [];
+            $danhsachchuasapxep[$ngay] []= [
+              'nguoidung' => $nguoidung[$userid],
+              'nghiphat' => $nghiphat,
+              'buoi' => $dulieubuoi[$buoi],
+              'ngaythang' => $ngaythang
+            ]; 
           }
         }
+      }
+    }
+
+    ksort($danhsachchuasapxep);
+
+    foreach ($danhsachchuasapxep as $ngay) {
+      foreach ($ngay as $dulieu) {
+        $danhsach []= $dulieu['nguoidung'] ." +$dulieu[nghiphat] nghỉ phạt vào buổi $dulieu[buoi] ngày $dulieu[ngaythang]";
       }
     }
 
