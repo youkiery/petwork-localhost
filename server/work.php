@@ -91,7 +91,6 @@ function themcongviec() {
   global $db, $data, $result;
 
   $userid = checkuserid();
-  $data->content = nl2br($data->content);
   $file = implode(',', $data->image);
   $time = time();
   $createtime = isodatetotime($data->create);
@@ -145,6 +144,7 @@ function themcongviec() {
 
   $result['status'] = 1;
   if (isset($data->laplai)) $result['laplai'] = danhsachlaplai();
+  if (isset($data->chitiet)) $result['chitiet'] = laythongtintheoid();
   $result['danhsach'] = danhsachcongviec();
   return $result;
 }
@@ -378,6 +378,14 @@ function chuyentrangthai() {
 function laythongtin() {
   global $db, $data, $result;
 
+  $result['status'] = 1;
+  $result['dulieu'] = laythongtintheoid();
+  return $result;
+}
+
+function laythongtintheoid() {
+  global $db, $data, $result;
+
   $sql = "select * from pet_". PREFIX ."_work where id = $data->id";
   $congviec = $db->fetch($sql);
 
@@ -385,6 +393,7 @@ function laythongtin() {
   $nhanvien = $db->obj($sql, 'userid');
 
   $sql = "select * from pet_". PREFIX ."_work_follow where workid = $data->id";
+  $followtext = implode(', ', $db->arr($sql, 'fullname'));
   $theodoi = $db->all($sql);
   $follow = array('text' => array(), 'list' => array());
   foreach ($theodoi as $dulieu) {
@@ -403,6 +412,7 @@ function laythongtin() {
   }
 
   $sql = "select * from pet_". PREFIX ."_work_assign where workid = $data->id";
+  $assigntext = implode(', ', $db->arr($sql, 'fullname'));
   $giaoviec = $db->all($sql);
   $assign = array('text' => array(), 'list' => array());
   foreach ($giaoviec as $dulieu) {
@@ -436,6 +446,23 @@ function laythongtin() {
     $repeat['list'][$key] = intval($value);
   }
 
+  $danhmuc = '';
+  if ($congviec['departid'] > 0) {
+    $sql = "select * from pet_". PREFIX ."_work_depart where id = $congviec[departid]";
+    if (!empty($depart = $db->fetch($sql))) {
+      $danhmuc = $depart['name'];        
+      if ($depart['parentid']) {
+        $sql = "select * from pet_". PREFIX ."_work_depart where id = $depart[parentid]";
+        if (!empty($depart = $db->fetch($sql))) {
+          $danhmuc = $depart['name'] .'/'. $danhmuc;
+        }
+      }
+    }
+  }
+
+  $sql = "select fullname from pet_". PREFIX ."_users where userid = $congviec[userid]";
+  $usertext = $db->fetch($sql)['fullname'];
+
   $dulieu = array(
     'id' => $congviec['id'],
     'title' => $congviec['title'],
@@ -443,16 +470,24 @@ function laythongtin() {
     'departid' => $congviec['departid'],
     'image' => parseimage($congviec['file']),
     'create' => date('Y-m-d', $congviec['createtime']),
+    'createtime' => date('d/m/Y', $congviec['createtime']),
+    'expiretime' => date('d/m/Y', $congviec['expiretime']),
+    'file' => parseimage($congviec['file']),
     'expire' => $congviec['expiretime'] > 0 ? date('Y-m-d', $congviec['expiretime']) : '',
     'follow' => $follow,
     'assign' => $assign,
-    'repeat' => $repeat
+    'status' => $congviec['status'],
+    'repeat' => $repeat,
+    'danhmuc' => $danhmuc,
+    'usertext' => $usertext,
+    'type' => 1,
+    'followtext' => $followtext,
+    'assigntext' => $assigntext,
   );
 
-  $result['status'] = 1;
-  $result['dulieu'] = $dulieu;
-  return $result;
+  return $dulieu;
 }
+
 
 function laybinhluan() {
   global $db, $data, $result;

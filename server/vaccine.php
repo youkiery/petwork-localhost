@@ -656,6 +656,8 @@ function insert() {
 
 function inserttype() {
   global $data, $db, $result;
+  $data->name = trim($data->name);
+  $data->code = trim($data->code);
   $sql = "insert into pet_". PREFIX ."_type (name, code) values('$data->name', '$data->code')";
   $db->query($sql);
   $result['status'] = 1;
