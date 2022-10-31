@@ -353,15 +353,15 @@ function remove() {
   $db->query($sql);
 
   // chuyển sang cho nhân viên khác
-  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid <> $data->userid)";
+  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid <> $data->userid";
   $target = $db->arr($sql, 'userid');
 
   if (!empty($data->userid)) {
-    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
+    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $target) .")";
     $db->query($sql);
   }
   else {
-    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $target) .")";
     $list = $db->all($sql);
     $l = count($list);
     $d = count($target);

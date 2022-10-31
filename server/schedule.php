@@ -340,7 +340,9 @@
     }
 
     foreach ($tongngaynghi as $userid => $ngaynghi) {
-      $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+      $nghilo = ($ngaynghi - 12) / 2;
+      $heso = round(1 + $nghilo);
+      $dulieu[$userid]['nghiphat2'] = ($nghilo > 0 ? $nghilo * $heso : 0);
     }
 
     foreach ($dulieu as $thutu => $thongtin) {
@@ -423,7 +425,9 @@
     }
 
     foreach ($tongngaynghi as $userid => $ngaynghi) {
-      $dulieu[$userid]['nghiphat2'] = ($ngaynghi > 12 ? ($ngaynghi - 12) / 2 : 0);
+      $nghilo = ($ngaynghi - 12) / 2;
+      $heso = round(1 + $nghilo);
+      $dulieu[$userid]['nghiphat2'] = ($nghilo > 0 ? $nghilo * $heso : 0);
     }
 
     foreach ($dulieu as $thutu => $thongtin) {

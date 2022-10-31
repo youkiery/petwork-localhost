@@ -130,7 +130,7 @@ function themcongviec() {
   $sql = "delete from pet_". PREFIX ."_work_repeat where workid = $data->id";
   $db->query($sql);
 
-  if (isset($repeat)) {
+  if (isset($data->repeat)) {
     $repeat = $data->repeat;
     if ($repeat->type) {
       $repeat->time = isodatetotime($repeat->time);
@@ -276,6 +276,7 @@ function danhsachcongviec() {
   if (!empty($xtra)) $xtra = 'and '. implode(' and ', $xtra);
   else $xtra = '';
   $time = time();
+  $cuserid = checkuserid();
 
   if ($filter->nhanvien > 0) $userid = $filter->nhanvien;
   else $userid = checkuserid();
@@ -336,7 +337,7 @@ function danhsachcongviec() {
     $danhsachcongviec[$thutu]['danhmuc'] = $danhmuc;
     // nếu chế độ = 0, kiểm tra userid = $userid, type = 2, nếu không type = 1, còn không type = 0
     if ($data->chedo == '0') {
-      if ($congviec['userid'] == $userid) $type = 2;
+      if ($congviec['userid'] == $userid || $cuserid == 1) $type = 2;
       else $type = 1;
     }
     else $type = 0;
