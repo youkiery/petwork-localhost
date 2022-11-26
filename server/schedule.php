@@ -131,29 +131,45 @@
     $daysofmonth = date('t', $data->time);
     $time = strtotime(date('Y/m/t'));
 
+    $sql = "select b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $danhsachngoaile = $db->arr($sql, 'fullname');
+
     $userid = checkuserid();
     $sql = "select * from pet_". PREFIX ."_user_per where module = 'manager' and userid = $userid";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
-    $checkprevent = [0, 3, 3, 3, 3, 3, 2, 1];
-    $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+    if (empty($cauhinh = $db->fetch($sql))) {
+      $cauhinh = json_decode(json_encode([
+        ['thu' => '', 'gioihan' => 0, 'phat' => 0],
+        ['thu' => 'T2', 'gioihan' => 3, 'phat' => 0],
+        ['thu' => 'T3', 'gioihan' => 3, 'phat' => 0],
+        ['thu' => 'T4', 'gioihan' => 3, 'phat' => 0],
+        ['thu' => 'T5', 'gioihan' => 3, 'phat' => 0],
+        ['thu' => 'T6', 'gioihan' => 3, 'phat' => 0],
+        ['thu' => 'T7', 'gioihan' => 2, 'phat' => 1],
+        ['thu' => 'CN', 'gioihan' => 1, 'phat' => 1],
+      ]));
+    }
+    else $cauhinh = json_decode($cauhinh['value']);
+
     for ($i = 0; $i < $daysofmonth; $i++) { 
       $ct = $starttime + 60 * 60 * 24 * $i;
       $ce = $ct + 60 * 60 * 24 - 1;
       $temp = array(
         'date' => date('d/m', $ct),
-        'day' => $convert[date('N', $ct)],
+        'day' => $cauhinh[date('N', $ct)]->thu,
         'list' => array()
       );
       for ($j = 0; $j < 4; $j++) {
         // lấy danh sách nhân viên đăng ký
         $sql = "select b.fullname from pet_". PREFIX ."_row a inner join pet_". PREFIX ."_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
-        $l = $db->arr($sql, 'fullname');
+        $nhanviendangky = $db->arr($sql, 'fullname');
         // foreach ($l as $key => $u) {
         //   $hoten = explode(' ', $u);
         //   $l[$key] = (count($hoten) > 1 ? $hoten[count($hoten) - 2] .' '. $hoten[count($hoten) - 1] : (count($hoten) ? $hoten[count($hoten) - 1] : ''));
         // }
         $temp['list'] []= array(
-          'name' =>  implode(', ', $l),
+          'name' =>  implode(', ', $nhanviendangky),
           'color' =>  'green',
         );
 
@@ -169,7 +185,13 @@
         else {
           // kiểm tra nếu nhân viên thuộc diện cá biệt, bỏ qua
           if ($p['type'] == '0' && $j > 1) {
-            if ($checkprevent[date('N', $ct)] <= count($l)) $temp['list'][$j]['color'] = 'gray';
+            // số lượng nhân viên trừ nhân viên bán hàng
+            $nhanvientrubanhang = 0;
+            foreach ($nhanviendangky as $tennhanvien) {
+              if (in_array($tennhanvien, $danhsachngoaile) == false) $nhanvientrubanhang ++;
+            }
+
+            if ($cauhinh[date('N', $ct)]->gioihan <= $nhanvientrubanhang) $temp['list'][$j]['color'] = 'gray';
           }
         }
       }
