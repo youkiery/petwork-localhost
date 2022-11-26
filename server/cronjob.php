@@ -1,15 +1,20 @@
 <?php
+
+// error_reporting(E_ALL);
+// ini_set('display_errors', 1);
+
 define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
 define('DIR', str_replace('/server', '/', ROOTDIR));
-include_once(ROOTDIR . '/include/config.php');
-include_once(ROOTDIR . '/server/db.php');
-include_once(ROOTDIR . '/server/global.php');
+include_once(DIR . '/include/config.php');
+include_once(DIR . '/server/db.php');
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
-$userid = checkuserid();
 $sql = "select a.*, b.type, b.time as rtime, b.list from pet_". PREFIX ."_work a inner join pet_". PREFIX ."_work_repeat b on a.id = b.workid and b.status = 1";
 $danhsachcongviec = $db->all($sql);
-$today = time();
+$today = strtotime(date('Y/m/d')) + 60 * 60 * 24;
 $endday = $today + 60 * 60 * 24 - 1;
+
+// $log = time();
+// error_log($log."\n", 3, DIR .'/include/log/' . time() . '.log');
 
 foreach ($danhsachcongviec as $key => $congviec) {
   // switch type
@@ -21,7 +26,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       // nếu ngày hôm nay trong split type thì thêm
       $list = explode(',', $congviec['list']);
       $day = strval(date('w', $today));
-      if (in_array($day, $list) != false) {
+      if ($list[$day] == '1') {
         $sql = "insert into pet_". PREFIX ."_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($congviec[userid], $congviec[departid], '$congviec[title]', '$congviec[content]', '$congviec[file]', $today, $today, $expire, $today, 0)";
         $db->query($sql);
       }

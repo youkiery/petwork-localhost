@@ -150,8 +150,10 @@ function updateData() {
 
   $time = time();
   $image = implode(',', $data->image);
+  $hinhanhtugiac = implode(',', $data->hinhanhtugiac);
+  $hinhanhdongdoi = implode(',', $data->hinhanhdongdoi);
 
-  $sql = "update pet_". PREFIX ."_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image', noidungdongdoi = '$noidungdongdoi', noidungtugiac = '$noidungtugiac', hinhanhdongdoi = '$hinhanhdongdoi', hinhanhtugiac = '$hinhanhtugiac' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_kaizen set problem = '$data->problem', solution = '$data->solution', result = '$data->result', edit_time = $time, image = '$image', noidungdongdoi = '$data->noidungdongdoi', noidungtugiac = '$data->noidungtugiac', hinhanhdongdoi = '$hinhanhdongdoi', hinhanhtugiac = '$hinhanhtugiac' where id = $data->id";
   $db->query($sql);
 }
 

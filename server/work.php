@@ -556,9 +556,12 @@ function nhantin() {
 
   $userid = checkuserid();
   $time = time();
-  if (empty($data->commentid)) $sql = "insert into pet_". PREFIX ."_work_comment (workid, userid, comment, file, time) values($data->id  , $userid, '$data->chat', '$data->image', $time)";
-  else $sql = "update pet_". PREFIX ."_work_comment set comment = '$data->chat', file = '$data->image' where id = $data->commentid";
-  $db->query($sql);
+  foreach ($data->image as $image) {
+    if (empty($data->commentid)) $sql = "insert into pet_". PREFIX ."_work_comment (workid, userid, comment, file, time) values($data->id  , $userid, '$data->chat', '$image', $time)";
+    else $sql = "update pet_". PREFIX ."_work_comment set comment = '$data->chat', file = '$image' where id = $data->commentid";
+    $data->chat = '';
+    $db->query($sql);
+  }
 
   $result['status'] = 1;
   $result['binhluan'] = danhsachbinhluan();
@@ -572,6 +575,7 @@ function danhsachbinhluan() {
   $danhsachbinhluan = $db->all($sql);
   foreach ($danhsachbinhluan as $key => $binhluan) {
     $danhsachbinhluan[$key]['time'] = date('d/m/Y h:i', $binhluan['time']);
+    $danhsachbinhluan[$key]['file'] = explode(',', $binhluan['file']);
   }
 
   return $danhsachbinhluan;
