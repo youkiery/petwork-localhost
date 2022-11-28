@@ -1,16 +1,17 @@
 <?php
 
-// error_reporting(E_ALL);
-// ini_set('display_errors', 1);
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
 define('DIR', str_replace('/server', '/', ROOTDIR));
 include_once(DIR . '/include/config.php');
 include_once(DIR . '/server/db.php');
+
+define('PREFIX', $config['prefix']);
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 $sql = "select a.*, b.type, b.time as rtime, b.list from pet_". PREFIX ."_work a inner join pet_". PREFIX ."_work_repeat b on a.id = b.workid and b.status = 1";
 $danhsachcongviec = $db->all($sql);
-$today = strtotime(date('Y/m/d')) + 60 * 60 * 24;
+$today = strtotime(date('Y/m/d'));
 $endday = $today + 60 * 60 * 24 - 1;
 
 // $log = time();
