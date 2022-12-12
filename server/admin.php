@@ -631,6 +631,19 @@ function placeselect() {
   return $result;
 }
 
+function thaydoichotlich() {
+  global $db, $result, $data;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+  if (empty($chotlich = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'chotlich', '$data->loaichot', '')";
+  else $sql = "update pet_". PREFIX ."_config set value = '$data->loaichot' where id = $chotlich[id]";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['chotlich'] = $data->loaichot;
+  return $result;
+}
+
 function cauhinhlich() {
   global $db, $result, $data;
 

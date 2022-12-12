@@ -11,7 +11,7 @@ define('PREFIX', $config['prefix']);
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 $sql = "select a.*, b.type, b.time as rtime, b.list from pet_". PREFIX ."_work a inner join pet_". PREFIX ."_work_repeat b on a.id = b.workid and b.status = 1";
 $danhsachcongviec = $db->all($sql);
-$today = strtotime(date('Y/m/d'));
+$today = strtotime(date('Y/m/d')) + 60 * 60 * 24;
 $endday = $today + 60 * 60 * 24 - 1;
 
 // $log = time();

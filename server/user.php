@@ -137,11 +137,17 @@ function getinitdata($userid) {
     if ($ngaythangsinh == $homnay || $ngaythangsinh == $ngaymai) $sinhnhat []= ['fullname' => $ngaysinh['fullname'], 'birthday' => date('d/m/Y', $ngaysinh['birthday'])];
   }
 
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+  $chotlich = $db->fetch($sql);
+  if (empty($chotlich)) $chotlich = "0";
+  else $chotlich = $chotlich['value'];
+
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
     'prefix' => PREFIX,
     'branch' => BRANCH,
     'userid' => $userid,
+    'chotlich' => $chotlich,
     'username' => $userinfo['username'],
     'name' => $userinfo['name'],
     'fullname' => $userinfo['fullname'],
