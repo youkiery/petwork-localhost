@@ -1,9 +1,13 @@
 <?php
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+  $chotlich = $db->fetch($sql)['value'];
+
   function init() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
     $data->time /= 1000;
 
     $result['status'] = 1;
+    $result['chedochotlich'] = $chotlich;
     $result['data'] = getList($data);
     $result['list'] = getScheduleUser();
     $result['except'] = getExcept();
@@ -14,16 +18,24 @@
   }
 
   function kiemtradadangky() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
 
-    // từ $time lấy dữ liệu tháng này
-    $userid = checkuserid();
-    $batdau = strtotime(date('Y/m/1', $data->time));
-    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
-    $danhsach = $db->all($sql);
-
-    return 8 - count($danhsach);
+    if ($chotlich == 1) {
+      $batdau = strtotime(date('Y/m/1', $data->time));
+      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $userid = checkuserid();
+      // từ $time lấy dữ liệu tháng này
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
+      $danhsach = $db->all($sql);
+  
+      return 8 - count($danhsach);
+    }
+    else {
+      // $date = date('N', $data->time) - 1;
+      // $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      // $ketthuc = $batdau + 60 * 60 * 24 - 1;
+      return 14;
+    }
   }
 
   function thongkedangky() {
@@ -67,7 +79,7 @@
   }
 
   function userreg() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
 
     $data->time /= 1000;
     $starttime = strtotime(date('Y/m/1', $data->time));
@@ -77,6 +89,9 @@
       $time = $starttime + $v->order * $aday;
       insert($v->uid, $time, $v->type, $v->action);
     }
+
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+    $chotlich = $db->fetch($sql)['value'];
     
     $result['status'] = 1;
     $result['messenger'] = 'Đã đăng ký lịch';
@@ -87,7 +102,7 @@
   }
 
   function managerreg() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
     
     $data->time /= 1000;
     
@@ -98,7 +113,10 @@
       $time = $starttime + $v->order * $aday;
       insert($v->uid, $time, $data->state * 2 + $v->type, $v->action);
     }
-    
+
+    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+    $chotlich = $db->fetch($sql)['value'];
+
     $result['status'] = 1;
     $result['messenger'] = 'Đã đăng ký lịch';
     $result['data'] = getList($data);
@@ -117,19 +135,29 @@
   }
 
   function getList($data) {
-    global $db;
+    global $db, $chotlich;
 
     if (getRole() > 1) return managerData();
     return userData();
   }
 
   function userData() {
-    global $db, $data;
-    
-    $starttime = strtotime(date('Y/m/1', $data->time));
-    $endtime = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $daysofmonth = date('t', $data->time);
-    $time = strtotime(date('Y/m/t'));
+    global $db, $data, $chotlich;
+
+    if ($chotlich == '1') {
+      $starttime = strtotime(date('Y/m/1', $data->time));
+      $endtime = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $daysofmonth = date('t', $data->time);
+      $time = strtotime(date('Y/m/t'));
+    }
+    else {
+      // xem 
+      $date = date('N', $data->time) - 1;
+      $starttime = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $endtime = $starttime + 60 * 60 * 24 - 1;
+      $daysofmonth = 7;
+      $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
+    }
 
     $sql = "select b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'fullname');
@@ -201,7 +229,23 @@
   }
 
   function managerData() {
-    global $db, $data;
+    global $db, $data, $chotlich;
+    
+    if ($chotlich == '1') {
+      $batdau = strtotime(date('Y/m/1', $data->time));
+      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $ngaytrongthang = date('t', $data->time);
+      $time = strtotime(date('Y/m/t'));
+    }
+    else {
+      // xem 
+      $date = date('N', $data->time) - 1;
+      $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $ketthuc = $batdau + 60 * 60 * 24 - 1;
+      $ngaytrongthang = 7;
+      $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
+    }
+
     $dulieu = array(
       'ngay' => array(),
       'thu' => array(),
@@ -209,11 +253,6 @@
       'dangky' => array()
     );
     
-    $batdau = strtotime(date('Y/m/1', $data->time));
-    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-    $ngaytrongthang = date('t', $data->time);
-    $time = strtotime(date('Y/m/t'));
-
     $sql = "select b.userid, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
     $danhsachnhanvien = $db->all($sql);
 
@@ -222,8 +261,14 @@
       $thoigian = $batdau + ($i - 1) * 60 * 60 * 24;
       $dulieu['ngay'] []= date('d/m', $thoigian);
       $dulieu['thu'] []= $convert[date('N', $thoigian)];
-      $dulieu['buoi'] []= 'S';
-      $dulieu['buoi'] []= 'C';
+      if ($data->state == 0) {
+        $dulieu['buoi'] []= 'BV';
+        $dulieu['buoi'] []= 'LB';
+      }
+      else {
+        $dulieu['buoi'] []= 'S';
+        $dulieu['buoi'] []= 'C';
+      }
     }
 
     // thay đổi type
@@ -351,11 +396,9 @@
             $dulieu[$nhanvien['userid']]['nghiphat'] ++;
             $dulieu[$nhanvien['userid']]['tongnghi'] ++;
             $thutuphat = $thutungay - $gioihanngay;
-            if ($config[$ngaytrongtuan]->phat) {
-              // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
-              $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
-              $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
-            }
+            // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
+            $dulieu[$nhanvien['userid']]['nghiphat'] += 1 + $thutuphat;
+            $dulieu[$nhanvien['userid']]['tongnghi'] += 1 + $thutuphat;
           }
         }
       }
@@ -436,11 +479,9 @@
             $dulieu[$nhanvien['userid']]['nghiphat'] ++;
             $dulieu[$nhanvien['userid']]['tongnghi'] ++;
             $thutuphat = $thutungay - $gioihanngay;
-            if ($config[$ngaytrongtuan]->phat) {
               // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
-              $dulieu[$nhanvien['userid']]['nghiphat'] += $thutuphat;
-              $dulieu[$nhanvien['userid']]['tongnghi'] += $thutuphat;
-            }
+            $dulieu[$nhanvien['userid']]['nghiphat'] += 1 + $thutuphat;
+            $dulieu[$nhanvien['userid']]['tongnghi'] += 1 + $thutuphat;
           }
         }
       }
@@ -492,15 +533,28 @@
   }
   
   function getoverload() {
-    global $data, $db;
+    global $data, $db, $chotlich;
+
+    if ($chotlich == '1') {
+      $batdau = strtotime(date('Y/m/1', $data->time));
+      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $ngaytrongthang = date('t', $data->time);
+      $time = strtotime(date('Y/m/t'));
+    }
+    else {
+      // xem 
+      $date = date('N', $data->time) - 1;
+      $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $ketthuc = $batdau + 60 * 60 * 24 - 1;
+      $ngaytrongthang = 7;
+      $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
+    }
 
     $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $danhsachchuasapxep = array();
 
-    $batdau = strtotime(date('Y/m/1', $data->time));
-    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
     $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
     $config = $db->fetch($sql);
     $config = json_decode($config['value']);  
@@ -532,11 +586,8 @@
         $gioihanngay = $config[$thutungay]->gioihan;
         foreach ($dsdk as $thutu => $userid) {
           if ($thutu >= $gioihanngay) {
-            if ($config[$thutungay]->phat == 1) {
-              $thutuphat = $thutu - $gioihanngay;
-              $nghiphat = (1 + $thutuphat) / 2;
-            }
-            else $nghiphat = 0.5;
+            $thutuphat = $thutu - $gioihanngay;
+            $nghiphat = (1 + $thutuphat) / 2;
             if (empty($danhsachchuasapxep[$ngay])) $danhsachchuasapxep[$ngay] = [];
             $danhsachchuasapxep[$ngay] []= [
               'nguoidung' => $nguoidung[$userid],

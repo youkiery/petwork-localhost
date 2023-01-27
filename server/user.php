@@ -156,7 +156,6 @@ function getinitdata($userid) {
     'type' => $type,
     'spa' => $spa,
     'birthday' => $sinhnhat,
-    'his' => getHisChatCount($userid),
     'usgcode' => $usgcode,
     'today' => date('d/m/Y'),
     'next' => date('d/m/Y', time() + 60 * 60 * 24 * 21),

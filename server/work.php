@@ -291,12 +291,12 @@ function danhsachcongviec() {
       // phân quyền công việc chưa được phân => tất cả thấy
       // 	công việc đã phân chỉ có người đó thấy
 
-      $sql = "select * from pet_". PREFIX ."_work where userid = $userid or ($xtra2 and (id not in (select workid as id from pet_". PREFIX ."_work_assign) or id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by time desc, updatetime desc limit 50";
+      $sql = "select * from pet_". PREFIX ."_work where userid = $userid or ($xtra2 or (id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by createtime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
     case '1':
       // workin in follow
-      $sql = "select * from pet_". PREFIX ."_work where id in (select workid as id from pet_". PREFIX ."_work_follow where userid = $userid) $xtra order by time desc, updatetime desc limit 50";
+      $sql = "select * from pet_". PREFIX ."_work where id in (select workid as id from pet_". PREFIX ."_work_follow where userid = $userid) $xtra order by createtime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
   }
@@ -393,7 +393,7 @@ function laythongtintheoid() {
   $sql = "select * from pet_". PREFIX ."_users where active = 1";
   $nhanvien = $db->obj($sql, 'userid');
 
-  $sql = "select * from pet_". PREFIX ."_work_follow where workid = $data->id";
+  $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $data->id";
   $followtext = implode(', ', $db->arr($sql, 'fullname'));
   $theodoi = $db->all($sql);
   $follow = array('text' => array(), 'list' => array());
@@ -412,7 +412,7 @@ function laythongtintheoid() {
     );
   }
 
-  $sql = "select * from pet_". PREFIX ."_work_assign where workid = $data->id";
+  $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_assign a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $data->id";
   $assigntext = implode(', ', $db->arr($sql, 'fullname'));
   $giaoviec = $db->all($sql);
   $assign = array('text' => array(), 'list' => array());
@@ -460,7 +460,6 @@ function laythongtintheoid() {
       }
     }
   }
-
   $sql = "select fullname from pet_". PREFIX ."_users where userid = $congviec[userid]";
   $usertext = $db->fetch($sql)['fullname'];
 

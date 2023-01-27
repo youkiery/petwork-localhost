@@ -36,12 +36,13 @@ else {
   include_once('../include/config.php');
   include_once('db.php');
   include_once('global.php');
-  include_once(ROOTDIR. "/$data->type.php");
   define('PREFIX', $config['prefix']);
   define('BRANCH', $config['branch']);
 
   $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
   $allow = array('session', 'login', 'signip');
+
+  include_once(ROOTDIR. "/$data->type.php");
 
   if (in_array($data->action, $allow) == false) {
     if ($data->type !== 'user') include_once(ROOTDIR. "/user.php");
