@@ -69,13 +69,15 @@
     $ngaybatdau = strtotime(date('Y', $time) .'/'. date('m', $time) .'/1');
     $ngayketthuc = strtotime(date('Y', $time) .'/'. (date('m', $time) + 1) .'/1') - 1;
 
-    $sql = "select thoigian from pet_". PREFIX ."_luong where thoigian between $ngaybatdau and $ngayketthuc";
-    $danhsach = $db->arr($sql, 'thoigian');
+    return [];
+    // $sql = "select thoigian from pet_". PREFIX ."_luong where thoigian between $ngaybatdau and $ngayketthuc";
+    // die($sql);
+    // $danhsach = $db->arr($sql, 'thoigian');
 
-    foreach ($danhsach as $key => $value) {
-      $danhsach[$key] = date('d/m/Y', $value);
-    }
-    return $danhsach;
+    // foreach ($danhsach as $key => $value) {
+    //   $danhsach[$key] = date('d/m/Y', $value);
+    // }
+    // return $danhsach;
   }
 
   function userreg() {

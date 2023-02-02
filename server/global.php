@@ -19,11 +19,11 @@ function parseimage($image) {
 function purenumber($number) {
   $n = '';
   $number = strval($number);
-  $arr = array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  $arr = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
   $l = strlen($number);
   for ($i = 0; $i < $l; $i++) {
-    $value = $number[$i]; 
-    if (in_array($value, $arr) != false) $n = $n . $value;
+    $value = $number[$i];
+    if (in_array($value, $arr) !== false) $n = $n . $value;
   }
   return intval($n);
 }
