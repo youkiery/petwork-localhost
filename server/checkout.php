@@ -211,8 +211,7 @@ function excel() {
     if (empty($kiottemp[$index])) {
       foreach ($bank as $bkey => $bankitem) {
         $content[$index]['list'] []= array(
-          'time' => $bankitem['time'],
-          'bank' => $bankitem['content'],
+          'bank' => $bankitem['time'] .': '. $bankitem['content'],
           'kiot' => '',
           'money' => $bankitem['money'],
           'status' => 1,
@@ -230,9 +229,8 @@ function excel() {
           // nếu chưa trùng và tiền 2 bên bằng nhau thì thêm vào ô khớp
           if ($check && $bankitem['money'] == $kiotitem['money']) {
             $content[$index]['list'] []= array(
-              'time' => $kiotitem['time'],
-              'kiot' => $kiotitem['content'],
-              'bank' => $bankitem['content'],
+              'kiot' => $kiotitem['time'] .': '.$kiotitem['content'],
+              'bank' => $bankitem['time'] .': '.$bankitem['content'],
               'money' => $kiotitem['money'],
               'status' => 0,
             );
@@ -247,12 +245,11 @@ function excel() {
         if ($check) {
           // không khớp ngân hàng, thêm vào ô ngân hàng
           $content[$index]['list'] []= array(
-            'time' => $bankitem['time'],
-            'bank' => $bankitem['content'],
+            'bank' => $bankitem['time'] .': '. $bankitem['content'],
             'kiot' => '',
             'money' => $bankitem['money'],
             'status' => 1,
-          );
+        );
           $content[$index]['bank'] += $bankitem['money'];
         } 
       }
@@ -260,8 +257,7 @@ function excel() {
       // chạy hết, những chi nhánh kiot chưa trùng thêm vào ô ngân hàng
       foreach ($kiot as $kkey => $kiotitem) {
         $content[$index]['list'] []= array(
-          'time' => $kiotitem['time'],
-          'kiot' => $kiotitem['content'],
+          'kiot' => $kiotitem['time'] .': '. $kiotitem['content'],
           'bank' => '',
           'money' => $kiotitem['money'],
           'status' => -1,
@@ -385,6 +381,7 @@ function getData($file, $key) {
     foreach ($key as $name => $data) {
       if ($name == 'money') {
         $val = str_replace(',', '', $sheet->getCell($data['a'] . $j)->getValue());
+        $val = str_replace('.00', '', $val);
         $val = str_replace('.', '', $val);
         $temp[$name] = $val;
       }

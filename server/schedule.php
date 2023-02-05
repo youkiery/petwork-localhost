@@ -14,7 +14,42 @@
     $result['quangay'] = getoverload();
     $result['dachotlich'] = kiemtrachotlich();
     $result['dadangky'] = kiemtradadangky();
+    $result['nghichunhat'] = nghichunhat();
     return $result;
+  }
+
+  function nghichunhat() {
+    global $db, $data;
+
+    $userid = checkuserid();
+    $thoigian = $data->time;
+    $motngay = 60 * 60 * 24;
+    $mottuan = 7 * $motngay;
+    $dauthangnay = strtotime(date('Y/m/1', $thoigian));
+    $cuoithangnay = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
+    $ngaychunhat = $dauthangnay + (7 - date('w', $dauthangnay)) * $motngay;
+
+    // danhsach: [ {ngay: {sang: chophep = true, chieu: khongchophep = false}} ]
+    // tìm danh sách ngày chủ nhật trong tháng
+    // chạy danh sách, tìm kiếm trong khoảng thời gian đó có đăng ký được không
+    // trả về danh sách
+    $nghichunhat = [];
+    while ($ngaychunhat < $cuoithangnay) {
+      $songaynghi = 0;
+      $xtra = [];
+      $xtra []= "time = ". $ngaychunhat;
+      for ($i = 1; $i <= 8; $i++) { 
+        $xtra []= "time = ". ($ngaychunhat - $i * $mottuan);
+        $xtra []= "time = ". ($ngaychunhat + $i * $mottuan);
+      }
+
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (". implode(' or ', $xtra) .") and type >= 2";
+      $songaynghi += $db->count($sql);
+
+      $nghichunhat[date('d/m', $ngaychunhat)] = $songaynghi;
+      $ngaychunhat += $mottuan;
+    }
+    return $nghichunhat;
   }
 
   function kiemtradadangky() {
@@ -100,6 +135,7 @@
     $result['data'] = getList($data);
     $result['quangay'] = getoverload();
     $result['dadangky'] = kiemtradadangky();
+    $result['nghichunhat'] = nghichunhat();
     return $result;
   }
 
@@ -124,6 +160,7 @@
     $result['data'] = getList($data);
     $result['quangay'] = getoverload();
     $result['dadangky'] = kiemtradadangky();
+    $result['nghichunhat'] = nghichunhat();
     return $result;
   }
 

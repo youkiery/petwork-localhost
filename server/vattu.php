@@ -11,6 +11,71 @@ function khoitao() {
   return $result;
 }
 
+function khoitaocophan() {
+  global $db, $data, $result;
+  
+  $result['status'] = 1;
+  $result['cophan'] = dulieucophan();
+  return $result;
+}
+
+function import() {
+  global $data, $db, $result, $_FILES;
+
+  $raw = $_FILES['file']['tmp_name'];
+  $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+  $name = pathinfo($_FILES['file']['name'], PATHINFO_FILENAME);
+  $file_name = $name . "-". time() . ".". $ext;
+
+  include DIR .'include/PHPExcel/IOFactory.php';
+  $inputFileType = PHPExcel_IOFactory::identify($raw);
+  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+  $objReader->setReadDataOnly(true);
+  $objPHPExcel = $objReader->load($raw);
+  $sheet = $objPHPExcel->getSheet(0); 
+
+  $x = [];
+  $xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');
+  foreach ($xr as $key => $value) {
+    $x[$value] = $key;
+  }
+
+  $highestRow = $sheet->getHighestRow(); 
+
+  for ($i = 2; $i <= $highestRow; $i ++) { 
+    $dulieutam = [];
+    // 0  , 1    , 2      , 3       , 4     , 5     , 6
+    // ten, donvi, soluong, thoigian, giatri, ghichu, thuoctang
+    for ($j = 0; $j <= 6; $j ++) { 
+      $dulieutam []= $sheet->getCell($xr[$j] . $i)->getValue();
+    }
+    $dulieutam[2] = intval($dulieutam[2]);
+    $dulieutam[3] = totime($dulieutam[3]);
+    $dulieutam[4] = purenumber($dulieutam[4]);
+    if (empty($dulieutam[0])) break;
+    else if ($dulieutam[2] == 0) break;
+    $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, ghichu) values('$dulieutam[0]', '$dulieutam[1]', $dulieutam[2], $dulieutam[3], $dulieutam[4], '$dulieutam[5]')";
+    $idvattu = $db->insertid($sql);
+
+    // thuộc tầng
+    $thuoctang = explode(',', $dulieutam[6]);
+    foreach ($thuoctang as $tang) {
+      $tang = trim($tang);
+      $sql = "select * from pet_". PREFIX ."_vattutang where ten = '$tang'";
+      if (empty($dulieutang = $db->fetch($sql))) {
+        $sql = "insert into pet_". PREFIX ."_vattutang (ten) values('$tang')";
+        $dulieutang = ['id' => $db->insertid($sql)];
+      }
+      $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($idvattu, $dulieutang[id])";
+      $db->query($sql);
+    }
+  }
+
+  $result['messenger'] = "Đã tải lên";
+  $result['dulieu'] = dulieuvattu();
+  return $result;
+}
+
 function xoavattu() {
   global $db, $data, $result;
 
@@ -19,6 +84,17 @@ function xoavattu() {
   
   $result['status'] = 1;
   $result['dulieu'] = dulieuvattu();
+  return $result;
+}
+
+function xoacophan() {
+  global $db, $data, $result;
+
+  $sql = "delete from pet_". PREFIX ."_cophan where id = $data->idgiaodich";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['cophan'] = dulieucophan();
   return $result;
 }
 
@@ -52,6 +128,24 @@ function xoatang() {
   
   $result['status'] = 1;
   $result['danhsachtang'] = danhsachtang();
+  return $result;
+}
+
+function themcophan() {
+  global $db, $data, $result;
+
+  $dulieu = $data->dulieu;
+  $dulieu->giatri = purenumber($dulieu->giatri);
+  if (!empty($dulieu->id)) {
+    $sql = "update pet_". PREFIX ."_cophan set nguoimua = '$dulieu->nguoimua', tile = $dulieu->tile, giatri = $dulieu->giatri where id = $dulieu->id";
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_cophan (nguoimua, tile, giatri) values('$dulieu->nguoimua', $dulieu->tile, $dulieu->giatri)";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['cophan'] = dulieucophan();
   return $result;
 }
 
@@ -98,6 +192,28 @@ function themvattu() {
 
 // chức năng
 
+function dulieucophan() {
+  global $db, $data;
+  $dulieu = [
+    'tile' => 0,
+    'giatri' => 0,
+    'danhsach' => []
+  ];
+
+  $sql = "select * from pet_". PREFIX ."_cophan order by id desc";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $giaodich) {
+    $dulieu['tile'] += $giaodich['tile'];
+    $dulieu['giatri'] += $giaodich['giatri'];
+    $danhsach[$thutu]['giatri'] = number_format($giaodich['giatri']);
+  }
+  $dulieu['danhsach'] = $danhsach;
+  $dulieu['giatri'] = number_format($dulieu['giatri']);
+
+  return $dulieu;
+}
+
 function dulieuvattu() {
   global $db, $data, $result;
   
@@ -110,7 +226,7 @@ function dulieuvattu() {
 
   // nếu có tầng thì lọc
   // nếu không để toàn bô
-  if (count($data->loctang)) {
+  if (count($data->loctang) && !empty($data->loctang[0])) {
     $xtra = "where id in (select idvattu as id from pet_". PREFIX ."_vattunoitang where idtang in (". implode(', ', $data->loctang) ."))";
   
     $sql = "select * from pet_". PREFIX ."_vattutang where id in (". implode(', ', $data->loctang) .") order by ten asc";
@@ -131,6 +247,7 @@ function dulieuvattu() {
     $danhsachvattu[$thutu]['thuoctang'] = danhsachlienkettang($vattu['id']);
     $danhsachvattu[$thutu]['tang'] = dulieulienkettang($vattu['id']);
     $danhsachvattu[$thutu]['giatri'] = number_format($vattu['giatri']);
+    $danhsachvattu[$thutu]['tongtien'] = number_format($vattu['soluong'] * $vattu['giatri']);
     $danhsachvattu[$thutu]['thoigian'] = date('d/m/Y', $vattu['thoigian']);
   }
   $dulieu['danhsach'] = $danhsachvattu;
@@ -178,7 +295,7 @@ function danhsachlienkettang($idvattu) {
     $danhsach []= $tang['ten'];
   }
   if (count($danhsach)) return implode(', ', $danhsach);
-  else return 'Không có';
+  else return 'Không';
 }
 
 function dulieulienkettang($idvattu) {

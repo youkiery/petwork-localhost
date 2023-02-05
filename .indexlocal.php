@@ -4,7 +4,7 @@ header("Access-Control-Allow-Credentials: true");
 
 for ($i = 0; $i < 7; $i++) { 
   $date = time() + $i * 60 * 60 * 24;
-  echo date('N', $date) . ': '. date('d/m/Y', $date) . '<br>';
+  echo date('w', $date) . ': '. date('d/m/Y', $date) . '<br>';
 }
 die();
 
