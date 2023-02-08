@@ -29,16 +29,22 @@
     $cuoithangnay = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
     $ngaychunhat = $dauthangnay + (7 - date('w', $dauthangnay)) * $motngay;
 
+    $sql = "select count(*) as soluong from pet_". PREFIX."_users a inner join pet_". PREFIX."_user_per b on a.userid = b.userid and b.module = 'manager' and b.type > 0";
+    $songoaile = $db->fetch($sql)['soluong'];
+
+    $sql = "select count(*) as soluong from pet_". PREFIX."_users a inner join pet_". PREFIX."_user_per b on a.userid = b.userid and b.module = 'schedule' and b.type > 0";
+    $sonhanvien = $db->fetch($sql)['soluong'] - $songoaile;
+
     // danhsach: [ {ngay: {sang: chophep = true, chieu: khongchophep = false}} ]
     // tìm danh sách ngày chủ nhật trong tháng
     // chạy danh sách, tìm kiếm trong khoảng thời gian đó có đăng ký được không
     // trả về danh sách
     $nghichunhat = [];
-    while ($ngaychunhat < $cuoithangnay) {
+    while ($ngaychunhat <= $cuoithangnay) {
       $songaynghi = 0;
       $xtra = [];
       $xtra []= "time = ". $ngaychunhat;
-      for ($i = 1; $i <= 8; $i++) { 
+      for ($i = 1; $i <= $sonhanvien; $i++) { 
         $xtra []= "time = ". ($ngaychunhat - $i * $mottuan);
         $xtra []= "time = ". ($ngaychunhat + $i * $mottuan);
       }
