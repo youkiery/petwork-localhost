@@ -665,9 +665,25 @@ function cauhinhlich() {
   }
   else $config = json_decode($config['value']);
 
+  $sql = "select * from pet_". PREFIX ."_config where name = 'thoigianmo'";
+  if (empty($thoigianmo = $db->fetch($sql))) $thoigianmo = ['value' => '0000-00-00T00:00:00+07:00'];
+  $sql = "select * from pet_". PREFIX ."_config where name = 'thoigiandong'";
+  if (empty($thoigiandong = $db->fetch($sql))) $thoigiandong = ['value' => '0000-00-00T00:00:00+07:00'];
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'khoathoigian'";
+  if (empty($khoathoigian = $db->fetch($sql))) $khoathoigian = ['value' => '0'];
+
   $result['status'] = 1;
   $result['dulieu'] = $config;
+  $result['khoathoigian'] = $khoathoigian['value'];
+  $result['thoigianmo'] = chuyenthoigianiso($thoigianmo['value']);
+  $result['thoigiandong'] = chuyenthoigianiso($thoigiandong['value']);
   return $result;
+}
+
+function chuyenthoigianiso($thoigian) {
+  if (empty($thoigian)) $thoigian = time();
+  return date(DATE_ISO8601, $thoigian);
 }
 
 function luucauhinhlich() {
@@ -676,6 +692,40 @@ function luucauhinhlich() {
   $json = json_encode($data->dulieu);
   $sql = "update pet_". PREFIX ."_config set value = '$json' where module = 'config' and name = 'schedule-config'";
   $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}
+
+function luucauhinhthoigian() {
+  global $db, $result, $data;
+
+  $data->thoigianmo = strtotime($data->thoigianmo);
+  $data->thoigiandong = strtotime($data->thoigiandong);
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'khoathoigian'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'khoathoigian', $data->khoathoigian, 0)";
+  else $sql = "update pet_". PREFIX ."_config set value = $data->khoathoigian where name = 'khoathoigian'";
+  $db->query($sql);
+
+  if (intval($data->khoathoigian)) {
+    $sql = "select * from pet_". PREFIX ."_config where name = 'thoigianmo'";
+    if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'thoigianmo', $data->thoigianmo, 0)";
+    else $sql = "update pet_". PREFIX ."_config set value = $data->thoigianmo where name = 'thoigianmo'";
+    $db->query($sql);
+  
+    $sql = "select * from pet_". PREFIX ."_config where name = 'thoigiandong'";
+    if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'thoigiandong', $data->thoigiandong, 0)";
+    else $sql = "update pet_". PREFIX ."_config set value = $data->thoigiandong where name = 'thoigiandong'";
+    $db->query($sql);
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = 0 where name = 'thoigiandong'";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_config set value = 0 where name = 'thoigianmo'";
+    $db->query($sql);
+  }
 
   $result['status'] = 1;
   $result['messenger'] = 'Đã lưu cấu hình';

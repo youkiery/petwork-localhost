@@ -121,27 +121,62 @@
     // return $danhsach;
   }
 
+  function kiemtrakhoalich() {
+    global $db;
+
+    $sql = "select * from pet_". PREFIX ."_config where name = 'khoathoigian'";
+    $khoathoigian = $db->fetch($sql);
+
+    if (empty($khoathoigian['value']) || $khoathoigian['value'] == '0') return true;
+    else {
+      $sql = "select * from pet_". PREFIX ."_config where name = 'thoigianmo'";
+      $thoigianmo = $db->fetch($sql)['value'];
+      $sql = "select * from pet_". PREFIX ."_config where name = 'thoigiandong'";
+      $thoigiandong = $db->fetch($sql)['value'];
+      $baygio = time();
+      // nếu baygio nằm giữa thì true
+      if ($baygio >= strtotime(date('Y/m/d') . ' ' . date('H:i', $thoigianmo)) && $baygio <= strtotime(date('Y/m/d') . ' ' . date('H:i', $thoigiandong))) return true;
+    }
+    return false;
+  }
+
+  function giokhoalich() {
+    global $db;
+    $sql = "select * from pet_". PREFIX ."_config where name = 'thoigianmo'";
+    $thoigianmo = $db->fetch($sql)['value'];
+
+    $sql = "select * from pet_". PREFIX ."_config where name = 'thoigiandong'";
+    $thoigiandong = $db->fetch($sql)['value'];
+
+    return date('H:i', $thoigianmo) . ' - ' . date('H:i', $thoigiandong);
+  }
+
   function userreg() {
     global $data, $db, $result, $chotlich;
 
     $data->time /= 1000;
     $starttime = strtotime(date('Y/m/1', $data->time));
     $aday = 60 * 60 * 24;
-    
-    foreach ($data->list as $v) {
-      $time = $starttime + $v->order * $aday;
-      insert($v->uid, $time, $v->type, $v->action);
-    }
 
-    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
-    $chotlich = $db->fetch($sql)['value'];
-    
-    $result['status'] = 1;
-    $result['messenger'] = 'Đã đăng ký lịch';
-    $result['data'] = getList($data);
-    $result['quangay'] = getoverload();
-    $result['dadangky'] = kiemtradadangky();
-    $result['nghichunhat'] = nghichunhat();
+    if (!kiemtrakhoalich()) {
+      $result['messenger'] = 'Đã quá giờ đăng ký lịch ('. giokhoalich() .')';
+    }
+    else {
+      foreach ($data->list as $v) {
+        $time = $starttime + $v->order * $aday;
+        insert($v->uid, $time, $v->type, $v->action);
+      }
+  
+      $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+      $chotlich = $db->fetch($sql)['value'];
+      
+      $result['status'] = 1;
+      $result['messenger'] = 'Đã đăng ký lịch';
+      $result['data'] = getList($data);
+      $result['quangay'] = getoverload();
+      $result['dadangky'] = kiemtradadangky();
+      $result['nghichunhat'] = nghichunhat();
+    }
     return $result;
   }
 
@@ -153,20 +188,25 @@
     $starttime = strtotime(date('Y/m/1', $data->time));
     $aday = 60 * 60 * 24;
     
-    foreach ($data->list as $v) {
-      $time = $starttime + $v->order * $aday;
-      insert($v->uid, $time, $data->state * 2 + $v->type, $v->action);
+    if (!kiemtrakhoalich()) {
+      $result['messenger'] = 'Đã quá giờ đăng ký lịch ('. giokhoalich() .')';
     }
+    else {
+      foreach ($data->list as $v) {
+        $time = $starttime + $v->order * $aday;
+        insert($v->uid, $time, $data->state * 2 + $v->type, $v->action);
+      }
 
-    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
-    $chotlich = $db->fetch($sql)['value'];
+      $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+      $chotlich = $db->fetch($sql)['value'];
 
-    $result['status'] = 1;
-    $result['messenger'] = 'Đã đăng ký lịch';
-    $result['data'] = getList($data);
-    $result['quangay'] = getoverload();
-    $result['dadangky'] = kiemtradadangky();
-    $result['nghichunhat'] = nghichunhat();
+      $result['status'] = 1;
+      $result['messenger'] = 'Đã đăng ký lịch';
+      $result['data'] = getList($data);
+      $result['quangay'] = getoverload();
+      $result['dadangky'] = kiemtradadangky();
+      $result['nghichunhat'] = nghichunhat();
+    }
     return $result;
   }
 

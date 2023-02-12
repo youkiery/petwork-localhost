@@ -135,6 +135,12 @@ function themcongviec() {
     if ($repeat->type) {
       $repeat->time = isodatetotime($repeat->time);
       if (empty($repeat->time)) $repeat->time = 0;
+      if (count($repeat->list)) {
+        foreach ($data->repeat->list as $thutu => $giatri) {
+          if ($giatri) $data->repeat->list[$thutu] = 1;
+          else $data->repeat->list[$thutu] = 0;
+        }
+      }
       $list = array();
       $repeat->list = implode(',', $repeat->list);
       $sql = "insert into pet_". PREFIX ."_work_repeat (workid, type, time, list) values ($data->id, $repeat->type, $repeat->time, '$repeat->list')";
