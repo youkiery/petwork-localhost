@@ -292,12 +292,12 @@ function danhsachcongviec() {
       // công việc, lấy userid = userid, depart in (user depart), workid in assign
       $sql = "select a.id from pet_". PREFIX ."_work_depart a inner join pet_". PREFIX ."_work_depart_user b on a.id = b.departid where b.userid = $userid";
       $chuyenmuc = $db->arr($sql, 'id');
-      if (count($chuyenmuc)) $xtra2 = 'departid in ('. implode(', ', $chuyenmuc) .')';
+      if (count($chuyenmuc)) $xtra2 = 'departid in ('. implode(', ', $chuyenmuc) .') or ';
       else $xtra2 = '';
       // phân quyền công việc chưa được phân => tất cả thấy
       // 	công việc đã phân chỉ có người đó thấy
 
-      $sql = "select * from pet_". PREFIX ."_work where userid = $userid or ($xtra2 or (id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by createtime desc limit 50";
+      $sql = "select * from pet_". PREFIX ."_work where userid = $userid or ($xtra2 (id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by createtime desc limit 50";
       $danhsachcongviec = $db->all($sql);
       break;
     case '1':

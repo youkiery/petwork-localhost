@@ -731,3 +731,80 @@ function luucauhinhthoigian() {
   $result['messenger'] = 'Đã lưu cấu hình';
   return $result;
 }
+
+function khoitaonhantin() {
+  global $db, $result, $data;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function xoanhantin() {
+  global $db, $result, $data;
+
+  $sql = "update pet_". PREFIX ."_customer set loaitru = 1 where id = $data->idkhachhang";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function danhsachnhantin() {
+  global $db;
+
+  $cuoihomnay = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
+
+  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where a.nhantin = 0 and a.calltime <= $cuoihomnay and c.loaitru = 0 order by a.calltime asc limit 50";
+  $danhsach = $db->all($sql);
+  $danhsachnhantin = [];
+  $danhsachdienthoai = [];
+
+  foreach ($danhsach as $thutu => $dulieu) {
+    $sql = "select * from pet_". PREFIX ."_type where id = $dulieu[typeid]";
+    $loaitiem = $db->fetch($sql);
+
+    // tin nhắn theo loại
+
+    if (empty($danhsachdienthoai[$dulieu['phone']])) {
+      $danhsachdienthoai[$dulieu['phone']] = 1;
+      $danhsachnhantin []= [
+        'id' => $dulieu['id'],
+        'loainhac' => $loaitiem['name'],
+        'thoigiantoi' => date('d/m/Y', $dulieu['cometime']),
+        'thoigiannhac' => date('d/m/Y', $dulieu['calltime']),
+        'ghichu' => $dulieu['note'],
+        'idkhachhang' => $dulieu['idkhachhang'],
+        'khachhang' => $dulieu['name'],
+        'dienthoai' => $dulieu['phone'],
+        'trangthai' => 0,
+      ];
+    }
+    else {
+      // tìm kiếm trong danh sách nhắn tin
+      // thay đổi loại nhắc
+
+      foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
+        if ($dulieu['idkhachhang'] == $dulieunhantin['idkhachhang']) {
+          $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
+          $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $loaitiem['name'];
+          break;
+        }
+      }
+    }
+  }
+
+  return $danhsachnhantin;
+}
+
+function xacnhandagui() {
+  global $db, $data, $result;
+
+  if (strpos($data->id, ',') != false) $sql = "update set pet_". PREFIX ."_vaccine set nhantin = 1 where id in ($data->id)";
+  else $sql = "update set pet_". PREFIX ."_vaccine set nhantin = 1 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  return $result;
+}
