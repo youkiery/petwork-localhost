@@ -740,6 +740,83 @@ function khoitaonhantin() {
   return $result;
 }
 
+function khoitaoloaitru() {
+  global $db, $result, $data;
+
+  $cauhinh = [
+    'min' => laycauhinh('min'),
+    'max' => laycauhinh('max'),
+    'ngay' => laycauhinh('ngay'),
+    'mautin' => danhsachmautin(),
+    'danhsachloai' => danhsachloai()
+  ];
+
+  if (empty($cauhinh['min'])) $cauhinh['min'] = 1;
+  if (empty($cauhinh['max'])) $cauhinh['max'] = 2;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaitru();
+  $result['cauhinh'] = $cauhinh;
+  return $result;
+}
+
+function luumautin() {
+  global $db, $result, $data;
+
+  if ($data->id) {
+    // cập nhật mẫu tin
+    // thêm những cái không có
+    // xóa những cái không có
+    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin' where id = $data->id";
+    $db->query($sql);
+
+    foreach ($data->loai as $idloai) {
+      $sql = "select * from pet_". PREFIX ."_vaccinelienketmautin where idmautin = $data->id and idloai = $idloai";
+      if (empty($db->fetch($sql))) {
+        $sql = "insert into pet_". PREFIX ."_vaccinelienketmautin (idloai, idmautin) values ($idloai, $data->id)";
+        $db->query($sql);
+      }
+
+    }
+    $sql = "delete from pet_". PREFIX ."_vaccinelienketmautin where idmautin = $data->id and idloai not in (". implode(', ', $data->loai) .")";
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin) values ('$data->mautin')";
+    $idmautin = $db->insertid($sql);
+
+    foreach ($data->loai as $idloai) {
+      $sql = "insert into pet_". PREFIX ."_vaccinelienketmautin (idloai, idmautin) values ($idloai, $idmautin)";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachmautin();
+  $result['danhsachloai'] = danhsachloai();
+  return $result;
+}
+
+function danhsachloai() {
+  global $db;
+
+  $sql = "select id, name from pet_". PREFIX ."_type where id not in (select idloai as id from pet_". PREFIX ."_vaccinelienketmautin) order by id asc";
+  return $db->all($sql);
+}
+
+function danhsachmautin() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_vaccinemautin order by id desc";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $mautin) {
+    $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_type b on a.idloai = b.id where a.idmautin = $mautin[id]";
+    $danhsach[$thutu]['loai'] = $db->all($sql);
+  }
+
+  return $danhsach;
+}
+
 function xoanhantin() {
   global $db, $result, $data;
 
@@ -751,12 +828,21 @@ function xoanhantin() {
   return $result;
 }
 
+function diendulieu($mautin, $dulieu) {
+  $danhsachtruong = ['[loainhac]' => 'loaitiem', '[ngayden]' => 'cometime', '[ngaynhac]' => 'calltime', '[khachhang]' => 'name', '[dienthoai]' => 'phone'];
+  foreach ($danhsachtruong as $tentruong => $tenbien) {
+    $mautin = str_replace($tentruong, alias($dulieu[$tenbien]), $mautin);
+  }
+  return $mautin;
+}
+
 function danhsachnhantin() {
   global $db;
 
-  $cuoihomnay = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
+  $ngay = laycauhinh('ngay');
+  $thoihancuoi = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1 + $ngay * 60 * 60 * 24;
 
-  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where a.nhantin = 0 and a.calltime <= $cuoihomnay and c.loaitru = 0 order by a.calltime asc limit 50";
+  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where a.nhantin = 0 and a.calltime <= $thoihancuoi and c.loaitru = 0 order by a.calltime asc limit 50";
   $danhsach = $db->all($sql);
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
@@ -765,19 +851,26 @@ function danhsachnhantin() {
     $sql = "select * from pet_". PREFIX ."_type where id = $dulieu[typeid]";
     $loaitiem = $db->fetch($sql);
 
-    // tin nhắn theo loại
+    $sql = "select a.mautin from pet_". PREFIX ."_vaccinemautin a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.id = b.idmautin where b.idloai = $dulieu[typeid]";
+    if (empty($mautin = $db->fetch($sql))) $mautin = 'Không có mẫu tin';
+    else $mautin = $mautin['mautin'];
+
+    $dulieu['loaitiem'] = $loaitiem['name'];
+    $dulieu['cometime'] = date('d/m/Y', $dulieu['cometime']);
+    $dulieu['calltime'] = date('d/m/Y', $dulieu['calltime']);
 
     if (empty($danhsachdienthoai[$dulieu['phone']])) {
       $danhsachdienthoai[$dulieu['phone']] = 1;
       $danhsachnhantin []= [
         'id' => $dulieu['id'],
-        'loainhac' => $loaitiem['name'],
-        'thoigiantoi' => date('d/m/Y', $dulieu['cometime']),
-        'thoigiannhac' => date('d/m/Y', $dulieu['calltime']),
+        'loainhac' => $dulieu['loaitiem'],
+        'thoigiantoi' => $dulieu['cometime'],
+        'thoigiannhac' => $dulieu['calltime'],
         'ghichu' => $dulieu['note'],
         'idkhachhang' => $dulieu['idkhachhang'],
         'khachhang' => $dulieu['name'],
         'dienthoai' => $dulieu['phone'],
+        'mautin' => diendulieu($mautin, $dulieu),
         'trangthai' => 0,
       ];
     }
@@ -798,6 +891,13 @@ function danhsachnhantin() {
   return $danhsachnhantin;
 }
 
+function danhsachloaitru() {
+  global $db;
+
+  $sql = "select id, name as khachhang, phone as dienthoai from pet_". PREFIX ."_customer where loaitru = 1 order by name asc";
+  return $db->all($sql);
+}
+
 function xacnhandagui() {
   global $db, $data, $result;
 
@@ -807,4 +907,58 @@ function xacnhandagui() {
 
   $result['status'] = 1;
   return $result;
+}
+
+function boloaitru() {
+  global $db, $data, $result;
+
+  $sql = "update set pet_". PREFIX ."_customer set loaitru = 0 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaitru();
+  return $result;
+}
+
+function xoamautin() {
+  global $db, $data, $result;
+
+  $sql = "delete from pet_". PREFIX ."_vaccinemautin where id = $data->id";
+  $db->query($sql);
+
+  $sql = "delete from pet_". PREFIX ."_vaccinelineketmautin where idmautin = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachmautin();
+  return $result;
+}
+
+function luucauhinhnhantin() {
+  global $db, $data, $result;
+
+  luucauhinh('min', $data->min);
+  luucauhinh('max', $data->max);
+  luucauhinh('ngay', $data->ngay);
+
+  $result['status'] = 1;
+  $result['messenger'] = "Đã lưu cấu hình";
+  return $result;
+}
+
+function luucauhinh($ten, $giatri) {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'nhantin' and name = '$ten'";
+  if (!empty($cauhinh = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_config set value = '$giatri' where id = $cauhinh[id]";
+  else $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('nhantin', '$ten', '$giatri', 1)";
+  $db->query($sql);
+}
+
+function laycauhinh($ten, $macdinh = 0) {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'nhantin' and name = '$ten'";
+  if (empty($cauhinh = $db->fetch($sql))) return $macdinh;
+  return $cauhinh['value'];
 }

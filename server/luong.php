@@ -599,7 +599,7 @@ function excelluongthang() {
     $doanhthu = layso($sheet->getCell($chudoanhthu . $j)->getValue());
     $loinhuan = layso($sheet->getCell($chuloinhuan . $j)->getValue());
     if (!empty($nhanvien)) {
-      $doanhthunhanvien[alias($nhanvien)] = array('doanhthu' => $doanhthu, 'loinhuan' => $loinhuan);
+      $doanhthunhanvien[lower($nhanvien)] = array('doanhthu' => $doanhthu, 'loinhuan' => $loinhuan);
     }
   }
 
@@ -620,7 +620,7 @@ function excelluongthang() {
 
   $ngaynghi = array();
   foreach ($data->ngaynghi as $tennhanvien => $songay) {
-    $ngaynghi[alias($tennhanvien)] = $songay;
+    $ngaynghi[lower($tennhanvien)] = $songay;
   }
 
   // chạy dữ liệu doanh thu, thêm vào 
@@ -628,7 +628,7 @@ function excelluongthang() {
   $tongluong = 0;
   foreach ($danhsachnhanvien as $nhanvien) {
     $luongcung = $nhanvien['luongcoban'] + 500000 * floor(($homnay - $nhanvien['hopdong']) / 365 / 60 / 60 / 24);
-    $tennhanvien = alias($nhanvien['tennhanvien']);
+    $tennhanvien = lower($nhanvien['tennhanvien']);
     
     if (isset($doanhthunhanvien[$tennhanvien])) {
       $doanhthu = $doanhthunhanvien[$tennhanvien]['doanhthu'];
