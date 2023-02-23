@@ -299,34 +299,37 @@ function badge() {
 function permission($userid) {
   global $data, $db;
 
+  $c = [
+    'spa' => 0,
+    'vaccine' => 0,
+    'schedule' => 0,
+    'item' => 0,
+    'kaizen' => 0,
+    'drug' => 0,
+    'price' => 0,
+    'ride' => 0,
+    'profile' => 0,
+    'physical' => 0,
+    'his' => 0,
+    'sieuam' => 0,
+    'xquang' => 0,
+    'transport' => 0,
+    'excel' => 0,
+    'hotel' => 0,
+    'other' => 0,
+    'luong' => 0,
+    'accounting' => 0,
+    'work' => 0,
+    'nhantin' => 0,
+  ];
+
   if ($userid == 1) {
-    return array(
-      'spa' => 2,
-      'vaccine' => 2,
-      'schedule' => 2,
-      'item' => 2,
-      'kaizen' => 2,
-      'drug' => 2,
-      'price' => 2,
-      'ride' => 2,
-      'profile' => 2,
-      'physical' => 2,
-      'his' => 2,
-      'sieuam' => 2,
-      'xquang' => 2,
-      'transport' => 2,
-      'excel' => 2,
-      'hotel' => 2,
-      'other' => 2,
-      'luong' => 2,
-      'accounting' => 2,
-      'work' => 2,
-    );
+    foreach ($c as $key => $value) {
+      $c[$key] = 2;
+    }
+    return $c;
   }
   else {
-    $sql = "select name, 0 as per from pet_". PREFIX ."_config where module = 'setting'";
-    $c = $db->obj($sql, 'name', 'per');
-  
     $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid";
     $query = $db->query($sql);
     

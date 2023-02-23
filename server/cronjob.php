@@ -12,7 +12,7 @@ $db = new database($config['servername'], $config['username'], $config['password
 $sql = "select a.*, b.type, b.time as rtime, b.list from pet_". PREFIX ."_work a inner join pet_". PREFIX ."_work_repeat b on a.id = b.workid and b.status = 1";
 $danhsachcongviec = $db->all($sql);
 $today = strtotime(date('Y/m/d')) + 60 * 60 * 24;
-$today = strtotime('2023/02/13');
+// $today = strtotime('2023/02/13');
 $endday = $today + 60 * 60 * 24 - 1;
 
 // $log = time();
@@ -32,6 +32,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       
       if ($list[$day] == '1') {
         $sql = "insert into pet_". PREFIX ."_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($congviec[userid], $congviec[departid], '$congviec[title]', '$congviec[content]', '$congviec[file]', $today, $today, $expire, $today, 0)";
+        die($sql);
         $workid = $db->insertid($sql);
       }
       break;

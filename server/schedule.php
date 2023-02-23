@@ -672,7 +672,7 @@
         foreach ($dsdk as $thutu => $userid) {
           if ($thutu >= $gioihanngay) {
             $thutuphat = $thutu - $gioihanngay;
-            $nghiphat = (1 + $thutuphat) / 2;
+            $nghiphat = (2 + $thutuphat) / 2;
             if (empty($danhsachchuasapxep[$ngay])) $danhsachchuasapxep[$ngay] = [];
             $danhsachchuasapxep[$ngay] []= [
               'nguoidung' => $nguoidung[$userid],

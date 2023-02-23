@@ -381,7 +381,7 @@ function xoanhanvien() {
 function getList() {
   global $db;
 
-  $module = array(
+  $module = [
     'spa' => 0,
     'vaccine' => 0,
     'schedule' => 0,
@@ -402,7 +402,8 @@ function getList() {
     'luong' => 0,
     'accounting' => 0,
     'work' => 0,
-  );
+    'nhantin' => 0,
+  ];
 
   $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1 and userid <> 1";
   $list = $db->all($sql);
@@ -737,27 +738,32 @@ function khoitaonhantin() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachnhantin();
+  $result['cauhinh'] = cauhinhnhantin();
   return $result;
 }
 
 function khoitaoloaitru() {
   global $db, $result, $data;
 
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaitru();
+  $result['cauhinh'] = cauhinhnhantin();
+  return $result;
+}
+
+function cauhinhnhantin() {
+  global $db;
+
   $cauhinh = [
     'min' => laycauhinh('min'),
     'max' => laycauhinh('max'),
-    'ngay' => laycauhinh('ngay'),
     'mautin' => danhsachmautin(),
     'danhsachloai' => danhsachloai()
   ];
 
   if (empty($cauhinh['min'])) $cauhinh['min'] = 1;
   if (empty($cauhinh['max'])) $cauhinh['max'] = 2;
-
-  $result['status'] = 1;
-  $result['danhsach'] = danhsachloaitru();
-  $result['cauhinh'] = $cauhinh;
-  return $result;
+  return $cauhinh;
 }
 
 function luumautin() {
@@ -821,6 +827,7 @@ function xoanhantin() {
   global $db, $result, $data;
 
   $sql = "update pet_". PREFIX ."_customer set loaitru = 1 where id = $data->idkhachhang";
+  // die($sql)
   $db->query($sql);
 
   $result['status'] = 1;
@@ -839,10 +846,10 @@ function diendulieu($mautin, $dulieu) {
 function danhsachnhantin() {
   global $db;
 
-  $ngay = laycauhinh('ngay');
-  $thoihancuoi = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1 + $ngay * 60 * 60 * 24;
+  $homnay = strtotime(date('Y/m/d'));
+  $ketthuc = $homnay + 60 * 60 * 24 - 1 + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
 
-  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where a.nhantin = 0 and a.calltime <= $thoihancuoi and c.loaitru = 0 order by a.calltime asc limit 50";
+  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.nhantin = 0 and (a.calltime between $homnay and $ketthuc) or (a.nhantin = 1 and a.calltime = $homnay)) and a.status < 2 and c.loaitru = 0 order by a.calltime asc";
   $danhsach = $db->all($sql);
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
@@ -901,8 +908,13 @@ function danhsachloaitru() {
 function xacnhandagui() {
   global $db, $data, $result;
 
-  if (strpos($data->id, ',') != false) $sql = "update set pet_". PREFIX ."_vaccine set nhantin = 1 where id in ($data->id)";
-  else $sql = "update set pet_". PREFIX ."_vaccine set nhantin = 1 where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_vaccine where id = $data->id";
+  $vaccine = $db->fetch($sql);
+  $homnay = strtotime(date('Y/m/d'));
+  if ($vaccine['calltime'] < $homnay) $nhantin = 1;
+  else $nhantin = 2;
+  if (strpos($data->id, ',') != false) $sql = "update set pet_". PREFIX ."_vaccine set nhantin = $nhantin where id in ($data->id)";
+  else $sql = "update set pet_". PREFIX ."_vaccine set nhantin = $nhantin where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -912,7 +924,7 @@ function xacnhandagui() {
 function boloaitru() {
   global $db, $data, $result;
 
-  $sql = "update set pet_". PREFIX ."_customer set loaitru = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_customer set loaitru = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
