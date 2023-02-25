@@ -47,18 +47,22 @@ function getneed() {
 
   $sql = "select id, xrayid, image from pet_". PREFIX ."_xray_row where sieuam < 0 order by time desc";
   $list = $db->all($sql);
+  $danhsach = [];
 
   foreach ($list as $key => $row) {
+    $mau = $list[$key];
     $sql = "select a.petname, b.name, b.phone, b.address from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $row[xrayid]";
-    $info = $db->fetch($sql);
-    $list[$key]['petname'] = $info['petname'];
-    $list[$key]['name'] = $info['name'];
-    $list[$key]['phone'] = $info['phone'];
-    $list[$key]['address'] = $info['address'];
-    $list[$key]['image'] = parseimage($row['image']);
+    if (!empty($info = $db->fetch($sql))) {
+      $mau['petname'] = $info['petname'];
+      $mau['name'] = $info['name'];
+      $mau['phone'] = $info['phone'];
+      $mau['address'] = $info['address'];
+      $mau['image'] = parseimage($row['image']);
+      $danhsach []= $mau;
+    }
   }
 
-  return $list;
+  return $danhsach;
 }
 
 function insert() {

@@ -369,6 +369,19 @@ function returned() {
   return $result;
 }
 
+function xoachitiet() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_xray_row where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã xóa chitiết';
+  $result['list'] = getlist();
+  
+  return $result;
+}
+
 function remove() {
   global $data, $db, $result;
 

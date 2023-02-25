@@ -845,11 +845,12 @@ function diendulieu($mautin, $dulieu) {
 
 function danhsachnhantin() {
   global $db;
-
+  
   $homnay = strtotime(date('Y/m/d'));
-  $ketthuc = $homnay + 60 * 60 * 24 - 1 + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
+  $cuoingay = $homnay + 60 * 60 * 24 - 1;
+  $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
 
-  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.nhantin = 0 and (a.calltime between $homnay and $ketthuc) or (a.nhantin = 1 and a.calltime = $homnay)) and a.status < 2 and c.loaitru = 0 order by a.calltime asc";
+  $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.nhantin = 0 and (a.calltime between $homnay and $ketthuc) or (a.nhantin = 1 and (a.calltime between $homnay and $cuoingay))) and a.status < 3 and c.loaitru = 0 order by a.calltime asc";
   $danhsach = $db->all($sql);
   $danhsachnhantin = [];
   $danhsachdienthoai = [];

@@ -184,13 +184,12 @@ function called() {
 
   $sql = "select * from pet_". PREFIX ."_vaccine where id = $data->id";
   $v = $db->fetch($sql);
-  $time = time();
-  $recall = $time + 60 * 60 * 24 * 3;
+  $time = strtotime(date('Y/m/d'));
 
-  $sql = "update pet_". PREFIX ."_vaccine set status = 2, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+  $sql = "update pet_". PREFIX ."_vaccine set status = 2, note = '". $data->note ."', called = $time, recall = calltime + 60 * 60 * 24 - 1 where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
-  $result['messenger'] = "Đã chuyển sang tab 'Đã gọi'";
+  $result['messenger'] = "Đã gọi khách, nếu khách không đến sau 7 ngày sẽ gọi lại";
   $result['list'] = getlist();
 
   return $result;
@@ -201,13 +200,13 @@ function uncalled() {
 
   $sql = "select * from pet_". PREFIX ."_vaccine where id = $data->id";
   $v = $db->fetch($sql);
-  $time = time();
-  $recall = $time + 60 * 60 * 24 * 3;
+  $time = strtotime(date('Y/m/d'));
+  $recall = $time + 60 * 60 * 24;
 
   $sql = "update pet_". PREFIX ."_vaccine set status = 1, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
-  $result['messenger'] = "Đã chuyển sang tab 'Không nghe'";
+  $result['messenger'] = "Khách không nghe máy, gọi lại vào ngày hôm sau";
   $result['list'] = getlist();
   
   return $result;
@@ -410,6 +409,7 @@ function excel() {
   $com = $db->fetch($sql);
   $day21 = 60 * 60 * 24 *21;
   $time = strtotime(date('Y/m/d'));
+  $homnay = $time + 4 * 60 * 60 * 24 - 1;
 
   $l = array();
   foreach ($exdata as $row) {
@@ -465,7 +465,8 @@ function excel() {
           $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
           if ($db->query($sql)) {
             $res['insert'] ++;
-            $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = $row[2] order by a.id asc)";
+            $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = '$row[2]' and a.calltime < $homnay order by a.id asc)";
+            $db->query($sql);
           }
           else {
             $res['error'][] = array(
@@ -817,16 +818,20 @@ function getlist($today = false) {
     $list = array(
       0 => array(),
       array(),
-      array(),
     );
 
-    for ($i = 0; $i <= 2; $i++) { 
-      $list[$i] = array_merge($list[$i], getOver($i, $xtra));
-    }
-    // Lấy danh sách hiện tại theo status
-    for ($i = 0; $i <= 2; $i++) { 
-      $list[$i] = array_merge($list[$i], getCurrent($i, $xtra));
-    }
+    $homnay = strtotime(date('Y/m/d'));
+    $cuoingay = $homnay + 60 * 60 * 24 - 1;
+    $ketthuc = $cuoingay + 60 * 60 * 24 * 3;
+
+    // select danh sách gọi nhắc hôm nay
+    // danh sách quá ngày status < 2, time < recall
+
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.recall < $ketthuc and called < $homnay $xtra and a.status = 0 order by a.calltime asc limit 50";
+    $list[0] = dataCover($db->all($sql));
+    
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.called between $homnay and $cuoingay) $xtra and a.status < 3 order by a.calltime asc limit 50";
+    $list[1] = dataCover($db->all($sql));
   }
   else {
     $key = trim($data->keyword);
@@ -837,24 +842,24 @@ function getlist($today = false) {
   return $list;
 }
 
-function getCurrent($status, $xtra) {
-  global $db, $data;
+// function getCurrent($status, $xtra) {
+//   global $db, $data;
 
-  $time = time();
-  $limf = $time;
-  $lime = $time + 60 * 60 * 24 * 3;
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
-  return dataCover($db->all($sql));
-}
+//   $time = time();
+//   $limf = $time;
+//   $lime = $time + 60 * 60 * 24 * 3;
+//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
+//   return dataCover($db->all($sql));
+// }
 
-function getOver($status, $xtra) {
-  global $db, $data;
+// function getOver($status, $xtra) {
+//   global $db, $data;
 
-  $time = time();
-  $lim = $time;
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
-  return dataCover($db->all($sql), 1);
-}
+//   $time = time();
+//   $lim = $time;
+//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
+//   return dataCover($db->all($sql), 1);
+// }
 
 function getOverList() {
   global $db, $data;
@@ -873,7 +878,11 @@ function dataCover($list, $over = 0) {
 
   foreach ($list as $row) {
     // thời gian gọi
-    if (!$row['called']) $called = '-';
+    $quangay = 0;
+    if (!$row['called']) {
+      $called = '-';
+      if ($row['recall'] < $stoday) $quangay = 1;
+    }
     else if ($row['called'] >= $stoday && $row['called'] <= $etoday) $called = 'Hôm hay đã gọi';
     else $called = date('d/m/Y', $row['called']);
     $v []= array(
@@ -886,7 +895,7 @@ function dataCover($list, $over = 0) {
       'phone' => $row['phone'],
       'address' => $row['address'],
       'status' => $row['status'],
-      'over' => $over,
+      'over' => $quangay,
       'vaccine' => $row['type'],
       'typeid' => $row['typeid'],
       'called' => $called,
