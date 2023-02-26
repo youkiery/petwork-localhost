@@ -32,7 +32,6 @@ foreach ($danhsachcongviec as $key => $congviec) {
       
       if ($list[$day] == '1') {
         $sql = "insert into pet_". PREFIX ."_work (userid, departid, title, content, file, time, createtime, expiretime, updatetime, status) values($congviec[userid], $congviec[departid], '$congviec[title]', '$congviec[content]', '$congviec[file]', $today, $today, $expire, $today, 0)";
-        die($sql);
         $workid = $db->insertid($sql);
       }
       break;

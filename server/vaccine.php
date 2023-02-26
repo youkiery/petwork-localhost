@@ -822,12 +822,12 @@ function getlist($today = false) {
 
     $homnay = strtotime(date('Y/m/d'));
     $cuoingay = $homnay + 60 * 60 * 24 - 1;
-    $ketthuc = $cuoingay + 60 * 60 * 24 * 3;
+    // $ketthuc = $cuoingay + 60 * 60 * 24 * 3;
 
     // select danh sách gọi nhắc hôm nay
     // danh sách quá ngày status < 2, time < recall
 
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.recall < $ketthuc and called < $homnay $xtra and a.status = 0 order by a.calltime asc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.recall < $cuoingay and called < $homnay $xtra and a.status = 0 order by a.calltime asc limit 50";
     $list[0] = dataCover($db->all($sql));
     
     $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.called between $homnay and $cuoingay) $xtra and a.status < 3 order by a.calltime asc limit 50";

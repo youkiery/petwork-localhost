@@ -773,7 +773,7 @@ function luumautin() {
     // cập nhật mẫu tin
     // thêm những cái không có
     // xóa những cái không có
-    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin' where id = $data->id";
+    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin', lich = $data->lich where id = $data->id";
     $db->query($sql);
 
     foreach ($data->loai as $idloai) {
@@ -782,12 +782,11 @@ function luumautin() {
         $sql = "insert into pet_". PREFIX ."_vaccinelienketmautin (idloai, idmautin) values ($idloai, $data->id)";
         $db->query($sql);
       }
-
     }
     $sql = "delete from pet_". PREFIX ."_vaccinelienketmautin where idmautin = $data->id and idloai not in (". implode(', ', $data->loai) .")";
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin) values ('$data->mautin')";
+    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin, lich) values ('$data->mautin', $data->lich)";
     $idmautin = $db->insertid($sql);
 
     foreach ($data->loai as $idloai) {
@@ -805,18 +804,22 @@ function luumautin() {
 function danhsachloai() {
   global $db;
 
-  $sql = "select id, name from pet_". PREFIX ."_type where id not in (select idloai as id from pet_". PREFIX ."_vaccinelienketmautin) order by id asc";
+  $sql = "select id, name from pet_". PREFIX ."_type order by id asc";
   return $db->all($sql);
 }
 
 function danhsachmautin() {
   global $db;
 
-  $sql = "select * from pet_". PREFIX ."_vaccinemautin order by id desc";
+  $sql = "select * from pet_". PREFIX ."_vaccinemautin order by lich desc, id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $mautin) {
     $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_type b on a.idloai = b.id where a.idmautin = $mautin[id]";
+    if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
+    else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
+    else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
+    $danhsach[$thutu]['thoigian'] = $thoigian;
     $danhsach[$thutu]['loai'] = $db->all($sql);
   }
 
@@ -848,7 +851,22 @@ function danhsachnhantin() {
   
   $homnay = strtotime(date('Y/m/d'));
   $cuoingay = $homnay + 60 * 60 * 24 - 1;
-  $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
+  // $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
+
+  // lấy từ mẫu tin
+  $sql = "select * from pet_". PREFIX ."_vaccinemautin";
+  $danhsachmautin = $db->all($sql);
+
+  foreach ($danhsachmautin as $mautin) {
+    // kiểm tra các phiếu nhắc theo lịch vẫn chưa nhắn tin
+    $batdau = $homnay + 60 * 60 * 24 * $mautin['lich'];
+    $batdau = $batdau + 60 * 60 * 24 - 1;
+    $sql = "select pet_". PREFIX ."_vaccine where (calltime between $batdau and $ketthuc)"
+
+
+  }
+  // danh sách loại nhắc đến hạn
+  // 
 
   $sql = "select a.*, c.id as idkhachhang, c.name, c.phone from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.nhantin = 0 and (a.calltime between $homnay and $ketthuc) or (a.nhantin = 1 and (a.calltime between $homnay and $cuoingay))) and a.status < 3 and c.loaitru = 0 order by a.calltime asc";
   $danhsach = $db->all($sql);
@@ -859,13 +877,22 @@ function danhsachnhantin() {
     $sql = "select * from pet_". PREFIX ."_type where id = $dulieu[typeid]";
     $loaitiem = $db->fetch($sql);
 
-    $sql = "select a.mautin from pet_". PREFIX ."_vaccinemautin a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.id = b.idmautin where b.idloai = $dulieu[typeid]";
-    if (empty($mautin = $db->fetch($sql))) $mautin = 'Không có mẫu tin';
-    else $mautin = $mautin['mautin'];
+    $sql = "select a.mautin, a.lich from pet_". PREFIX ."_vaccinemautin a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.id = b.idmautin where b.idloai = $dulieu[typeid]";
+    if (empty($dulieumautin = $db->fetch($sql))) {
+      $mautin = 'Không có mẫu tin';
+      $thoigian = '';
+    }
+    else {
+      $mautin = $dulieumautin['mautin'];
+      if ($dulieumautin['lich'] == 0) $thoigian = 'Đúng ngày';
+      else if ($dulieumautin['lich'] > 0) $thoigian = "Sau $dulieumautin[lich] ngày";
+      else $thoigian = "Trước ". abs($dulieumautin[lich]) ." ngày";
+    }
 
     $dulieu['loaitiem'] = $loaitiem['name'];
     $dulieu['cometime'] = date('d/m/Y', $dulieu['cometime']);
     $dulieu['calltime'] = date('d/m/Y', $dulieu['calltime']);
+
 
     if (empty($danhsachdienthoai[$dulieu['phone']])) {
       $danhsachdienthoai[$dulieu['phone']] = 1;
@@ -880,12 +907,12 @@ function danhsachnhantin() {
         'dienthoai' => $dulieu['phone'],
         'mautin' => diendulieu($mautin, $dulieu),
         'trangthai' => 0,
+        'thoigian' => $thoigian
       ];
     }
     else {
-      // tìm kiếm trong danh sách nhắn tin
-      // thay đổi loại nhắc
-
+      // trùng loại, thêm vào loại nhắc cũ
+      
       foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
         if ($dulieu['idkhachhang'] == $dulieunhantin['idkhachhang']) {
           $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
