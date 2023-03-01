@@ -311,3 +311,36 @@ function dulieulienkettang($idvattu) {
   }
   return $danhsach;
 }
+
+function xuatfile() {
+  global $data, $db, $result, $x, $xr;
+    
+  $dir = str_replace('/server', '', ROOTDIR);
+  include "$dir/include/PHPExcel/IOFactory.php";
+  $file = "$dir/include/file-mau-vat-tu.xlsx";
+  $inputFileType = PHPExcel_IOFactory::identify($file);
+  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+  $objReader->setReadDataOnly(true);
+  $objPHPExcel = $objReader->load($file);
+
+  $i = 2;
+  $giatri = [0 => 'thutu', 'thoigian', 'ten', 'donvi', 'thuoctang', 'ghichu', 'soluong', 'giatri', 'tongtien'];
+  $chuyendoi = [0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+  foreach ($data->danhsach as $tang) {
+    $tang->thutu = $i - 1;
+    foreach ($giatri as $thutu => $tengiatri) {
+      $objPHPExcel->setActiveSheetIndex(0)->setCellValue($chuyendoi[$thutu] . $i, $tang->{$tengiatri});
+    }
+    $i ++;
+  }
+
+  $time = time();
+  $filename = "$dir/include/export/file-mau-vat-tu-$time.xlsx";
+  $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, $inputFileType);
+  $objWriter->save($filename);
+  $objPHPExcel->disconnectWorksheets();
+
+  $result['status'] = 1;
+  $result['link'] = $filename;
+  return $result;
+}

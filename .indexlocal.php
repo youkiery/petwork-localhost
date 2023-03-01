@@ -1,4 +1,62 @@
 <?php
+
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+include './include/PHPExcel/IOFactory.php';
+$file = './include/kien.xlsx';
+$inputFileType = PHPExcel_IOFactory::identify($file);
+$objReader = PHPExcel_IOFactory::createReader($inputFileType);
+$objReader->setReadDataOnly(true);
+$objPHPExcel = $objReader->load($file);
+
+$x = array();
+$xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');
+foreach ($xr as $key => $value) {
+  $x[$value] = $key;
+}
+
+$sheet = $objPHPExcel->getSheet(0); 
+$highestRow = $sheet->getHighestRow(); 
+$highestColumn = $sheet->getHighestColumn();
+
+$dulieu = [];
+// dulieu: { khachhang: { ten, dienthoai, doanhthu, spa, dieutri, hoadon: [] } }
+for ($i = 2; $i < $highestRow; $i++) { 
+  $hoadon = $sheet->getCell("A$i")->getValue();
+  $ten = $sheet->getCell("B$i")->getValue();
+  $dienthoai = $sheet->getCell("C$i")->getValue();
+  $tienhang = $sheet->getCell("D$i")->getValue();
+  $mahang = $sheet->getCell("E$i")->getValue();
+  $tenhang = $sheet->getCell("F$i")->getValue();
+  $soluong = $sheet->getCell("G$i")->getValue();
+  if (empty($dulieu[$dienthoai])) $dulieu[$dienthoai] = [
+    'ten' => $ten,
+    'dienthoai' => $dienthoai,
+    'doanhthu' => 0,
+    'spa' => 0,
+    'dieutri' => 0,
+    'hoadon' => []
+  ];
+  if (empty($dulieu[$dienthoai]['hoadon'][$hoadon])) {
+    $dulieu[$dienthoai]['hoadon'][$hoadon] = 1;
+    $dulieu[$dienthoai]['doanhthu'] += $tienhang;
+  }
+  if (mb_strpos($tenhang, 'Công tắm') !== false) $dulieu[$dienthoai]['spa'] += $soluong;
+  if (mb_strpos($mahang, 'BVTK') !== false) $dulieu[$dienthoai]['dieutri'] += $soluong;
+}
+echo "<pre>";
+foreach ($dulieu as $dienthoai => $data) {
+  foreach ($data as $value) {
+    if (!is_array($value)) echo "$value&#9;";
+  }
+  echo "<br>";
+}
+echo "</pre>";
+
+die();
+
 header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Credentials: true");
 
@@ -52,7 +110,6 @@ $db = new database($config['servername'], $config['username'], $config['password
 //   $sql = "update pet_". PREFIX ."_xray set customerid = $row[cid], petname = '$row[name]' where id = $row[id]";
 //   $db->query($sql);
 // }
-
 $sql = "SELECT table_name FROM information_schema.tables WHERE table_schema = '$config[database]'";
 $list = $db->all($sql);
 
