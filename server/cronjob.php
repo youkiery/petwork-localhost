@@ -55,7 +55,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       break;
   }
   if ($workid) {
-    $sql = "select * from pet_". PREFIX ."_work_follow where workid = $congviec[id]";
+    $sql = "select * from pet_". PREFIX ."_work_follow where workid = $workid";
     $dstheodoi = $db->arr($sql, 'userid');
       
     foreach ($dstheodoi as $nhanvien) {
@@ -63,7 +63,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       $db->query($sql);
     }
      
-    $sql = "select * from pet_". PREFIX ."_work_assign where workid = $congviec[id]";
+    $sql = "select * from pet_". PREFIX ."_work_assign where workid = $workid";
     $dstheodoi = $db->arr($sql, 'userid');
       
     foreach ($dstheodoi as $nhanvien) {

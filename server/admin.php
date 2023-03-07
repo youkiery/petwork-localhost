@@ -781,7 +781,7 @@ function luumautin() {
     // cập nhật mẫu tin
     // thêm những cái không có
     // xóa những cái không có
-    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin', lich = $data->lich where id = $data->id";
+    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin', lich = $data->lich, loainhac = $data->loainhac where id = $data->id";
     $db->query($sql);
 
     foreach ($data->loai as $idloai) {
@@ -792,9 +792,10 @@ function luumautin() {
       }
     }
     $sql = "delete from pet_". PREFIX ."_vaccinelienketmautin where idmautin = $data->id and idloai not in (". implode(', ', $data->loai) .")";
+    $db->query($sql);
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin, lich) values ('$data->mautin', $data->lich)";
+    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin, lich, loainhac) values ('$data->mautin', $data->lich, $data->loainhac)";
     $idmautin = $db->insertid($sql);
 
     foreach ($data->loai as $idloai) {
@@ -812,7 +813,7 @@ function luumautin() {
 function danhsachloai() {
   global $db;
 
-  $sql = "select id, name from pet_". PREFIX ."_type order by id asc";
+  $sql = "select id, name from pet_". PREFIX ."_type where active = 1 order by id asc";
   return $db->all($sql);
 }
 
@@ -821,15 +822,20 @@ function danhsachmautin() {
 
   $sql = "select * from pet_". PREFIX ."_vaccinemautin order by lich desc, id desc";
   $danhsach = $db->all($sql);
+  $hauto = [' tái chủng', ' sinh', ' tái khám'];
 
   foreach ($danhsach as $thutu => $mautin) {
-    $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_type b on a.idloai = b.id where a.idmautin = $mautin[id]";
     if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
     else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
     else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
+    $thoigian .= $hauto[$mautin['loainhac']];
     $danhsach[$thutu]['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
     $danhsach[$thutu]['thoigian'] = $thoigian;
-    $danhsach[$thutu]['loai'] = $db->all($sql);
+    if ($mautin['loainhac'] == 0) {
+      $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_type b on a.idloai = b.id where a.idmautin = $mautin[id]";
+      $danhsach[$thutu]['loai'] = $db->all($sql);
+    }
+    else $danhsach[$thutu]['loai'] = [];
   }
 
   return $danhsach;
@@ -884,6 +890,14 @@ function danhsachdaguitin() {
   return $danhsach;
 }
 
+function chuanhoatenkhach($tenkhach) {
+  $mau = ['Huy', 'Khang', 'Bảo', 'Minh', 'Phúc', 'Anh', 'Khoa', 'Phát', 'Đạt', 'Khôi', 'Long', 'Nam', 'Duy', 'Quân', 'Kiệt', 'Thịnh', 'Tuấn', 'Hưng', 'Hoàng', 'Hiếu', 'Nhân', 'Trí', 'Tài', 'Phong', 'Nguyên', 'An', 'Phú', 'Thành', 'Đức', 'Dũng', 'Lộc', 'Khánh', 'Vinh', 'Tiến', 'Nghĩa', 'Thiện', 'Hào', 'Hải', 'Đăng', 'Quang', 'Lâm', 'Nhật', 'Trung', 'Thắng', 'Tú', 'Hùng', 'Tâm', 'Sang', 'Sơn', 'Thái', 'Cường', 'Vũ', 'Toàn', 'Ân', 'Thuận', 'Bình', 'Trường', 'Danh', 'Kiên', 'Phước', 'Thiên', 'Tân', 'Việt', 'Khải', 'Tín', 'Dương', 'Tùng', 'Quý', 'Hậu', 'Trọng', 'Triết', 'Luân', 'Phương', 'Quốc', 'Thông', 'Khiêm', 'Hòa', 'Thanh', 'Tường', 'Kha', 'Vỹ', 'Bách', 'Khanh', 'Mạnh', 'Lợi', 'Đại', 'Hiệp', 'Đông', 'Nhựt', 'Giang', 'Kỳ', 'Phi', 'Tấn', 'Văn', 'Vương', 'Công', 'Hiển', 'Linh', 'Ngọc', 'Vĩ'];
+
+  $tenkhach = mb_strtoupper($tenkhach);
+
+  return $tenkhach;
+}
+
 function danhsachnhantin() {
   global $db;
   
@@ -893,96 +907,82 @@ function danhsachnhantin() {
   // $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
 
   // lấy từ mẫu tin, kiểm tra những mục cần nhắn
-  $sql = "select a.*, b.idmautin, c.mautin, c.lich from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and a.status < 3 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich) and ($homnay + 60 * 60 * 24 * (c.lich + 1) - 1))";
+  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and a.status < 3 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
   $danhsachmautin = $db->all($sql);
+
+  $sql = "select a.id, a.cometime, a.calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.number > 0 and (a.calltime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $danhsachmautin = array_merge($db->all($sql));
+
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
+  $hauto = [' tái chủng', ' sinh', ' tái khám'];
+  $danhsachloai = [1 => ' siêu âm', ' tái khám'];
 
-  $danhsachkhachhang = [0 => ['Anh Xuân', '0987060181'], ['Khánh Pet', '0339837545']];
-  $soluongkhach = count($danhsachkhachhang);
-  $thutu = 0;
   // lọc loại bỏ những mục đã nhắn tin
   foreach ($danhsachmautin as $mautin) {
-    if (count($danhsachnhantin) >= $soluongkhach) break;
-    $khachhang = $danhsachkhachhang[$thutu];
-    $sql = "select * from pet_". PREFIX ."_type where id = $mautin[typeid]";
-    $loaitiem = $db->fetch($sql);
-    if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
-    else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
-    else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
-    $mautin['thoigian'] = $thoigian;
-    $mautin['loaitiem'] = $loaitiem['name'];
-    $mautin['cometime'] = date('d/m/Y', $mautin['cometime']);
-    $mautin['calltime'] = date('d/m/Y', $mautin['calltime']);
-    $mautin['idkhachhang'] = $khachhang['id'];
-    $mautin['phone'] = $khachhang[1];
-    $mautin['thucung'] = '';
-    $mautin['name'] = $khachhang[0];
-    $danhsachnhantin []= [
-      'id' => 0,
-      'idmautin' => 0,
-      'loainhac' => $mautin['loaitiem'],
-      'thoigiantoi' => $mautin['cometime'],
-      'thoigiannhac' => $mautin['calltime'],
-      'ghichu' => $mautin['note'],
-      'idkhachhang' => $mautin['idkhachhang'],
-      'khachhang' => $mautin['name'],
-      'dienthoai' => $mautin['phone'],
-      'mautin' => diendulieu($mautin['mautin'], $mautin),
-      'trangthai' => 0,
-      'thoigian' => $thoigian
-    ];
-    $thutu ++;
+    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idmautin = $mautin[idmautin] and idvaccine = $mautin[id]";
 
-  //   $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idmautin = $mautin[idmautin] and idvaccine = $mautin[id]";
-  //   $sql2 = "select a.name as thucung, b.* from pet_". PREFIX ."_pet a inner join pet_". PREFIX ."_customer b on a.customerid = b.id and a.id = $mautin[petid]";
-  //   $khachhang = $db->fetch($sql2);
+    if (empty($mautin['petid'])) {
+      $sql2 = "select * from pet_". PREFIX ."_customer where id = $mautin[customerid]";
+      $khachhang = $db->fetch($sql2);
+      $khachhang['thucung'] = '';
+    }
+    else {
+      $sql2 = "select a.name as thucung, b.* from pet_". PREFIX ."_pet a inner join pet_". PREFIX ."_customer b on a.customerid = b.id and a.id = $mautin[petid]";
+      $khachhang = $db->fetch($sql2);
+    }
     
-  //   if (empty($db->fetch($sql)) && $khachhang['loaitru'] == 0) {
+    if (empty($db->fetch($sql)) && $khachhang['loaitru'] == 0) {
+      if ($mautin['loainhac'] == 0) {
+        $sql = "select * from pet_". PREFIX ."_type where id = $mautin[typeid]";
+        $loaitiem = $db->fetch($sql);
+      }
+      else {
+        $loaitiem = ['name' => $danhsachloai[$mautin['loainhac']]];
+      }
 
-  //     $sql = "select * from pet_". PREFIX ."_type where id = $mautin[typeid]";
-  //     $loaitiem = $db->fetch($sql);
-
-  //     if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
-  //     else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
-  //     else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
-  //     $mautin['thoigian'] = $thoigian;
-
-  //     $mautin['loaitiem'] = $loaitiem['name'];
-  //     $mautin['cometime'] = date('d/m/Y', $mautin['cometime']);
-  //     $mautin['calltime'] = date('d/m/Y', $mautin['calltime']);
-  //     $mautin['idkhachhang'] = $khachhang['id'];
-  //     $mautin['phone'] = $khachhang['phone'];
-  //     $mautin['thucung'] = $khachhang['thucung'];
-  //     $mautin['name'] = $khachhang['name'];
-
-  //     if (empty($danhsachdienthoai[$khachhang['phone']])) {
-  //       $danhsachnhantin []= [
-  //         'id' => $mautin['id'],
-  //         'idmautin' => $mautin['idmautin'],
-  //         'loainhac' => $mautin['loaitiem'],
-  //         'thoigiantoi' => $mautin['cometime'],
-  //         'thoigiannhac' => $mautin['calltime'],
-  //         'ghichu' => $mautin['note'],
-  //         'idkhachhang' => $mautin['idkhachhang'],
-  //         'khachhang' => $mautin['name'],
-  //         'dienthoai' => $mautin['phone'],
-  //         'mautin' => diendulieu($mautin['mautin'], $mautin),
-  //         'trangthai' => 0,
-  //         'thoigian' => $thoigian
-  //       ];
-  //       $danhsachdienthoai[$khachhang['phone']] = 1;
-  //     }
-  //     else {
-  //       foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
-  //         if ($dulieu['idkhachhang'] == $dulieunhantin['idkhachhang']) {
-  //           $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
-  //           $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $dulieunhantin['idmautin'];
-  //           break;
-  //         }
-  //       }
-  //     }
-  //   };
+      if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
+      else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
+      else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
+      $mautin['thoigian'] = $thoigian;
+      $thoigian .= $hauto[$mautin['loainhac']];
+    
+      $mautin['loaitiem'] = $loaitiem['name'];
+      $mautin['cometime'] = date('d/m/Y', $mautin['cometime']);
+      $mautin['calltime'] = date('d/m/Y', $mautin['calltime']);
+      $mautin['idkhachhang'] = $khachhang['id'];
+      $mautin['phone'] = $khachhang['phone'];
+      $mautin['thucung'] = $khachhang['thucung'];
+      $mautin['name'] = chuanhoatenkhach($khachhang['name']);
+      $mautin['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
+  
+      if (empty($danhsachdienthoai[$khachhang['phone']])) {
+        $danhsachnhantin []= [
+          'id' => $mautin['id'],
+          'idmautin' => $mautin['idmautin'],
+          'loainhac' => $mautin['loaitiem'],
+          'thoigiantoi' => $mautin['cometime'],
+          'thoigiannhac' => $mautin['calltime'],
+          'ghichu' => $mautin['note'],
+          'idkhachhang' => $mautin['idkhachhang'],
+          'khachhang' => $mautin['name'],
+          'dienthoai' => $mautin['phone'],
+          'mautin' => diendulieu($mautin['mautin'], $mautin),
+          'trangthai' => 0,
+          'thoigian' => $thoigian
+        ];
+        $danhsachdienthoai[$khachhang['phone']] = 1;
+      }
+      else {
+        foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
+          if ($dulieu['idkhachhang'] == $dulieunhantin['idkhachhang']) {
+            $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
+            $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $dulieunhantin['idmautin'];
+            break;
+          }
+        }
+      }
+    };
   }
 
   return $danhsachnhantin;
@@ -1001,6 +1001,22 @@ function xacnhandagui() {
   $thoigian = time();
   $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($data->id, $data->idmautin, $thoigian)";
   $db->query($sql);
+
+  $result['status'] = 0;
+  return $result;
+}
+
+function xacnhandanhsachloi() {
+  global $db, $data, $result;
+
+  $thoigian = time();
+  foreach ($data->danhsach as $dulieu) {
+    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine = $data->id and idmautin = $data->idmautin";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($data->id, $data->idmautin, $thoigian)";
+      $db->query($sql);
+    }
+  }
 
   $result['status'] = 1;
   return $result;
@@ -1028,6 +1044,17 @@ function xoamautin() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachmautin();
+  return $result;
+}
+
+function doitenkhach() {
+  global $db, $data, $result;
+
+  $sql = "update pet_". PREFIX ."_customer set name = '$data->ten' where id = $data->idkhachhang";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
   return $result;
 }
 
