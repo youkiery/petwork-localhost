@@ -11,41 +11,113 @@ $objReader = PHPExcel_IOFactory::createReader($inputFileType);
 $objReader->setReadDataOnly(true);
 $objPHPExcel = $objReader->load($file);
 
-$x = array();
-$xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');
-foreach ($xr as $key => $value) {
-  $x[$value] = $key;
+// $x = array();
+// $xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');
+// foreach ($xr as $key => $value) {
+//   $x[$value] = $key;
+// }
+
+$danhsach = [];
+for ($i = 0; $i < 4; $i++) { 
+  $sheet = $objPHPExcel->getSheet($i); 
+  $highestRow = $sheet->getHighestRow(); 
+  $highestColumn = $sheet->getHighestColumn();
+  $danhsach[$i] = [];
+
+  for ($j = 2; $j < $highestRow; $j++) { 
+    $danhsach[$i] []= [
+      'hoadon' => $sheet->getCell("A$j")->getValue(),
+      'khachhang' => $sheet->getCell("B$j")->getValue(),
+      'dienthoai' => $sheet->getCell("C$j")->getValue(),
+      'tienhang' => $sheet->getCell("D$j")->getValue(),
+      'mahang' => $sheet->getCell("E$j")->getValue(),
+      'tenhang' => $sheet->getCell("F$j")->getValue(),
+      'soluong' => $sheet->getCell("G$j")->getValue(),
+    ];
+  }
 }
 
-$sheet = $objPHPExcel->getSheet(0); 
-$highestRow = $sheet->getHighestRow(); 
-$highestColumn = $sheet->getHighestColumn();
 
 $dulieu = [];
-// dulieu: { khachhang: { ten, dienthoai, doanhthu, spa, dieutri, hoadon: [] } }
-for ($i = 2; $i < $highestRow; $i++) { 
-  $hoadon = $sheet->getCell("A$i")->getValue();
-  $ten = $sheet->getCell("B$i")->getValue();
-  $dienthoai = $sheet->getCell("C$i")->getValue();
-  $tienhang = $sheet->getCell("D$i")->getValue();
-  $mahang = $sheet->getCell("E$i")->getValue();
-  $tenhang = $sheet->getCell("F$i")->getValue();
-  $soluong = $sheet->getCell("G$i")->getValue();
-  if (empty($dulieu[$dienthoai])) $dulieu[$dienthoai] = [
-    'ten' => $ten,
-    'dienthoai' => $dienthoai,
-    'doanhthu' => 0,
-    'spa' => 0,
-    'dieutri' => 0,
-    'hoadon' => []
+$danhsachhoadon = [];
+for ($i = 1; $i < 4; $i++) {
+  $dulieu[$i] = [
+    'hoadon' => [],
+    'khachhang' => []
   ];
-  if (empty($dulieu[$dienthoai]['hoadon'][$hoadon])) {
-    $dulieu[$dienthoai]['hoadon'][$hoadon] = 1;
-    $dulieu[$dienthoai]['doanhthu'] += $tienhang;
+
+  foreach ($danhsach[$i] as $dulieukhach) {
+    if (empty($dulieu[$i]['hoadon'][$dulieukhach['hoadon']])) {
+      $danhsachhoadon[$dulieukhach['hoadon']] = 1;
+      $dulieu[$i]['hoadon'][$dulieukhach['hoadon']] = 1;
+
+      if (empty($dulieu[$i]['khachhang'][$dulieukhach['dienthoai']])) $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']] = [
+        'khachhang' => $dulieukhach['khachhang'],
+        'tienhang' => 0,
+        'solan' => 0,
+        'soluong' => 0,
+      ];
+      $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['tienhang'] += $dulieukhach['tienhang'];
+      $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['soluong'] += $dulieukhach['soluong'];
+      $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['solan'] ++;
+    }
   }
-  if (mb_strpos($tenhang, 'Công tắm') !== false) $dulieu[$dienthoai]['spa'] += $soluong;
-  if (mb_strpos($mahang, 'BVTK') !== false) $dulieu[$dienthoai]['dieutri'] += $soluong;
 }
+
+$i = 0;
+$dulieu[$i] = [
+  'hoadon' => [],
+  'khachhang' => []
+];
+
+foreach ($danhsach[$i] as $dulieukhach) {
+  // hóa đơn chưa thêm
+  // hóa đơn không có trong danh sách hoa đơn
+  if (empty($dulieu[$i]['hoadon'][$dulieukhach['hoadon']]) && empty($danhsachhoadon[$dulieukhach['hoadon']])) {
+    $danhsachhoadon[$dulieukhach['hoadon']] = 1;
+    $dulieu[$i]['hoadon'][$dulieukhach['hoadon']] = 1;
+    if (empty($dulieu[$i]['khachhang'][$dulieukhach['dienthoai']])) $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']] = [
+      'khachhang' => $dulieukhach['khachhang'],
+      'tienhang' => 0,
+      'solan' => 0,
+      'soluong' => 0,
+    ];
+    
+    $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['tienhang'] += $dulieukhach['tienhang'];
+    $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['soluong'] += $dulieukhach['soluong'];
+    $dulieu[$i]['khachhang'][$dulieukhach['dienthoai']]['solan'] ++;
+  }
+}
+
+$file = './include/file-mau.xlsx';
+$fileType = PHPExcel_IOFactory::identify($file);
+$objPHPExcel = PHPExcel_IOFactory::load($file);
+
+foreach ($dulieu as $thutu => $dulieukhach) {
+  $thutuy = 2;
+  foreach ($dulieukhach['khachhang'] as $dienthoai => $value) {
+    $objPHPExcel
+    ->setActiveSheetIndex($thutu)
+    ->setCellValue("A" . $thutuy, $value['khachhang'])
+    ->setCellValue("B" . $thutuy, $dienthoai)
+    ->setCellValue("C" . $thutuy, $value['tienhang'])
+    ->setCellValue("D" . $thutuy, $value['solan'])
+    ->setCellValue("E" . $thutuy, $value['soluong']);
+    $thutuy ++;
+  }
+}
+
+$time = time(); 
+$objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, $fileType);
+$objWriter->save('./include/file-mau-'. $time .'.xlsx');
+$objPHPExcel->disconnectWorksheets();
+unset($objWriter, $objPHPExcel);
+
+die();
+// sheet 1: tổng dùng để đối chiếu
+// sheet 2: spa
+// sheet 2: điều trị
+// sheet 2: vaccine
 echo "<pre>";
 foreach ($dulieu as $dienthoai => $data) {
   foreach ($data as $value) {

@@ -911,7 +911,7 @@ function danhsachnhantin() {
   $danhsachmautin = $db->all($sql);
 
   $sql = "select a.id, a.cometime, a.calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.number > 0 and (a.calltime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
-  $danhsachmautin = array_merge($db->all($sql));
+  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
@@ -1011,9 +1011,9 @@ function xacnhandanhsachloi() {
 
   $thoigian = time();
   foreach ($data->danhsach as $dulieu) {
-    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine = $data->id and idmautin = $data->idmautin";
+    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine = $dulieu->id and idmautin = $dulieu->idmautin";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($data->id, $data->idmautin, $thoigian)";
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($dulieu->id, $dulieu->idmautin, $thoigian)";
       $db->query($sql);
     }
   }
