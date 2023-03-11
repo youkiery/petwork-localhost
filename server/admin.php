@@ -1002,7 +1002,7 @@ function xacnhandagui() {
   $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($data->id, $data->idmautin, $thoigian)";
   $db->query($sql);
 
-  $result['status'] = 0;
+  $result['status'] = 1;
   return $result;
 }
 
@@ -1063,7 +1063,6 @@ function luucauhinhnhantin() {
 
   luucauhinh('min', $data->min);
   luucauhinh('max', $data->max);
-  luucauhinh('ngay', $data->ngay);
 
   $result['status'] = 1;
   $result['messenger'] = "Đã lưu cấu hình";

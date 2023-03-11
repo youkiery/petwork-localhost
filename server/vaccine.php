@@ -465,7 +465,7 @@ function excel() {
           if ($db->query($sql)) {
             $res['insert'] ++;
             // cập nhật nhắc vaccine có ngày nhắc trước 3 ngày
-            $danhsachid = $db->arr("select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = '$row[2]' and a.calltime < $homnay order by a.id asc", 'id');
+            $danhsachid = $db->arr("select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$row[2]' and a.calltime < $homnay order by a.id asc", 'id');
             if (count($danhsachid)) {
               $danhsachid = implode(', ', $danhsachid);
               $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
