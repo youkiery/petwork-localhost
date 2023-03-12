@@ -13,6 +13,24 @@ function auto() {
   return $result;
 }
 
+function luucauhinhvaccine() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+  if (empty($config = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('vaccine', 'ngay', $data->ngay, 0)";
+    $config = ['id' => $db->insertid($sql)];
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = $data->ngay where id = $config[id]";
+    $db->query($sql);
+  }
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}
+
 function getform() {
   global $db, $data, $result;
 
@@ -175,9 +193,17 @@ function spa() {
 
 function type() {
   global $db, $data, $result;
+
   $sql = "select * from pet_". PREFIX ."_type where active = 1";
+  $type = $db->all($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+  if (empty($config = $db->fetch($sql))) $ngay = 0;
+  else $ngay = $config['value'];
+
   $result['status'] = 1;
-  $result['list'] = $db->all($sql);
+  $result['list'] = $type;
+  $result['ngay'] = $ngay;
   return $result;
 }
 
@@ -899,9 +925,10 @@ function chuanhoatenkhach($tenkhach) {
 }
 
 function danhsachnhantin() {
-  global $db;
+  global $db, $data;
   
-  $homnay = strtotime(date('Y/m/d'));
+  $thoigian = isodatetotime($data->thoigian);
+  $homnay = strtotime(date('Y/m/d', $thoigian));
   $cuoingay = $homnay + 60 * 60 * 24 - 1;
   $motngay = 60 * 60 * 24;
   // $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
@@ -1076,6 +1103,66 @@ function luucauhinh($ten, $giatri) {
   if (!empty($cauhinh = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_config set value = '$giatri' where id = $cauhinh[id]";
   else $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('nhantin', '$ten', '$giatri', 1)";
   $db->query($sql);
+}
+
+function khoitaothongke() {
+  global $db, $data, $result;
+
+  $batdau = isodatetotime($data->batdau);
+  $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
+  $gioihanbatdau = $batdau - 60 * 60 * 24 * 10;
+  $gioihanketthuc = $ketthuc + 60 * 60 * 24 * 10;
+
+  $dulieu = [
+    'tongnhan' => 0,
+    'tongkhach' => 0,
+    'danhsachden' => [], 
+    'danhsachkhongden' => []
+  ];
+
+  $sql = "select * from pet_". PREFIX ."_vaccinenhantin where thoigian between $batdau and $ketthuc";
+  $danhsach = $db->all($sql);
+  $danhsachkhach = [];
+
+  foreach ($danhsach as $nhantin) {
+    $dulieu['tongnhan'] ++;
+
+    $sql = "select b.customerid, c.name as khachhang, c.phone as dienthoai from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid  = c.id where a.id = $nhantin[idvaccine]";
+    $khachhang = $db->fetch($sql);
+    if (empty($danhsachkhach[$khachhang['customerid']])) {
+      $danhsachkhach[$khachhang['customerid']] = 1;
+
+      $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where b.customerid = $khachhang[customerid] and (a.time between $gioihanbatdau and $gioihanketthuc)";
+      if (empty($db->fetch($sql))) $dulieu['danhsachkhongden'] []= $khachhang;
+      else $dulieu['danhsachden'] []= $khachhang;
+    }
+  }
+
+  $dulieu['tongkhach'] = count($danhsachkhach);
+
+  $homnay = strtotime(date('Y/m/d'));
+  $homqua = strtotime(date('Y/m/d')) - 60 * 60 * 24;
+  $dautuannay = $homnay - (date('N') - 1) * 60 * 60 * 24;
+  $dautuantruoc = $dautuannay - 60 * 60 * 24 * 7;
+  $dauthangnay = strtotime(date('Y/m/1'));
+  $cuoithangnay = strtotime(date('Y/m/t'));
+  $dauthangtruoc = strtotime("first day of last month");
+  $cuoithangtruoc = strtotime(date('Y/m/t', $dauthangtruoc));
+
+  $chonngay = [
+    ['ten' => 'Hôm nay', 'batdau' => date(DATE_ISO8601, $homnay), 'ketthuc' => date(DATE_ISO8601, $homnay)],
+    ['ten' => 'Hôm qua', 'batdau' => date(DATE_ISO8601, $homqua), 'ketthuc' => date(DATE_ISO8601, $homqua)],
+    ['ten' => 'Tuần này', 'batdau' => date(DATE_ISO8601, $dautuannay), 'ketthuc' => date(DATE_ISO8601, $dautuannay + 60 * 60 * 24 * 6)],
+    ['ten' => 'Tuần trước', 'batdau' => date(DATE_ISO8601, $dautuantruoc), 'ketthuc' => date(DATE_ISO8601, $dautuantruoc + 60 * 60 * 24 * 6)],
+    ['ten' => 'Tháng này', 'batdau' => date(DATE_ISO8601, $dauthangnay), 'ketthuc' => date(DATE_ISO8601, $cuoithangnay)],
+    ['ten' => 'Tháng trước', 'batdau' => date(DATE_ISO8601, $dauthangtruoc), 'ketthuc' => date(DATE_ISO8601, $cuoithangtruoc)],
+  ];
+
+
+  $result['status'] = 1;
+  $result['dulieu'] = $dulieu;
+  $result['chonngay'] = $chonngay;
+  return $result;
 }
 
 function laycauhinh($ten, $macdinh = 0) {

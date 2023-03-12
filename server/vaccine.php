@@ -827,9 +827,13 @@ function getlist($today = false) {
       array(),
     );
 
+    $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+    if (empty($config = $db->fetch($sql))) $ngay = 0;
+    else $ngay = $config['value'];
+  
     $homnay = strtotime(date('Y/m/d'));
     $cuoingay = $homnay + 60 * 60 * 24 - 1;
-    $ketthuc = $homnay - 60 * 60 * 24 * 3;
+    $ketthuc = $homnay - 60 * 60 * 24 * $ngay;
 
     // danh sách gọi nhắc sau 3 ngày nhưng chưa đến
 
