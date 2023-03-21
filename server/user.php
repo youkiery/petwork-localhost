@@ -85,7 +85,7 @@ function getinitdata($userid) {
   $sql = "select userid, fullname as name, fullname, username from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1)";
   $doctor = $db->all($sql);
 
-  $sql = "select * from pet_". PREFIX ."_type where active = 1";
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   $type = $db->all($sql);
 
   $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
@@ -174,7 +174,7 @@ function login() {
   $username = mb_strtolower($data->username);
   $password = $data->password;
 
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 
@@ -210,7 +210,7 @@ function signin() {
   $username = mb_strtolower($data->username);
   $password = $data->password;
 
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 
@@ -248,7 +248,7 @@ function changename() {
 
 function password() {
   global $data, $db, $result;
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 

@@ -71,15 +71,6 @@ function tempdatacover($data) {
   );
 }
 
-function typeauto() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = gettypeobj();
-  
-  return $result;
-}
-
 function doctorauto() {
   global $data, $db, $result;
 
@@ -129,7 +120,7 @@ function doneall() {
 function history() {
   global $data, $db, $result;
 
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
   $result['status'] = 1;
   $result['old'] = dataCover($db->all($sql));
   return $result;
@@ -230,7 +221,7 @@ function transfer() {
 function confirm() {
   global $data, $db, $result;
 
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.id = $data->id";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.id = $data->id";
   $c = $db->fetch($sql);
   $c['cometime'] = date('d/m/Y', $c['cometime']);
   $c['calltime'] = date('d/m/Y', $c['calltime']);
@@ -365,11 +356,30 @@ function excel() {
     $doctor[mb_strtolower($key)] = $row;
   }
 
-  $sql = "select * from pet_". PREFIX ."_type where active = 1";
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   $type = $db->obj($sql, 'code', 'id');
 
   $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
   $usg = $db->obj($sql, 'name', 'id');
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
+  $danhsachloai = $db->obj($sql, 'id');
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloainhom where active = 1";
+  $danhsachnhom = $db->arr($sql, 'id');
+  $dulieunhom = [];
+
+  foreach ($danhsachnhom as $idnhom) {
+    $sql = "select * from pet_". PREFIX ."_vaccineloai where idnhom = $idnhom";
+    $tam = $db->arr($sql, 'id');
+    if (count($tam)) $dulieunhom[$idnhom] = 'and typeid in ('. implode(', ', $tam) .')';
+    else $dulieunhom[$idnhom] = '';
+  }
+
+  foreach ($danhsachloai as $idloai => $loai) {
+    if (empty($dulieunhom[$loai['idnhom']])) $danhsachloai[$idloai]['nhom'] = '';
+    else $danhsachloai[$idloai]['nhom'] = $dulieunhom[$loai['idnhom']];
+  }
 
   $col = array(
     'Mã hàng' => '', // 0
@@ -408,7 +418,7 @@ function excel() {
   $com = $db->fetch($sql);
   $day21 = 60 * 60 * 24 *21;
   $time = strtotime(date('Y/m/d'));
-  $homnay = $time + 4 * 60 * 60 * 24 - 1;
+  $homnay = $time + 8 * 60 * 60 * 24 - 1;
 
   $l = array();
   foreach ($exdata as $row) {
@@ -463,9 +473,13 @@ function excel() {
         if (empty($r = $db->fetch($sql))) {
           $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
           if ($db->query($sql)) {
+          // if (1) {
             $res['insert'] ++;
             // cập nhật nhắc vaccine có ngày nhắc trước 3 ngày
-            $danhsachid = $db->arr("select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$row[2]' and a.calltime < $homnay order by a.id asc", 'id');
+            $xtra = $danhsachloai[$type[$row[0]]]['nhom'];
+            $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$row[2]' and a.calltime < $homnay $xtra order by a.id asc";
+            $danhsachid = $db->arr($sql, 'id');
+
             if (count($danhsachid)) {
               $danhsachid = implode(', ', $danhsachid);
               $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
@@ -639,7 +653,7 @@ function checkExcept($list, $name) {
 
 function getvacid($id) {
   global $db;
-  $sql = "select * from pet_". PREFIX ."_type where id = $id";
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $id";
   return $db->fetch($sql);
 }
 
@@ -665,15 +679,192 @@ function insert() {
   return $result;
 }
 
-function inserttype() {
+function themloai() {
   global $data, $db, $result;
   $data->name = trim($data->name);
   $data->code = trim($data->code);
-  $sql = "insert into pet_". PREFIX ."_type (name, code) values('$data->name', '$data->code')";
+
+  if ($data->id) $sql = "update pet_". PREFIX ."_vaccineloai set name = '$data->name', code = '$data->code' where id = $data->id";
+  else $sql = "insert into pet_". PREFIX ."_vaccineloai (name, code) values('$data->name', '$data->code')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function xoaloai() {
+  global $data, $db, $result;
+  $sql = "update pet_". PREFIX ."_vaccineloai set active = 0 where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
-  $result['list'] = gettypeobj();
-  $result['messenger'] = "Đã thêm loại nhắc";
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function themnhomloai() {
+  global $data, $db, $result;
+  $data->name = trim($data->name);
+
+  if ($data->id) $sql = "update pet_". PREFIX ."_vaccineloainhom set name = '$data->name' where id = $data->id";
+  else $sql = "insert into pet_". PREFIX ."_vaccineloainhom (name) values('$data->name')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['nhomloai'] = danhsachnhomloai();
+  return $result;
+}
+
+function chonnhomloai() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $data->idloai and idnhom = $data->idnhom";
+  if (empty($db->fetch($sql))) $sql = "update pet_". PREFIX ."_vaccineloai set idnhom = $data->idnhom where id = $data->idloai";
+  else $sql = "update pet_". PREFIX ."_vaccineloai set idnhom = 0 where id = $data->idloai";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function xoanhomloai() {
+  global $data, $db, $result;
+  $sql = "update pet_". PREFIX ."_vaccineloainhom set active = 0 where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['nhomloai'] = danhsachnhomloai();
+  return $result;
+}
+
+function khoitaoloai() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+  if (empty($config = $db->fetch($sql))) $ngay = 0;
+  else $ngay = $config['value'];
+
+  $result['status'] = 1;
+  $result['ngay'] = $ngay;
+  $result['loainhac'] = dulieuloai();
+  $result['nhomloai'] = danhsachnhomloai();
+  return $result;
+}
+
+function danhsachnhomloai() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloainhom where active = 1";
+  return $db->all($sql);
+}
+
+function dulieuloai() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
+  return $db->all($sql);
+}
+
+function luucauhinhvaccine() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+  if (empty($config = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('vaccine', 'ngay', $data->ngay, 0)";
+    $config = ['id' => $db->insertid($sql)];
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = $data->ngay where id = $config[id]";
+    $db->query($sql);
+  }
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}
+
+function xoadulieuvaccine() {
+  global $db, $data, $result;
+
+  $sql = "update pet_". PREFIX ."_vaccine set status = 4 where calltime < $data->date and status < 3";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_usg set status = 8 where calltime < $data->date and status < 7";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  return $result;
+}
+
+function chuyendulieuvaccine() {
+  global $db, $data, $result;
+
+  // foreach data->option
+  // lấy danh sách data->doctor + db(user not in doctor), chuyển cho danh sách db(doctor - data->doctor)
+  $sql = "select userid from pet_". PREFIX ."_users where userid not in (select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1)";
+  $doctor = array_merge($data->doctor, $db->arr($sql, 'userid'));
+  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid not in (". implode(',', $data->doctor) .")";
+  $target = $db->arr($sql, 'userid');
+
+  if (!empty($data->userid)) {
+    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_". PREFIX ."_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
+
+  $t = time() - 60 * 60 * 24 * 90; 
+  $sql = "update pet_". PREFIX ."_vaccine status = 4 where status < 3 and calltime < $t"; // đã trôi qua 3 tháng không nhắc nữa
+  $db->query($sql);
+
+  if (!empty($data->userid)) {
+    $sql = "update pet_". PREFIX ."_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_". PREFIX ."_usg set userid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
+  
+  if (!empty($data->userid)) {
+    $sql = "update pet_". PREFIX ."_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
+    $list = $db->all($sql);
+    $l = count($list);
+    $d = count($target);
+    $n = (int) ($l / $d);
+    $c = 0;
+    for ($i = 0; $i < $l; $i++) { 
+      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+      $sql = "update pet_". PREFIX ."_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
   return $result;
 }
 
@@ -684,16 +875,6 @@ function removevaccine() {
   $result['status'] = 1;
   $result['new'] = getlist(true);
   $result['messenger'] = "Đã xóa phiếu nhắc";
-  return $result;
-}
-
-function remove() {
-  global $data, $db, $result;
-  $sql = "update pet_". PREFIX ."_type set active = 0 where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['list'] = gettypeobj();
-  $result['messenger'] = "Đã xóa loại nhắc";
   return $result;
 }
 
@@ -746,7 +927,7 @@ function vaccined() {
     $xtra = "and a.userid = $userid;";
   }
   
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
   $list = dataCover($db->all($sql));
   $result['status'] = 1;
   $result['list'] = $list;
@@ -774,21 +955,10 @@ function resetvaccine() {
     $xtra = "and a.userid = $userid;";
   }
 
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
   $list = dataCover($db->all($sql));
   $result['status'] = 1;
   $result['list'] = $list;
-  return $result;
-}
-
-function updatetype() {
-  global $data, $db, $result;
-
-  $sql = "update pet_". PREFIX ."_type set name = '$data->name', code = '$data->code' where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['list'] = gettypeobj();
-  $result['messenger'] = "Đã cập nhật loại nhắc";  
   return $result;
 }
 
@@ -818,7 +988,7 @@ function getlist($today = false) {
   $start = strtotime(date('Y/m/d'));
 
   if ($today) {
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 order by a.id desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 order by a.id desc limit 50";
     $list = dataCover($db->all($sql));
   }
   else if (empty($data->keyword)) {
@@ -837,15 +1007,15 @@ function getlist($today = false) {
 
     // danh sách gọi nhắc sau 3 ngày nhưng chưa đến
 
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.status = 0 and recall <= $ketthuc and (called not between $homnay and $cuoingay) $xtra order by a.calltime asc";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and recall <= $ketthuc and (called not between $homnay and $cuoingay) $xtra order by a.calltime asc";
     $list[0] = dataCover($db->all($sql));
     
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (a.called between $homnay and $cuoingay) $xtra and a.status < 3 order by a.calltime asc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) $xtra and a.status < 3 order by a.calltime asc limit 50";
     $list[1] = dataCover($db->all($sql));
   }
   else {
     $key = trim($data->keyword);
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 order by a.calltime desc, a.recall desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 order by a.calltime desc, a.recall desc limit 50";
     $list = dataCover($db->all($sql));
   }
 
@@ -858,7 +1028,7 @@ function getlist($today = false) {
 //   $time = time();
 //   $limf = $time;
 //   $lime = $time + 60 * 60 * 24 * 3;
-//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
+//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where  a.status = $status and (calltime between $limf and $lime) $xtra order by a.recall asc";
 //   return dataCover($db->all($sql));
 // }
 
@@ -867,7 +1037,7 @@ function getlist($today = false) {
 
 //   $time = time();
 //   $lim = $time;
-//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
+//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where status = $status and calltime < $lim $xtra order by a.recall asc";
 //   return dataCover($db->all($sql), 1);
 // }
 
@@ -875,7 +1045,7 @@ function getOverList() {
   global $db, $data;
 
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.status < 3 and calltime < $time order by a.calltime asc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status < 3 and calltime < $time order by a.calltime asc limit 50";
   return dataCover($db->all($sql));
 }
 
@@ -939,7 +1109,7 @@ function gettemplist() {
   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
   else $xtra = "";
 
-  $sql = "select a.*, c.fullname as doctor, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_type d on a.typeid = d.id where a.status = 5 $xtra order by a.id desc";
+  $sql = "select a.*, c.fullname as doctor, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 5 $xtra order by a.id desc";
   $v = $db->all($sql);
   $e = array();
   $l = array();
@@ -987,7 +1157,7 @@ function gettemplist() {
   $list[0] = array_merge($l, $e);
   $start = strtotime(date('Y/m/d'));
   $end = $start + 60 * 60 * 24 - 1;
-  $sql = "select a.*, g.name as petname, g.customerid, b.name, b.phone, b.address, c.fullname as doctor, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_type d on a.typeid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc limit 50";
+  $sql = "select a.*, g.name as petname, g.customerid, b.name, b.phone, b.address, c.fullname as doctor, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc limit 50";
   $v = $db->all($sql);
   foreach ($v as $row) {
     $list[1] []= array(
@@ -1011,15 +1181,8 @@ function gettemplist() {
 
 function typeList() {
   global $db;
-  $sql = "select * from pet_". PREFIX ."_type where active = 1";
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   return $db->obj($sql, 'id', 'name');
-}
-
-function gettypeobj() {
-  global $db;
-
-  $sql = "select * from pet_". PREFIX ."_type where active = 1";
-  return $db->all($sql);
 }
 
 function getDoctor() {

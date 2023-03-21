@@ -144,7 +144,7 @@ function themnhanvien2() {
   $username = mb_strtolower($data->username);
   $password = $data->password;
 
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
 

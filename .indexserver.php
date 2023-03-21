@@ -5,8 +5,8 @@ header("Access-Control-Allow-Credentials: true");
 define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
 define('DIR', str_replace('/server', '/', ROOTDIR));
 include_once(ROOTDIR . '/include/config.php');
-include_once(ROOTDIR . '/server/db.php');
-include_once(ROOTDIR . '/server/global.php');
+include_once(ROOTDIR . '/include/db.php');
+include_once(ROOTDIR . '/include/global.php');
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
 // $arr = array(

@@ -6,7 +6,7 @@ header("Access-Control-Allow-Credentials: true");
 /*
 chuyển đổi petid trong bảng thành customerid
 include_once('../config.php');
-include_once('db.php');
+include_once(DIR. '/include/db.php');
 
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
@@ -34,8 +34,8 @@ $result = array(
 if (empty($data->type) || !file_exists(ROOTDIR. "/$data->type.php")) $result['messenger'] = 'Lỗi chức năng';
 else {
   include_once('../include/config.php');
-  include_once('db.php');
-  include_once('global.php');
+  include_once(DIR. '/include/db.php');
+  include_once(DIR. '/include/global.php');
   define('PREFIX', $config['prefix']);
   define('BRANCH', $config['branch']);
 

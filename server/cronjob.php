@@ -5,7 +5,7 @@ ini_set('display_errors', 1);
 define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
 define('DIR', str_replace('/server', '/', ROOTDIR));
 include_once(DIR . '/include/config.php');
-include_once(DIR . '/server/db.php');
+include_once(DIR . '/include/db.php');
 
 define('PREFIX', $config['prefix']);
 $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
@@ -55,7 +55,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       break;
   }
   if ($workid) {
-    $sql = "select * from pet_". PREFIX ."_work_follow where workid = $workid";
+    $sql = "select * from pet_". PREFIX ."_work_follow where workid = $congviec[id]";
     $dstheodoi = $db->arr($sql, 'userid');
       
     foreach ($dstheodoi as $nhanvien) {
@@ -63,7 +63,7 @@ foreach ($danhsachcongviec as $key => $congviec) {
       $db->query($sql);
     }
      
-    $sql = "select * from pet_". PREFIX ."_work_assign where workid = $workid";
+    $sql = "select * from pet_". PREFIX ."_work_assign where workid = $congviec[id]";
     $dstheodoi = $db->arr($sql, 'userid');
       
     foreach ($dstheodoi as $nhanvien) {

@@ -13,24 +13,6 @@ function auto() {
   return $result;
 }
 
-function luucauhinhvaccine() {
-  global $db, $data, $result;
-
-  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
-  if (empty($config = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('vaccine', 'ngay', $data->ngay, 0)";
-    $config = ['id' => $db->insertid($sql)];
-  }
-  else {
-    $sql = "update pet_". PREFIX ."_config set value = $data->ngay where id = $config[id]";
-    $db->query($sql);
-  }
-  
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã lưu cấu hình';
-  return $result;
-}
-
 function getform() {
   global $db, $data, $result;
 
@@ -39,18 +21,6 @@ function getform() {
   if (empty($form['value'])) $form['value'] = '';
   $result['status'] = 1;
   $result['html'] = $form['value'];
-  return $result;
-}
-
-function reduce() {
-  global $db, $data, $result;
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 4 where calltime < $data->date and status < 3";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_usg set status = 8 where calltime < $data->date and status < 7";
-  $db->query($sql);
-
-  $result['status'] = 1;
   return $result;
 }
 
@@ -81,80 +51,6 @@ function config() {
 
   $result['status'] = 1;
   $result['messenger'] = 'Đã lưu';
-  return $result;
-}
-
-function recycle() {
-  global $db, $data, $result;
-
-  // foreach data->option
-  // lấy danh sách data->doctor + db(user not in doctor), chuyển cho danh sách db(doctor - data->doctor)
-  $sql = "select userid from pet_". PREFIX ."_users where userid not in (select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1)";
-  $doctor = array_merge($data->doctor, $db->arr($sql, 'userid'));
-  $sql = "select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1 and userid not in (". implode(',', $data->doctor) .")";
-  $target = $db->arr($sql, 'userid');
-
-    if (!empty($data->userid)) {
-      $sql = "update pet_". PREFIX ."_vaccine set userid = $data->userid where (status < 3 or status = 5) and userid in (". implode(',', $doctor) .")";
-      $db->query($sql);
-    }
-    else {
-      $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 3 or a.status = 5) and a.userid in (". implode(',', $doctor) .")";
-      $list = $db->all($sql);
-
-      $l = count($list);
-      $d = count($target);
-      $n = (int) ($l / $d);
-  
-      $c = 0;
-      for ($i = 0; $i < $l; $i++) { 
-        if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-        $sql = "update pet_". PREFIX ."_vaccine set userid = $target[$c] where id = ". $list[$i]['id'];
-        $db->query($sql);
-      }
-    }
-
-  $t = time() - 60 * 60 * 24 * 90; 
-  $sql = "update pet_". PREFIX ."_vaccine status = 4 where status < 3 and calltime < $t"; // đã trôi qua 3 tháng không nhắc nữa
-  $db->query($sql);
-
-  if (!empty($data->userid)) {
-    $sql = "update pet_". PREFIX ."_usg set userid = $data->userid where (status < 7 or status = 9) and userid in (". implode(',', $doctor) .")";
-    $db->query($sql);
-  }
-  else {
-    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.status < 7 or a.status = 9) and a.userid in (". implode(',', $doctor) .")";
-    $list = $db->all($sql);
-    $l = count($list);
-    $d = count($target);
-    $n = (int) ($l / $d);
-    $c = 0;
-    for ($i = 0; $i < $l; $i++) { 
-      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_". PREFIX ."_usg set userid = $target[$c] where id = ". $list[$i]['id'];
-      $db->query($sql);
-    }
-  }
-  
-  if (!empty($data->userid)) {
-    $sql = "update pet_". PREFIX ."_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
-    $db->query($sql);
-  }
-  else {
-    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
-    $list = $db->all($sql);
-    $l = count($list);
-    $d = count($target);
-    $n = (int) ($l / $d);
-    $c = 0;
-    for ($i = 0; $i < $l; $i++) { 
-      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_". PREFIX ."_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
-      $db->query($sql);
-    }
-  }
-
-  $result['status'] = 1;
   return $result;
 }
 
@@ -191,10 +87,10 @@ function spa() {
   return $result;
 }
 
-function type() {
+function khoitaoloaikhoitaoloai() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_type where active = 1";
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   $type = $db->all($sql);
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
@@ -483,7 +379,7 @@ function signup() {
   $username = mb_strtolower($data->username);
   $password = $data->password;
 
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $birthday = 0;
@@ -507,7 +403,7 @@ function updateuser() {
   
   $password = $data->password;
 
-  include_once('Encryption.php');
+  include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $birthday = isodatetotime($data->birthday);
@@ -839,14 +735,14 @@ function luumautin() {
 function danhsachloai() {
   global $db;
 
-  $sql = "select id, name from pet_". PREFIX ."_type where active = 1 order by id asc";
+  $sql = "select id, name from pet_". PREFIX ."_vaccineloai where active = 1 order by id asc";
   return $db->all($sql);
 }
 
 function danhsachmautin() {
   global $db;
 
-  $sql = "select * from pet_". PREFIX ."_vaccinemautin order by lich desc, id desc";
+  $sql = "select * from pet_". PREFIX ."_vaccinemautin where kichhoat = 1 order by lich desc, id desc";
   $danhsach = $db->all($sql);
   $hauto = [' tái chủng', ' sinh', ' tái khám'];
 
@@ -858,7 +754,7 @@ function danhsachmautin() {
     $danhsach[$thutu]['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
     $danhsach[$thutu]['thoigian'] = $thoigian;
     if ($mautin['loainhac'] == 0) {
-      $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_type b on a.idloai = b.id where a.idmautin = $mautin[id]";
+      $sql = "select b.id, b.name from pet_". PREFIX ."_vaccinelienketmautin a inner join pet_". PREFIX ."_vaccineloai b on a.idloai = b.id where a.idmautin = $mautin[id]";
       $danhsach[$thutu]['loai'] = $db->all($sql);
     }
     else $danhsach[$thutu]['loai'] = [];
@@ -903,7 +799,7 @@ function danhsachdaguitin() {
     $sql = "select b.* from pet_". PREFIX ."_pet a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $vaccine[petid]";
     $khachhang = $db->fetch($sql);
     // loại tiêm
-    $sql = "select * from pet_". PREFIX ."_type where id = $vaccine[typeid]";
+    $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $vaccine[typeid]";
     $loaitiem = $db->fetch($sql);
     $danhsach[$thutu]['loainhac'] = $loaitiem['name'];
     $danhsach[$thutu]['khachhang'] = $khachhang['name'];
@@ -934,10 +830,10 @@ function danhsachnhantin() {
   // $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
 
   // lấy từ mẫu tin, kiểm tra những mục cần nhắn
-  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and a.status < 3 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
+  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and a.status < 3 and c.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
   $danhsachmautin = $db->all($sql);
 
-  $sql = "select a.id, a.cometime, a.calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.number > 0 and (a.calltime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $sql = "select a.id, a.cometime, a.calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.number > 0 and b.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
@@ -961,7 +857,7 @@ function danhsachnhantin() {
     
     if (empty($db->fetch($sql)) && $khachhang['loaitru'] == 0) {
       if ($mautin['loainhac'] == 0) {
-        $sql = "select * from pet_". PREFIX ."_type where id = $mautin[typeid]";
+        $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $mautin[typeid]";
         $loaitiem = $db->fetch($sql);
       }
       else {
@@ -1002,7 +898,7 @@ function danhsachnhantin() {
       }
       else {
         foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
-          if ($dulieu['idkhachhang'] == $dulieunhantin['idkhachhang']) {
+          if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang']) {
             $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
             $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $dulieunhantin['idmautin'];
             break;
@@ -1063,10 +959,7 @@ function boloaitru() {
 function xoamautin() {
   global $db, $data, $result;
 
-  $sql = "delete from pet_". PREFIX ."_vaccinemautin where id = $data->id";
-  $db->query($sql);
-
-  $sql = "delete from pet_". PREFIX ."_vaccinelineketmautin where idmautin = $data->id";
+  $sql = "update pet_". PREFIX ."_vaccinemautin set kichhoat = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
