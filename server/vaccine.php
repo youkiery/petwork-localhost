@@ -410,14 +410,14 @@ function excel() {
   }
 
   $res = array(
-    'on' => 1, 'total' => 0, 'vaccine' => 0, 'insert' => '', 'error' => array()
+    'on' => 1, 'total' => 0, 'vaccine' => 0, 'recalled' => 0, 'insert' => '', 'error' => array()
   );
 
   $his = array();
   $sql = "select * from pet_". PREFIX ."_config where name = 'vaccine-comma'";
   $com = $db->fetch($sql);
   $day21 = 60 * 60 * 24 *21;
-  $time = strtotime(date('Y/m/d'));
+  $time = strtotime(date('Y/m/d')); 
   $homnay = $time + 8 * 60 * 60 * 24 - 1;
 
   $l = array();
@@ -484,6 +484,8 @@ function excel() {
               $danhsachid = implode(', ', $danhsachid);
               $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
               $db->query($sql);
+
+              $res['recalled'] ++;
   
               $sql = "insert into pet_". PREFIX ."_vaccinetaichung (idkhachhang, thoigian) values($c[id], $time)";
               $db->query($sql);

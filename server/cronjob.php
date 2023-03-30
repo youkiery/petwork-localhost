@@ -21,7 +21,7 @@ $endday = $today + 60 * 60 * 24 - 1;
 foreach ($danhsachcongviec as $key => $congviec) {
   // switch type
   $expire = 0;
-  $workdid = 0;
+  $workid = 0;
   if ($congviec['expiretime'] > 0) $expire = $today + $congviec['expiretime'] - $congviec['createtime'];
   switch ($congviec['type']) {
     case '1':
