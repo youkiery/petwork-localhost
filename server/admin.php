@@ -703,7 +703,7 @@ function luumautin() {
     // cập nhật mẫu tin
     // thêm những cái không có
     // xóa những cái không có
-    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin', lich = $data->lich, loainhac = $data->loainhac where id = $data->id";
+    $sql = "update pet_". PREFIX ."_vaccinemautin set mautin = '$data->mautin', lich = $data->lich, loainhac = $data->loainhac, sukien = $data->sukien where id = $data->id";
     $db->query($sql);
 
     foreach ($data->loai as $idloai) {
@@ -717,7 +717,7 @@ function luumautin() {
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin, lich, loainhac) values ('$data->mautin', $data->lich, $data->loainhac)";
+    $sql = "insert into pet_". PREFIX ."_vaccinemautin (mautin, lich, loainhac, sukien) values ('$data->mautin', $data->lich, $data->loainhac, $data->sukien)";
     $idmautin = $db->insertid($sql);
 
     foreach ($data->loai as $idloai) {
@@ -744,13 +744,14 @@ function danhsachmautin() {
 
   $sql = "select * from pet_". PREFIX ."_vaccinemautin where kichhoat = 1 order by lich desc, id desc";
   $danhsach = $db->all($sql);
-  $hauto = [' tái chủng', ' sinh', ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun'], ' tái khám'];
 
   foreach ($danhsach as $thutu => $mautin) {
     if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
     else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
     else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
-    $thoigian .= $hauto[$mautin['loainhac']];
+    if ($mautin['loainhac'] == 1) $thoigian .= $hauto[$mautin['loainhac']][$mautin['sukien']];
+    else $thoigian .= $hauto[$mautin['loainhac']];
     $danhsach[$thutu]['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
     $danhsach[$thutu]['thoigian'] = $thoigian;
     if ($mautin['loainhac'] == 0) {
@@ -830,15 +831,18 @@ function danhsachnhantin() {
   // $ketthuc = $cuoingay + 3 * 60 * 60 * 24; // trước ngày nhắc 3 ngày
 
   // lấy từ mẫu tin, kiểm tra những mục cần nhắn
-  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and a.status < 3 and c.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
+  // nhắn tin vaccine
+  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and c.loainhac = 0 and a.status < 3 and c.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
   $danhsachmautin = $db->all($sql);
 
-  $sql = "select a.id, a.cometime, a.calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.number > 0 and b.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  // nhắn tin siêu âm
+  // nếu sự kiện = 0 thì dùng birthday, nếu sự kiện = 1 thì deworm
+  $sql = "select a.id, a.cometime, a.recall as calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and a.status = 3 + b.sukien and a.number > 0 and b.kichhoat = 1 and (a.recall between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
-  $hauto = [' tái chủng', ' sinh', ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun'], ' tái khám'];
   $danhsachloai = [1 => ' siêu âm', ' tái khám'];
 
   // lọc loại bỏ những mục đã nhắn tin
@@ -868,7 +872,8 @@ function danhsachnhantin() {
       else if ($mautin['lich'] > 0) $thoigian = "Sau $mautin[lich] ngày";
       else $thoigian = "Trước ". abs($mautin['lich']) ." ngày";
       $mautin['thoigian'] = $thoigian;
-      $thoigian .= $hauto[$mautin['loainhac']];
+      if ($mautin['loainhac'] == 1) $thoigian .= $hauto[$mautin['loainhac']][$mautin['sukien']];
+      else $thoigian .= $hauto[$mautin['loainhac']];
     
       $mautin['loaitiem'] = $loaitiem['name'];
       $mautin['cometime'] = date('d/m/Y', $mautin['cometime']);
