@@ -511,33 +511,34 @@ function excel() {
         if (count($dat) >= 1) $number = intval($dat[1]);
         else $number = 0;
   
-        if ($number == 0) $calltime = time();
-        else if (count($date) == 3) $calltime = strtotime(purenumber($date[2]) ."/". purenumber($date[1]) . "/". purenumber($date[0]));
-        else $calltime = 0;
-        
-        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
-        if (empty($c = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
-          $c['id'] = $db->insertid($sql);
-        }
-  
-        $datetime = explode(' ', $row[4]);
-        $date = explode('/', $datetime[0]);
-        $cometime = strtotime("$date[2]/$date[1]/$date[0]");
-        $userid = checkExcept($doctor, $row[1]);
+        if ($number > 0) {
+          if (count($date) == 3) $calltime = strtotime(purenumber($date[2]) ."/". purenumber($date[1]) . "/". purenumber($date[0]));
+          else $calltime = 0;
 
-        $sql = "select * from pet_". PREFIX ."_usg where customerid = $c[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
-        if (empty($r = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($c[id], $userid, $cometime, $calltime, $calltime, '$number', 9, '$dat[2]', ". time() .", 0)";
-          if ($db->query($sql)) $res['insert'] ++;
-          else {
-            $res['error'][] = array(
-              'name' => $row[3],
-              'phone' => $row[2],
-              'note' => $row[5],
-            );
+          $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+          if (empty($c = $db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+            $c['id'] = $db->insertid($sql);
           }
-        }
+    
+          $datetime = explode(' ', $row[4]);
+          $date = explode('/', $datetime[0]);
+          $cometime = strtotime("$date[2]/$date[1]/$date[0]");
+          $userid = checkExcept($doctor, $row[1]);
+  
+          $sql = "select * from pet_". PREFIX ."_usg where customerid = $c[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
+          if (empty($r = $db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($c[id], $userid, $cometime, $calltime, $calltime, '$number', 9, '$dat[2]', ". time() .", 0)";
+            if ($db->query($sql)) $res['insert'] ++;
+            else {
+              $res['error'][] = array(
+                'name' => $row[3],
+                'phone' => $row[2],
+                'note' => $row[5],
+              );
+            }
+          }
+        } 
       }
       else if ($row[5] == '1') {
         // var_dump($row);echo "<br>";
@@ -1248,18 +1249,16 @@ function getusglist($today = false) {
   }
   else if (empty($data->keyword)) {
     // danh sách nhắc hôm nay
-    $list = array(0 => array(), array(), array());
-    $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.status > 1 and a.status < 4) $xtra order by a.recall asc";
+    $daungay = strtotime(date('Y/m/d'));
+    $cuoingay = $daungay + 60 * 60 * 24 - 1;
+
+    $list = array(0 => array());
+    
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 3 and (calltime < $cuoingay) and called = 0 $xtra order by a.recall asc";
     $list[0] = usgdataCover($db->all($sql));
     
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.status > 3 and a.status < 6) $xtra order by a.recall asc";
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (called between $daungay and $cuoingay) $xtra order by a.recall asc";
     $list[1] = usgdataCover($db->all($sql));
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 6 $xtra order by a.recall asc";
-  	$list[1] = array_merge($list[1], usgdataCover($db->all($sql)));
-    
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status < 2 $xtra order by a.recall asc";
-    $list[2] = usgdataCover($db->all($sql));
   }
   else {
     // danh sách tìm kiếm khách hàng

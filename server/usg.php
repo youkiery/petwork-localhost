@@ -145,18 +145,16 @@ function getlist($today = false) {
   }
   else if (empty($data->keyword)) {
     // danh sách nhắc hôm nay
-    $list = array(0 => array(), array(), array());
-    $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.status > 1 and a.status < 4) $xtra order by a.recall asc";
-    $list[0] = dataCover($db->all($sql));
+    $daungay = strtotime(date('Y/m/d'));
+    $cuoingay = $daungay + 60 * 60 * 24 - 1;
+
+    $list = array(0 => array());
     
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.status > 3 and a.status < 6) $xtra order by a.recall asc";
-    $list[1] = dataCover($db->all($sql));
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 6 $xtra order by a.recall asc";
-  	$list[1] = array_merge($list[1], dataCover($db->all($sql)));
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 3 and (calltime < $cuoingay) and called = 0 $xtra order by a.recall asc";
+    $list[0] = usgdataCover($db->all($sql));
     
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status < 2 $xtra order by a.recall asc";
-    $list[2] = dataCover($db->all($sql));
+    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (called between $daungay and $cuoingay) $xtra order by a.recall asc";
+    $list[1] = usgdataCover($db->all($sql));
   }
   else {
     // danh sách tìm kiếm khách hàng
@@ -227,15 +225,10 @@ function insert() {
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
   $userid = checkuserid();
-  if (!isset($data->number)) $data->number = 0;
 
-  // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
-    // nếu không, đặt 5 tháng sau nhắc kỳ salơ
-  $recall = $data->cometime + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
-  if ($data->number) $recall = $data->calltime - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
-  $status = intval(boolval($data->number)) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
+  $recall = $data->calltime - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
 
-  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $userid, $data->cometime, $data->calltime, $recall, $data->number, $status, '$data->note', ". time() .", 0)";
+  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $userid, $data->cometime, $data->calltime, $recall, $data->number, 3, '$data->note', ". time() .", 0)";
   $result['status'] = 1;
   $result['vid'] = $db->insertid($sql);
   $result['list'] = getlist();
@@ -270,20 +263,9 @@ function update() {
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
 
-  // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
-  // nếu không, đặt 5 tháng sau nhắc kỳ salơ
-  $recall = $data->cometime + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
-  if ($data->number) $recall = $data->calltime - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
-  $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
-  $u = $db->fetch($sql);
-  $status = intval(boolval($data->number)); // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
-  // kiểm tra kết quả status bên trên có thay đổi hay không
-  // nếu có, reset, nếu không, giữ nguyên
-  if ($status == 1 && $u['status'] < 2) $status = 2; // trạng thái chưa sinh
-  else if ($status == 0 && $u['status'] > 1) $status = 0; // trạng thái nhắc tiêm phòng salơ
-  else $status = $u['status'];
+  $recall = $data->calltime - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
   
-  $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $recall, status = $status, number = $data->number where id = $data->id";
+  $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $recall, number = $data->number where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = getlist();
@@ -294,19 +276,6 @@ function update() {
 
 function birth() {
   global $data, $db, $result, $cover;
-
-  // nếu có ngày nhắc ngày salơ chó mẹ
-  if (!empty($data->repregnant)) {
-    $recall = isodatetotime($data->repregnant) - 60 * 60 * 24 * 7 * 5;
-
-    $userid = checkuserid();
-    $time = time();
-    $sql = "select customerid from pet_". PREFIX ."_usg where id = $data->id";
-    $usg = $db->fetch($sql);
-
-    $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($usg[customerid], $userid, $time, $recall, $recall, 0, 0, '$data->note', $time, 0)";
-    $db->query($sql);
-  }
 
   $data->calltime = isodatetotime($data->calltime);
   if (!empty($data->deworm)) $recall = isodatetotime($data->deworm);
@@ -322,46 +291,46 @@ function birth() {
   return $result;
 }
 
-function called() {
-  global $data, $db, $result, $cover;
+// function called() {
+//   global $data, $db, $result, $cover;
 
-  $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
-  $u = $db->fetch($sql);
-  $time = time();
-  if ($u['status'] == 0) $recall = $u['cometime'] + $cover[$u['status']]['t'];
-  else $recall = $u['calltime'] + $cover[$u['status']]['t'];
-  $status = $cover[$u['status']]['s'];
+//   $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
+//   $u = $db->fetch($sql);
+//   $time = time();
+//   if ($u['status'] == 0) $recall = $u['cometime'] + $cover[$u['status']]['t'];
+//   else $recall = $u['calltime'] + $cover[$u['status']]['t'];
+//   $status = $cover[$u['status']]['s'];
 
-  $sql = "update pet_". PREFIX ."_usg set status = $status, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['messenger'] = "Đã thay đổi trạng thái";
-  $result['list'] = getlist();
+//   $sql = "update pet_". PREFIX ."_usg set status = $status, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Đã thay đổi trạng thái";
+//   $result['list'] = getlist();
 
-  return $result;
-}
+//   return $result;
+// }
 
-function deworm() {
-  global $data, $db, $result, $cover;
+// function deworm() {
+//   global $data, $db, $result, $cover;
 
-  $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
-  $u = $db->fetch($sql);
-  $time = time();
-  // neu co deworm thi cap nhat, neu khong + 5 tuan
-  if (isset($data->deworm)) {
-    $t = str_replace('-', '/', $data->deworm);
-    $recall = strtotime($t);
-  } 
-  else $recall = $u['calltime'] + 60 * 60 * 24 * 7 * 6;
+//   $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
+//   $u = $db->fetch($sql);
+//   $time = time();
+//   // neu co deworm thi cap nhat, neu khong + 5 tuan
+//   if (isset($data->deworm)) {
+//     $t = str_replace('-', '/', $data->deworm);
+//     $recall = strtotime($t);
+//   } 
+//   else $recall = $u['calltime'] + 60 * 60 * 24 * 7 * 6;
 
-  $sql = "update pet_". PREFIX ."_usg set status = 5, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['messenger'] = "Đã thay đổi trạng thái";
-  $result['list'] = getlist();
+//   $sql = "update pet_". PREFIX ."_usg set status = 5, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Đã thay đổi trạng thái";
+//   $result['list'] = getlist();
 
-  return $result;
-}
+//   return $result;
+// }
 
 function dead() {
   global $data, $db, $result;
@@ -375,31 +344,31 @@ function dead() {
   return $result;
 }
 
-function done() {
-  global $data, $db, $result;
+// function done() {
+//   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_usg set status = 7, note = '$data->note' where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['messenger'] = "Phiếu nhắc đã không được theo dõi nữa";
-  $result['list'] = getlist();
+//   $sql = "update pet_". PREFIX ."_usg set status = 7, note = '$data->note' where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Phiếu nhắc đã không được theo dõi nữa";
+//   $result['list'] = getlist();
   
-  return $result;
-}
+//   return $result;
+// }
 
-function repregnant() {
-  global $data, $db, $result;
+// function repregnant() {
+//   global $data, $db, $result;
 
-  $time = time();
-  $recall = $time + 60 * 60 * 24 * 30 * 5;
-  $sql = "update pet_". PREFIX ."_usg set status = 0, number = 0, cometime = $time, calltime = $recall, recall = $recall, note = '$data->note' where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['messenger'] = "Phiếu nhắc đã lặp lại 5 tháng sau";
-  $result['list'] = getlist();
+//   $time = time();
+//   $recall = $time + 60 * 60 * 24 * 30 * 5;
+//   $sql = "update pet_". PREFIX ."_usg set status = 0, number = 0, cometime = $time, calltime = $recall, recall = $recall, note = '$data->note' where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Phiếu nhắc đã lặp lại 5 tháng sau";
+//   $result['list'] = getlist();
   
-  return $result;
-}
+//   return $result;
+// }
 
 function checkcustomer() {
   global $db, $data;
@@ -468,12 +437,9 @@ function doneall() {
     $u = $db->fetch($sql);
     // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
     // nếu không, đặt 5 tháng sau nhắc kỳ salơ
-    $recall = $u['cometime'] + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
-    if ($u['note'] == 'mèo') $recall = $u['cometime'] + 60 * 60 * 24 * 30; // là mèo nhắc 1 tháng sau salơ
-    if ($u['number']) $recall = $u['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
-    $status = intval(boolval($u['number'])) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
+    $recall = $u['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
 
-    $sql = "update pet_". PREFIX ."_usg set status = $status, recall = $recall, utemp = 1, time = $time where id = $id";
+    $sql = "update pet_". PREFIX ."_usg set status = 3, recall = $recall, utemp = 1, time = $time where id = $id";
     $db->query($sql);
   }
 
@@ -489,31 +455,6 @@ function history() {
   $sql = "select a.*, c.fullname as doctor, b.phone, b.name, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
   $result['status'] = 1;
   $result['old'] = dataCover($db->all($sql));
-  return $result;
-}
-
-function updatehistory() {
-  global $data, $db, $result;
-
-  $customerid = checkcustomer();
-  
-  $data->cometime = isodatetotime($data->cometime);
-  $data->calltime = isodatetotime($data->calltime);
-  $userid = checkuserid();
-
-  // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
-  // nếu không, đặt 5 tháng sau nhắc kỳ salơ
-  $recall = $data->cometime + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
-  if ($data->number) $recall = $data->calltime - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
-  $status = intval(boolval($data->number)) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
-
-  $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, cometime = $data->cometime, calltime = $data->calltime, status = $status, recall = $recall, note = '$data->note', number = $data->number, utemp = 1, time = ". time() ." where id = $data->id";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã xác nhận và thêm vào danh sách nhắc';
-  $result['list'] = gettemplist();
-
   return $result;
 }
 
@@ -541,13 +482,10 @@ function confirm() {
 
   // nếu số con > 0, đặt trạng thái sắp sinh, ngày nhắc là 1 tuần trước sinh
   // nếu không, đặt 5 tháng sau nhắc kỳ salơ
-  $recall = $c['cometime'] + 60 * 60 * 24 * 30 * 5; // mặc định 5 tháng sau salơ
-  if ($c['note'] == 'mèo') $recall = $c['cometime'] + 60 * 60 * 24 * 30; // nếu là mèo thì nhắc 1 tháng sau salơ
-  if ($c['number']) $recall = $c['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
-  $status = intval(boolval($c['number'])) * 2; // nếu có con thì trạng thái = 1, nếu không, trạng thái = 0
+  $recall = $c['calltime'] - 60 * 60 * 24 * 7; // có con, nhắc trước ngày sinh 1 tuần
   $userid = checkuserid();
 
-  $sql = "update pet_". PREFIX ."_usg set status = $status, utemp = 1, recall = $recall, time = ". time() ." where id = $data->id";
+  $sql = "update pet_". PREFIX ."_usg set status = 3, utemp = 1, recall = $recall, time = ". time() ." where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = "Đã xác nhận và chuyển vào danh sách nhắc";
