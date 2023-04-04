@@ -698,6 +698,8 @@ function cauhinhnhantin() {
 
 function luumautin() {
   global $db, $result, $data;
+  
+  if (empty($data->sukien)) $data->sukien = 0;
 
   if ($data->id) {
     // cập nhật mẫu tin
@@ -770,6 +772,27 @@ function xoanhantin() {
   $sql = "update pet_". PREFIX ."_customer set loaitru = 1 where id = $data->idkhachhang";
   // die($sql)
   $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function xacnhanthucong() {
+  global $db, $result, $data;
+
+  $thoigian = time();
+  $danhsachvaccine = explode(',', $data->id);
+  $danhsachmautin = explode(',', $data->idmautin);
+  $danhsachdaxacnhan = [];
+
+  foreach ($danhsachmautin as $thutu => $idmautin) {
+    if (empty($danhsachdaxacnhan[$idmautin . $danhsachvaccine[$thutu]])) {
+      $danhsachdaxacnhan[$idmautin] = $idmautin . $danhsachvaccine[$thutu];
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($danhsachvaccine[$thutu], $idmautin, $thoigian)";
+      $db->query($sql);
+    }
+  }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachnhantin();
@@ -904,8 +927,8 @@ function danhsachnhantin() {
       else {
         foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
           if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang']) {
-            $danhsachnhantin[$thutunhantin]['id'] .= ',' . $dulieunhantin['id'];
-            $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $dulieunhantin['idmautin'];
+            $danhsachnhantin[$thutunhantin]['id'] .= ',' . $mautin['id'];
+            $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $mautin['idmautin'];
             break;
           }
         }
@@ -927,8 +950,17 @@ function xacnhandagui() {
   global $db, $data, $result;
 
   $thoigian = time();
-  $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($data->id, $data->idmautin, $thoigian)";
-  $db->query($sql);
+  $danhsachvaccine = explode(',', $data->id);
+  $danhsachmautin = explode(',', $data->idmautin);
+  $danhsachdaxacnhan = [];
+
+  foreach ($danhsachmautin as $thutu => $idmautin) {
+    if (empty($danhsachdaxacnhan[$idmautin . $danhsachvaccine[$thutu]])) {
+      $danhsachdaxacnhan[$idmautin] = $idmautin . $danhsachvaccine[$thutu];
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($danhsachvaccine[$thutu], $idmautin, $thoigian)";
+      $db->query($sql);
+    }
+  }
 
   $result['status'] = 1;
   return $result;
@@ -976,6 +1008,17 @@ function doitenkhach() {
   global $db, $data, $result;
 
   $sql = "update pet_". PREFIX ."_customer set name = '$data->ten' where id = $data->idkhachhang";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function doidienthoai() {
+  global $db, $data, $result;
+
+  $sql = "update pet_". PREFIX ."_customer set phone = '$data->dienthoai' where id = $data->idkhachhang";
   $db->query($sql);
 
   $result['status'] = 1;
