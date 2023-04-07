@@ -828,7 +828,7 @@ function xacnhanthucong() {
 }
 
 function diendulieu($mautin, $dulieu) {
-  $danhsachtruong = ['[loainhac]' => 'loaitiem', '[ngayden]' => 'cometime', '[ngaynhac]' => 'calltime', '[khachhang]' => 'name', '[dienthoai]' => 'phone', '[thucung]' => 'thucung'];
+  $danhsachtruong = ['[loainhac]' => 'loainhac', '[ngayden]' => 'thoigiantoi', '[ngaynhac]' => 'thoigiannhac', '[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai', '[thucung]' => 'thucung'];
   foreach ($danhsachtruong as $tentruong => $tenbien) {
     $mautin = str_replace($tentruong, alias($dulieu[$tenbien]), $mautin);
   }
@@ -926,26 +926,27 @@ function danhsachnhantin() {
       if ($mautin['loainhac'] == 1) $thoigian .= $hauto[$mautin['loainhac']][$mautin['sukien']];
       else $thoigian .= $hauto[$mautin['loainhac']];
     
-      $mautin['loaitiem'] = $loaitiem['name'];
-      $mautin['cometime'] = date('d/m/Y', $mautin['cometime']);
-      $mautin['calltime'] = date('d/m/Y', $mautin['calltime']);
+      $mautin['loainhac'] = $loaitiem['name'];
+      $mautin['thoigiantoi'] = date('d/m/Y', $mautin['cometime']);
+      $mautin['thoigiannhac'] = date('d/m/Y', $mautin['calltime']);
       $mautin['idkhachhang'] = $khachhang['id'];
-      $mautin['phone'] = $khachhang['phone'];
+      $mautin['dienthoai'] = $khachhang['phone'];
       $mautin['thucung'] = $khachhang['thucung'];
-      $mautin['name'] = chuanhoatenkhach($khachhang['name']);
+      $mautin['khachhang'] = chuanhoatenkhach($khachhang['name']);
       $mautin['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
   
       if (empty($danhsachdienthoai[$khachhang['phone']])) {
         $danhsachnhantin []= [
           'id' => $mautin['id'],
           'idmautin' => $mautin['idmautin'],
-          'loainhac' => $mautin['loaitiem'],
-          'thoigiantoi' => $mautin['cometime'],
-          'thoigiannhac' => $mautin['calltime'],
+          'loainhac' => $mautin['loainhac'],
+          'thoigiantoi' => $mautin['thoigiantoi'],
+          'thoigiannhac' => $mautin['thoigiannhac'],
           'ghichu' => $mautin['note'],
           'idkhachhang' => $mautin['idkhachhang'],
-          'khachhang' => $mautin['name'],
-          'dienthoai' => $mautin['phone'],
+          'khachhang' => $mautin['khachhang'],
+          'dienthoai' => $mautin['dienthoai'],
+          'thucung' => $mautin['thucung'],
           'mautin' => diendulieu($mautin['mautin'], $mautin),
           'trangthai' => 0,
           'thoigian' => $thoigian
@@ -955,8 +956,13 @@ function danhsachnhantin() {
       else {
         foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
           if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang']) {
+            if (strpos($danhsachnhantin[$thutunhantin]['idmautin'], $mautin['idmautin']) == false) {
+              $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $mautin['loainhac'];
+              $danhsachnhantin[$thutunhantin]['mautin'] = diendulieu($mautin['mautin'], $danhsachnhantin[$thutunhantin]);
+            }
             $danhsachnhantin[$thutunhantin]['id'] .= ',' . $mautin['id'];
             $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $mautin['idmautin'];
+            // nếu khác loại thì cập nhật lại loại nhắn
             break;
           }
         }
