@@ -15,7 +15,53 @@
     $result['dachotlich'] = kiemtrachotlich();
     $result['dadangky'] = kiemtradadangky();
     $result['nghichunhat'] = nghichunhat();
+    $result['cauhinh'] = cauhinhlich();
+    $result['dangky'] = dangkylich();
+    $result['thangnay'] = thangnay();
     return $result;
+  }
+
+  function thangnay() {
+    global $db, $data;
+
+    $thoigian = $data->time;
+    $homnay = time();
+    $dauthang = strtotime(date('Y/m/1', $thoigian));
+    $cuoithang = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
+
+    if ($homnay >= $dauthang && $homnay <= $cuoithang) return true;
+    return false;
+  }
+
+  function cauhinhlich() {
+    global $db;
+
+    $cauhinh = ['dangkythem' => '0', 'huydangky' => 0];
+
+    $sql = "select * from pet_". PREFIX ."_config where name = 'dangkythem'";
+    if (!empty($dangkythem = $db->fetch($sql))) $cauhinh['dangkythem'] = $dangkythem['value'];
+
+    $sql = "select * from pet_". PREFIX ."_config where name = 'huydangky'";
+    if (!empty($huydangky = $db->fetch($sql))) $cauhinh['huydangky'] = $huydangky['value'];
+
+    return $cauhinh;
+  }
+
+  function dangkylich() {
+    global $db, $data;
+
+    $thoigian = $data->time;
+    $dangky = ['dangkythem' => '0', 'huydangky' => 0];
+
+    $dauthang = strtotime(date('Y/m/1', $thoigian));
+    $cuoithang = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
+
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 0 group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $dangky['dangkythem'] = $db->count($sql);
+
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 1 group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $dangky['huydangky'] = $db->count($sql);
+    return $dangky;
   }
 
   function nghichunhat() {
@@ -151,6 +197,16 @@
     return date('H:i', $thoigianmo) . ' - ' . date('H:i', $thoigiandong);
   }
 
+  function themthaydoi($userid, $thoigian, $buoi, $hanhdong) {
+    global $db;
+
+    if ($hanhdong == 'insert') $loaithaydoi = 0;
+    else $loaithaydoi = 1;
+    $homnay = time();
+    $sql = "insert into pet_". PREFIX ."_thaydoilich (userid, ngaythaydoi, buoithaydoi, loaithaydoi, thoigian) values($userid, $thoigian, $buoi, $loaithaydoi, $homnay)";
+    $db->query($sql);
+  }
+
   function userreg() {
     global $data, $db, $result, $chotlich;
 
@@ -162,9 +218,13 @@
       $result['messenger'] = 'Đã quá giờ đăng ký lịch ('. giokhoalich() .')';
     }
     else {
+      // kiểm tra nếu thay đổi trong tháng
+      $thangnay = thangnay();
+
       foreach ($data->list as $v) {
         $time = $starttime + $v->order * $aday;
         insert($v->uid, $time, $v->type, $v->action);
+        if ($thangnay) themthaydoi($v->uid, $time, $v->type, $v->action);
       }
   
       $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
@@ -228,6 +288,7 @@
 
   function userData() {
     global $db, $data, $chotlich;
+    $ngaymai = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
     if ($chotlich == '1') {
       $starttime = strtotime(date('Y/m/1', $data->time));
@@ -269,6 +330,7 @@
       $ct = $starttime + 60 * 60 * 24 * $i;
       $ce = $ct + 60 * 60 * 24 - 1;
       $temp = array(
+        'thaydoi' => $ngaymai < $ct,
         'date' => date('d/m', $ct),
         'day' => $cauhinh[date('N', $ct)]->thu,
         'list' => array()

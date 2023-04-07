@@ -593,6 +593,11 @@ function cauhinhlich() {
   $sql = "select * from pet_". PREFIX ."_config where name = 'thoigiandong'";
   if (empty($thoigiandong = $db->fetch($sql))) $thoigiandong = ['value' => '0000-00-00T00:00:00+07:00'];
 
+  $sql = "select * from pet_". PREFIX ."_config where name = 'dangkythem'";
+  if (empty($dangkythem = $db->fetch($sql))) $dangkythem = ['value' => '0'];
+  $sql = "select * from pet_". PREFIX ."_config where name = 'huydangky'";
+  if (empty($huydangky = $db->fetch($sql))) $huydangky = ['value' => '0'];
+
   $sql = "select * from pet_". PREFIX ."_config where name = 'khoathoigian'";
   if (empty($khoathoigian = $db->fetch($sql))) $khoathoigian = ['value' => '0'];
 
@@ -601,6 +606,8 @@ function cauhinhlich() {
   $result['khoathoigian'] = $khoathoigian['value'];
   $result['thoigianmo'] = chuyenthoigianiso($thoigianmo['value']);
   $result['thoigiandong'] = chuyenthoigianiso($thoigiandong['value']);
+  $result['huydangky'] = $huydangky['value'];
+  $result['dangkythem'] = $dangkythem['value'];
   return $result;
 }
 
@@ -649,6 +656,27 @@ function luucauhinhthoigian() {
     $sql = "update pet_". PREFIX ."_config set value = 0 where name = 'thoigianmo'";
     $db->query($sql);
   }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}
+
+function luudangky() {
+  global $db, $result, $data;
+
+  if (empty($data->dangkythem)) $data->dangkythem = 0;
+  if (empty($data->huydangky)) $data->huydangky = 0;
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'dangkythem'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'dangkythem', $data->dangkythem, 0)";
+  else $sql = "update pet_". PREFIX ."_config set value = $data->dangkythem where name = 'dangkythem'";
+  $db->query($sql);
+  
+  $sql = "select * from pet_". PREFIX ."_config where name = 'huydangky'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('config', 'huydangky', $data->huydangky, 0)";
+  else $sql = "update pet_". PREFIX ."_config set value = $data->huydangky where name = 'huydangky'";
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['messenger'] = 'Đã lưu cấu hình';
