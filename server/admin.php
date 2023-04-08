@@ -82,8 +82,11 @@ function savevaccine() {
 function spa() {
   global $db, $data, $result;
   $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
+  $danhsach = $db->all($sql);
+
   $result['status'] = 1;
-  $result['list'] = $db->all($sql);
+  $result['list'] = $danhsach;
+  $result['loainhac'] = dulieuloai();
   return $result;
 }
 
@@ -956,7 +959,7 @@ function danhsachnhantin() {
       else {
         foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
           if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang']) {
-            if (strpos($danhsachnhantin[$thutunhantin]['idmautin'], $mautin['idmautin']) == false) {
+            if (strpos($danhsachnhantin[$thutunhantin]['loainhac'], $mautin['loainhac']) == false) {
               $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $mautin['loainhac'];
               $danhsachnhantin[$thutunhantin]['mautin'] = diendulieu($mautin['mautin'], $danhsachnhantin[$thutunhantin]);
             }
@@ -1170,4 +1173,34 @@ function laycauhinh($ten, $macdinh = 0) {
   $sql = "select * from pet_". PREFIX ."_config where module = 'nhantin' and name = '$ten'";
   if (empty($cauhinh = $db->fetch($sql))) return $macdinh;
   return $cauhinh['value'];
+}
+
+function dulieuloai() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_spaloai where active = 1";
+  return $db->all($sql);
+}
+
+function themloai() {
+  global $data, $db, $result;
+  $data->name = trim($data->name);
+  $data->code = trim($data->code);
+
+  if ($data->id) $sql = "update pet_". PREFIX ."_spaloai set name = '$data->name', code = '$data->code' where id = $data->id";
+  else $sql = "insert into pet_". PREFIX ."_spaloai (name, code) values('$data->name', '$data->code')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function xoaloai() {
+  global $data, $db, $result;
+  $sql = "update pet_". PREFIX ."_spaloai set active = 0 where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
 }

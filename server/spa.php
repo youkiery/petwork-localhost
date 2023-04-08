@@ -522,6 +522,15 @@ function insert() {
   return $result;
 }
 
+function thongke() {
+  global $data, $db, $result;
+
+
+  $result['thongke'] = [];
+  $result['status'] = 1;
+  return $result;
+}
+
 function update() {
   global $data, $db, $result;
 

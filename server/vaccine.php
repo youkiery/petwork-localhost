@@ -376,6 +376,9 @@ function excel() {
     else $dulieunhom[$idnhom] = '';
   }
 
+  $sql = "select * from pet_". PREFIX ."_spaloai where active = 1";
+  $danhsachspa = $db->obj($sql, 'code', 'id');
+
   foreach ($danhsachloai as $idloai => $loai) {
     if (empty($dulieunhom[$loai['idnhom']])) $danhsachloai[$idloai]['nhom'] = '';
     else $danhsachloai[$idloai]['nhom'] = $dulieunhom[$loai['idnhom']];
@@ -498,6 +501,26 @@ function excel() {
               'note' => $row[5],
             );
           }
+        }
+      }
+      else if (isset($danhsachspa[$row[0]])) {
+        $datetime = explode(' ', $row[4]);
+        $date = explode('/', $datetime[0]);
+        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
+
+        $idloai = $danhsachspa[$row[0]];
+
+        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+        if (empty($c = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+          $c['id'] = $db->insertid($sql);
+        }
+        $idkhach = $c['id'];
+
+        $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, soluong, thoigian) values($idkhach, $idloai, $row[7], $thoigian)";
+          $db->query($sql);
         }
       }
       else if (isset($usg[$row[0]])) {
