@@ -886,7 +886,7 @@ function danhsachnhantin() {
 
   // lấy từ mẫu tin, kiểm tra những mục cần nhắn
   // nhắn tin vaccine
-  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and c.loainhac = 0 and a.status < 3 and c.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
+  $sql = "select a.*, b.idmautin, c.mautin, c.lich, c.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccinelienketmautin b on a.typeid = b.idloai inner join pet_". PREFIX ."_vaccinemautin c on b.idmautin = c.id and c.loainhac = 0 and (a.status < 3 or a.status = 5) and c.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * c.lich * -1) and ($homnay + 60 * 60 * 24 * (c.lich * -1 + 1) - 1))";
   $danhsachmautin = $db->all($sql);
 
   // nhắn tin siêu âm
