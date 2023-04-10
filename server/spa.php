@@ -522,11 +522,136 @@ function insert() {
   return $result;
 }
 
+function chitietthongke($dulieu) {
+  global $db;
+
+  $chitiet = [];
+	// tổng số lần họ tới
+	// trung bình số lần tới
+	// tổng tiền dịch vụ
+  /**
+    idkhach: {
+      tenkhach
+      dienthoai
+      tonglan
+      trungbinhlan
+      tongtien
+    } 
+  */
+  foreach ($dulieu as $thongtin) {
+    if (empty($chitiet[$thongtin['idkhach']])) {
+      $sql = "select name as tenkhach, phone as dienthoai from pet_". PREFIX ."_customer where id = $thongtin[idkhach]";
+      $khach = $db->fetch($sql);
+
+      $chitiet[$thongtin['idkhach']] = [
+        'tenkhach' => $khach['tenkhach'],
+        'dienthoai' => $khach['dienthoai'],
+        'tonglan' => 0,
+        'tongtien' => 0,
+        'ngay' => []
+      ];
+    }
+    $ngay = date('dmY', $thongtin['thoigian']);
+    if (empty($chitiet[$thongtin['idkhach']]['ngay'][$ngay])) $chitiet[$thongtin['idkhach']]['ngay'][$ngay] = 1;
+    $chitiet[$thongtin['idkhach']]['tongtien'] += $thongtin['tongtien'];
+  }
+
+  foreach ($chitiet as $idkhach => $thongtin) {
+    $chitiet[$idkhach]['tonglan'] = count($thongtin['ngay']);
+    unset($chitiet[$idkhach]['ngay']);
+  }
+
+  return $chitiet;
+}
+
+function sosanhtonglan($a, $b) {
+  return $a['tonglan'] < $b['tonglan'];
+}
+
 function thongke() {
   global $data, $db, $result;
 
+  // lấy từ trong danh sách dịch vụ
+  // thống kê số lượng dịch vụ theo khách hàng
+  // khách hàng: tổng dịch vụ, trung bình dịch vụ mỗi ngày, số ngày, tổng tiền
+  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->thang)));
+  $cuoithangnay = strtotime(date('Y/m/t', $dauthangnay)) + 60 * 60 * 24 - 1;
+  $dauthangtruoc = strtotime(date('Y/m/1', $dauthangnay - 1));
+  $cuoithangtruoc = strtotime(date('Y/m/t', $dauthangtruoc)) + 60 * 60 * 24 - 1;
 
-  $result['thongke'] = [];
+  // danh sách khách tháng này
+  $sql = "select * from pet_". PREFIX ."_spadichvu where thoigian between $dauthangnay and $cuoithangnay";
+  $thangnay = chitietthongke($db->all($sql));
+
+  // danh sách khách tháng trước
+  $sql = "select * from pet_". PREFIX ."_spadichvu where thoigian between $dauthangtruoc and $cuoithangtruoc";
+  $thangtruoc = chitietthongke($db->all($sql));
+
+  $dulieu = [];
+  // so sánh tháng này và tháng trước
+  // for tháng trước, so với tháng này nếu có idkhach, thực hiện so sánh
+  // nếu không, báo tháng này không đến
+  foreach ($thangtruoc as $idkhach => $thongtin) {
+    if (!empty($thangnay[$idkhach])) {
+      $tam = $thangnay[$idkhach];
+      $tam['tongtien'] = number_format($tam['tongtien']);
+      $tam['thangtruoc'] = $thongtin['tonglan'];
+      $dulieu []= $tam;
+    }
+    else {
+      $tam = $thangtruoc[$idkhach];
+      $tam['tongtien'] = number_format($tam['tongtien']);
+      $tam['thangtruoc'] = false;
+      $dulieu []= $tam;
+    }
+  }
+
+  usort($dulieu, "sosanhtonglan");
+
+  // $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $batdau and $ketthuc)";
+  // $danhsach = $db->all($sql);
+  // $dulieu = [];
+  // $thongke = [];
+  // $tongngay = floor(($ketthuc - $batdau) / 60 / 60 / 24);
+
+  // foreach ($danhsach as $dichvu) {
+  //   if (empty($dulieu[$dichvu['idkhach']])) {
+  //     $sql = "select * from pet_". PREFIX ."_customer where id = $dichvu[idkhach]";
+  //     if (empty($khach = $db->fetch($sql))) $khach = ['name' => '', 'phone' => ''];
+  //     $dulieu[$dichvu['idkhach']] = [
+  //       'khachhang' => $khach['name'],
+  //       'dienthoai' => $khach['phone'],
+  //       'tongden' => 0
+  //       'thangtruoc' => 0
+  //       'tongtien' => 0
+  //       'trungbinhdichvu' => 0
+  //       'trungbinhtongtien' => 0
+  //       'songay' => 0,
+  //       'danhsach' => [],
+  //     ];
+  //   }
+  //   $ngaythang = date('d/m/Y', $dichvu['thoigian']);
+  //   if (empty($dulieu[$dichvu['idkhach']]['danhsach'][$ngaythang])) $dulieu[$dichvu['idkhach']]['danhsach'][$ngaythang] = [
+  //     'tongdichvu' => 0,
+  //     'tongtien' => 0
+  //   ];
+  //   $dulieu[$dichvu['idkhach']]['danhsach'][$ngaythang]['tongdichvu'] += $dichvu['soluong'];
+  //   $dulieu[$dichvu['idkhach']]['danhsach'][$ngaythang]['tongtien'] += $dichvu['tongtien'];
+  //   $dulieu[$dichvu['idkhach']]['tongdichvu'] += $dichvu['soluong'];
+  //   $dulieu[$dichvu['idkhach']]['tongtien'] += $dichvu['tongtien'];
+  // }
+
+  // $thongke = [];
+  // foreach ($dulieu as $idkhach => $khachhang) {
+  //   $songay = count($khachhang['danhsach']);
+  //   $dulieu[$idkhach]['songay'] = $songay;
+  //   $dulieu[$idkhach]['trungbinhlan'] = $khachhang['tongdichvu'] / $tongngay;
+  //   $dulieu[$idkhach]['trungbinhtien'] = number_format($khachhang['tongtien'] / $songay);
+  //   $dulieu[$idkhach]['tongtien'] = number_format($khachhang['tongtien']);
+  //   $thongke []= $dulieu[$idkhach];
+  // }
+
+  $result['thongke'] = $dulieu;
   $result['status'] = 1;
   return $result;
 }

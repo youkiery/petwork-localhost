@@ -392,7 +392,8 @@ function excel() {
     'Thời gian' => '', // 4 01/10/2021 18:58:47
     'Ghi chú' => '', // 5
     'Tên hàng' => '', // 6
-    'Số lượng' => '' // 7
+    'Số lượng' => '', // 7
+    'Thành tiền' => '' // 8
   );
 
   for ($j = 0; $j <= $x[$highestColumn]; $j ++) {
@@ -519,7 +520,7 @@ function excel() {
 
         $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
         if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, soluong, thoigian) values($idkhach, $idloai, $row[7], $thoigian)";
+          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, soluong, tongtien, thoigian) values($idkhach, $idloai, $row[7], $row[8], $thoigian)";
           $db->query($sql);
         }
       }
