@@ -53,10 +53,6 @@ ini_set('display_errors', 1);
 //   }
 // }
 
-// $file = './include/file-mau.xlsx';
-// $fileType = PHPExcel_IOFactory::identify($file);
-// $objPHPExcel = PHPExcel_IOFactory::load($file);
-
 // foreach ($dulieu as $thutu => $dulieukhach) {
 //   $thutuy = 2;
 //   foreach ($dulieukhach['khachhang'] as $dienthoai => $value) {

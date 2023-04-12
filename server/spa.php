@@ -518,7 +518,56 @@ function insert() {
   $result['time'] = time();
   $result['list'] = getList();
   $result['status'] = 1;
-  
+  return $result;
+}
+
+function kiemtrachitiet($dulieu) {
+  global $db;
+
+  $chitiet = [];
+  $sql = "select * from pet_". PREFIX ."_spaloai";
+  $dulieuloaispa = $db->obj($sql, 'id', 'name');
+
+  $sql = "select * from pet_". PREFIX ."_spanhanvien";
+  $dulieunhanvien = $db->obj($sql, 'id', 'ten');
+  // liệt kê những ngày khách đến, làm dịch vụ gì, ai làm
+  foreach ($dulieu as $thongtin) {
+    $ngay = date('d/m/Y', $thongtin['thoigian']);
+    if (empty($chitiet[$ngay])) $chitiet[$ngay] = [];
+    if (empty($chitiet[$ngay][$thongtin['idnhanvien']])) $chitiet[$ngay][$thongtin['idnhanvien']] = [];
+    $chitiet[$ngay][$thongtin['idnhanvien']] []= $dulieuloaispa[$thongtin['idloai']];
+  }
+
+  $danhsach = [];
+  foreach ($chitiet as $ngay => $thongtin) {
+    foreach ($thongtin as $idnhanvien => $dichvu) {
+      $danhsach []= ['nhanvien' => $dulieunhanvien[$idnhanvien], 'dichvu' => implode(', ', $dichvu), 'ngay' => $ngay];
+    }
+  }
+
+  return $danhsach;
+}
+
+function chitietdulieu() {
+  global $db, $data, $result;
+
+  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->thang)));
+  $cuoithangnay = strtotime(date('Y/m/t', $dauthangnay)) + 60 * 60 * 24 - 1;
+  $dauthangtruoc = strtotime(date('Y/m/1', $dauthangnay - 1));
+  $cuoithangtruoc = strtotime(date('Y/m/t', $dauthangtruoc)) + 60 * 60 * 24 - 1;
+
+  $chitiet = ['thangnay' => [], 'thangtruoc' => []];
+
+  // danh sách khách tháng này
+  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthangnay and $cuoithangnay) and idkhach = $data->idkhach order by thoigian desc";
+  $chitiet['thangnay'] = kiemtrachitiet($db->all($sql));
+
+  // danh sách khách tháng trước
+  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthangtruoc and $cuoithangtruoc) and idkhach = $data->idkhach order by thoigian desc";
+  $chitiet['thangtruoc'] = kiemtrachitiet($db->all($sql));
+
+  $result['chitiet'] = $chitiet;
+  $result['status'] = 1;
   return $result;
 }
 
@@ -540,10 +589,11 @@ function chitietthongke($dulieu) {
   */
   foreach ($dulieu as $thongtin) {
     if (empty($chitiet[$thongtin['idkhach']])) {
-      $sql = "select name as tenkhach, phone as dienthoai from pet_". PREFIX ."_customer where id = $thongtin[idkhach]";
+      $sql = "select id, name as tenkhach, phone as dienthoai from pet_". PREFIX ."_customer where id = $thongtin[idkhach]";
       $khach = $db->fetch($sql);
 
       $chitiet[$thongtin['idkhach']] = [
+        'idkhach' => $khach['id'],
         'tenkhach' => $khach['tenkhach'],
         'dienthoai' => $khach['dienthoai'],
         'tonglan' => 0,

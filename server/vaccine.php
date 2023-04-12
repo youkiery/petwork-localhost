@@ -511,6 +511,12 @@ function excel() {
 
         $idloai = $danhsachspa[$row[0]];
 
+        $sql = "select * from pet_". PREFIX ."_spanhanvien where ten = '$row[1]'";
+        if (empty($nhanvien = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_spanhanvien (ten) values ('$row[1]')";
+          $nhanvien = ['id' => $db->insertid($sql)];
+        }
+
         $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
         if (empty($c = $db->fetch($sql))) {
           $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
@@ -520,7 +526,7 @@ function excel() {
 
         $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
         if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, soluong, tongtien, thoigian) values($idkhach, $idloai, $row[7], $row[8], $thoigian)";
+          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $nhanvien[id], $row[7], $row[8], $thoigian)";
           $db->query($sql);
         }
       }
