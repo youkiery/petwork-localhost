@@ -128,7 +128,7 @@ function danhsachnhantin() {
 
   $sql = "select a.id, b.id as idkhachhang, b.name as khachhang, b.phone as dienthoai from pet_". PREFIX ."_nhomtinlienket a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where a.idnhomtin = $data->id";
   $danhsach = $db->all($sql);
-  $danhsachbien = ['[khachhang]' => 'khachhang'];
+  $danhsachbien = ['[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai'];
   $mautin = str_replace('<br>', PHP_EOL, $data->mautin);
 
   foreach ($danhsach as $thutu => $khachhang) {
@@ -140,7 +140,8 @@ function danhsachnhantin() {
     $danhsach[$thutu]['mautin'] = $mautin;
 
     foreach ($danhsachbien as $mau => $tenbien) {
-      $danhsach[$thutu]['mautin'] = str_replace($mau, $khachhang[$tenbien], $danhsach[$thutu]['mautin']);
+      // $mautin = str_replace($tentruong, alias($dulieu[$tenbien]), $mautin);
+      $danhsach[$thutu]['mautin'] = str_replace($mau, alias($danhsach[$thutu][$tenbien]), $danhsach[$thutu]['mautin']);
     }
   }
 
@@ -165,6 +166,18 @@ function xoanhantin() {
   $db->query($sql);
 
   $sql = "delete from pet_". PREFIX ."_nhomtinchitiet where idlienket = $data->idlienket";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function xacnhanthucong() {
+  global $db, $result, $data;
+
+  $thoigian = time();
+  $sql = "insert into pet_". PREFIX ."_nhomtinchitiet (idlienket, thoigian) values($data->idlienket, $thoigian)";
   $db->query($sql);
 
   $result['status'] = 1;

@@ -551,10 +551,14 @@ function kiemtrachitiet($dulieu) {
 function chitietdulieu() {
   global $db, $data, $result;
 
-  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->thang)));
-  $cuoithangnay = strtotime(date('Y/m/t', $dauthangnay)) + 60 * 60 * 24 - 1;
-  $dauthangtruoc = strtotime(date('Y/m/1', $dauthangnay - 1));
-  $cuoithangtruoc = strtotime(date('Y/m/t', $dauthangtruoc)) + 60 * 60 * 24 - 1;
+  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->dauthang)));
+  $cuoithangnay = strtotime(date('Y/m/t', isodatetotime($data->cuoithang))) + 60 * 60 * 24 - 1;
+  $cuoithangtruoc = $dauthangnay - 1;
+  $thangtruoc = 2 * date('m', $dauthangnay) - date('m', $cuoithangnay) - 1;
+  if ($thangtruoc < 0) {
+    $thangtruoc += 12;
+  }
+  $dauthangtruoc = strtotime(date('Y', $dauthangnay) . '/'. $thangtruoc . '/1');
 
   $chitiet = ['thangnay' => [], 'thangtruoc' => []];
 
@@ -618,16 +622,39 @@ function sosanhtonglan($a, $b) {
   return $a['tonglan'] < $b['tonglan'];
 }
 
+function themchuongtrinh() {
+  global $data, $db, $result, $_FILES;
+
+  $thoigian = time();
+  $sql = "insert pet_". PREFIX ."_nhomtin (tennhom, mautin, thoigian) values('$data->tennhom', '$data->mautin', $thoigian)";
+  $idnhomtin = $db->insertid($sql);
+  
+  foreach ($data->danhsach as $idkhachhang) {
+    $sql = "select * from pet_". PREFIX ."_nhomtinlienket where idnhomtin = $idnhomtin and idkhachhang = $idkhachhang";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into pet_". PREFIX ."_nhomtinlienket (idnhomtin, idkhachhang) values($idnhomtin, $idkhachhang)";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  return $result;
+}
+
 function thongke() {
   global $data, $db, $result;
 
   // lấy từ trong danh sách dịch vụ
   // thống kê số lượng dịch vụ theo khách hàng
   // khách hàng: tổng dịch vụ, trung bình dịch vụ mỗi ngày, số ngày, tổng tiền
-  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->thang)));
-  $cuoithangnay = strtotime(date('Y/m/t', $dauthangnay)) + 60 * 60 * 24 - 1;
-  $dauthangtruoc = strtotime(date('Y/m/1', $dauthangnay - 1));
-  $cuoithangtruoc = strtotime(date('Y/m/t', $dauthangtruoc)) + 60 * 60 * 24 - 1;
+  $dauthangnay = strtotime(date('Y/m/1', isodatetotime($data->dauthang)));
+  $cuoithangnay = strtotime(date('Y/m/t', isodatetotime($data->cuoithang))) + 60 * 60 * 24 - 1;
+  $cuoithangtruoc = $dauthangnay - 1;
+  $thangtruoc = 2 * date('m', $dauthangnay) - date('m', $cuoithangnay) - 1;
+  if ($thangtruoc < 0) {
+    $thangtruoc += 12;
+  }
+  $dauthangtruoc = strtotime(date('Y', $dauthangnay) . '/'. $thangtruoc . '/1');
 
   // danh sách khách tháng này
   $sql = "select * from pet_". PREFIX ."_spadichvu where thoigian between $dauthangnay and $cuoithangnay";
@@ -645,15 +672,25 @@ function thongke() {
     if (!empty($thangnay[$idkhach])) {
       $tam = $thangnay[$idkhach];
       $tam['tongtien'] = number_format($tam['tongtien']);
+      $tam['thangnay'] = $tam['tonglan'];
       $tam['thangtruoc'] = $thongtin['tonglan'];
       $dulieu []= $tam;
+      unset($thangnay[$idkhach]);
     }
     else {
       $tam = $thangtruoc[$idkhach];
       $tam['tongtien'] = number_format($tam['tongtien']);
-      $tam['thangtruoc'] = false;
+      $tam['thangnay'] = 0;
+      $tam['thangtruoc'] = $thongtin['tonglan'];
       $dulieu []= $tam;
     }
+  }
+  foreach ($thangnay as $idkhach => $thongtin) {
+    $tam = $thangnay[$idkhach];
+    $tam['tongtien'] = number_format($tam['tongtien']);
+    $tam['thangnay'] = $thongtin['tonglan'];
+    $tam['thangtruoc'] = 0;
+    $dulieu []= $tam;
   }
 
   usort($dulieu, "sosanhtonglan");

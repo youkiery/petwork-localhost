@@ -229,15 +229,15 @@ function dulieuvattu() {
   if (count($data->loctang) && !empty($data->loctang[0])) {
     $xtra = "where id in (select idvattu as id from pet_". PREFIX ."_vattunoitang where idtang in (". implode(', ', $data->loctang) ."))";
   
-    $sql = "select * from pet_". PREFIX ."_vattutang where id in (". implode(', ', $data->loctang) .") order by ten asc";
+    $sql = "select * from pet_". PREFIX ."_vattutang where id in (". implode(', ', $data->loctang) .") order by id desc";
   }
   else {
     $xtra = "";
-    $sql = "select * from pet_". PREFIX ."_vattutang order by ten asc";
+    $sql = "select * from pet_". PREFIX ."_vattutang order by id desc";
   }
   $danhsachtang = $db->all($sql);
 
-  $sql = "select * from pet_". PREFIX . "_vattu $xtra";
+  $sql = "select * from pet_". PREFIX . "_vattu $xtra order by id desc";
   $danhsachvattu = $db->all($sql);
 
   foreach ($danhsachvattu as $thutu => $vattu) {

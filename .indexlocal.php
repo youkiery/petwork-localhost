@@ -2,6 +2,27 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
+define('DIR', str_replace('/server', '/', ROOTDIR));
+include_once(ROOTDIR . '/include/config.php');
+include_once(ROOTDIR . '/include/db.php');
+include_once(ROOTDIR . '/include/global.php');
+$db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
+
+$sql = "select * from pet_phc_spadichvu order by thoigian";
+$danhsach = $db->all($sql);
+$thoigian = [];
+
+foreach ($danhsach as $row) {
+  $ngay = date('d/m.y', $row['thoigian']);
+  if (empty($thoigian[$ngay])) $thoigian[$ngay] = 1;
+}
+
+foreach ($thoigian as $ngay => $value) {
+  echo "$ngay <br>";
+}
+die();
+
 // $dulieu = [];
 // $danhsachhoadon = [];
 // for ($i = 1; $i < 4; $i++) {
