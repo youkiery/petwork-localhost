@@ -879,23 +879,23 @@ function chuyendulieuvaccine() {
     }
   }
   
-  if (!empty($data->userid)) {
-    $sql = "update pet_". PREFIX ."_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
-    $db->query($sql);
-  }
-  else {
-    $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
-    $list = $db->all($sql);
-    $l = count($list);
-    $d = count($target);
-    $n = (int) ($l / $d);
-    $c = 0;
-    for ($i = 0; $i < $l; $i++) { 
-      if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
-      $sql = "update pet_". PREFIX ."_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
-      $db->query($sql);
-    }
-  }
+  // if (!empty($data->userid)) {
+  //   $sql = "update pet_". PREFIX ."_xray set doctorid = $data->userid where doctorid in (". implode(',', $doctor) .")";
+  //   $db->query($sql);
+  // }
+  // else {
+  //   $sql = "select a.id, b.fullname as name from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_users b on a.doctorid = b.userid where a.userid in (". implode(',', $doctor) .")";
+  //   $list = $db->all($sql);
+  //   $l = count($list);
+  //   $d = count($target);
+  //   $n = (int) ($l / $d);
+  //   $c = 0;
+  //   for ($i = 0; $i < $l; $i++) { 
+  //     if ($c < ($d - 1) && $i >= ($c + 1) * $n) $c ++;
+  //     $sql = "update pet_". PREFIX ."_xray set doctorid = $target[$c] where id = ". $list[$i]['id'];
+  //     $db->query($sql);
+  //   }
+  // }
 
   $result['status'] = 1;
   return $result;

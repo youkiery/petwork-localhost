@@ -53,13 +53,14 @@
     $thoigian = $data->time;
     $dangky = ['dangkythem' => '0', 'huydangky' => 0];
 
+    $userid = checkuserid();
     $dauthang = strtotime(date('Y/m/1', $thoigian));
     $cuoithang = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
 
-    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 0 group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 0 and userid = $userid group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
     $dangky['dangkythem'] = $db->count($sql);
 
-    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 1 group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 1 and userid = $userid group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
     $dangky['huydangky'] = $db->count($sql);
     return $dangky;
   }
