@@ -837,6 +837,74 @@ function statrate() {
   return $result;
 }
 
+function khoitaoloai() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  $result['loaicong'] = dulieucong();
+  return $result;
+}
+
+function dulieuloai() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_dieutrima order by id desc";
+  return $db->all($sql);
+}
+
+function dulieucong() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_dieutricong where active = 1 order by id desc";
+  return $db->all($sql);
+}
+
+function themloai() {
+  global $data, $db, $result;
+  $data->code = trim($data->code);
+
+  if ($data->id) $sql = "update pet_". PREFIX ."_dieutrima set code = '$data->code' where id = $data->id";
+  else $sql = "insert into pet_". PREFIX ."_dieutrima (code) values('$data->code')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function xoaloai() {
+  global $data, $db, $result;
+  $sql = "delete from pet_". PREFIX ."_dieutrima where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['loainhac'] = dulieuloai();
+  return $result;
+}
+
+function themloaicong() {
+  global $data, $db, $result;
+  $data->name = trim($data->name);
+  $data->code = trim($data->code);
+
+  if ($data->id) $sql = "update pet_". PREFIX ."_dieutricong set code = '$data->code', name = '$data->name' where id = $data->id";
+  else $sql = "insert into pet_". PREFIX ."_dieutricong (code, name) values('$data->code', '$data->name')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['loaicong'] = dulieucong();
+  return $result;
+}
+
+function xoaloaicong() {
+  global $data, $db, $result;
+  $sql = "update pet_". PREFIX ."_dieutricong set active = 0 where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['loaicong'] = dulieucong();
+  return $result;
+}
+
 function checkpet() {
   global $data, $db;
   $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";

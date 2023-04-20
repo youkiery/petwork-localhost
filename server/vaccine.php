@@ -379,6 +379,15 @@ function excel() {
   $sql = "select * from pet_". PREFIX ."_spaloai where active = 1";
   $danhsachspa = $db->obj($sql, 'code', 'id');
 
+  $sql = "select * from pet_". PREFIX ."_dieutrima";
+  $danhsachdieutri = $db->obj($sql, 'code', 'id');
+
+  $sql = "select * from pet_". PREFIX ."_dieutricong";
+  $danhsachcong = $db->obj($sql, 'code', 'id');
+
+  $sql = "select * from pet_". PREFIX ."_drug";
+  $danhsachthuoc = $db->obj($sql, 'code', 'id');
+
   foreach ($danhsachloai as $idloai => $loai) {
     if (empty($dulieunhom[$loai['idnhom']])) $danhsachloai[$idloai]['nhom'] = '';
     else $danhsachloai[$idloai]['nhom'] = $dulieunhom[$loai['idnhom']];
@@ -414,7 +423,7 @@ function excel() {
   }
 
   $res = array(
-    'on' => 1, 'total' => 0, 'vaccine' => 0, 'recalled' => 0, 'insert' => '', 'error' => array()
+    'on' => 1, 'total' => 0, 'vaccine' => 0, 'recalled' => 0, 'insert' => '', 'error' => array(), 'taikhamthem' => [], 'taikhamden' => []
   );
 
   $his = array();
@@ -504,32 +513,6 @@ function excel() {
           }
         }
       }
-      else if (isset($danhsachspa[$row[0]])) {
-        $datetime = explode(' ', $row[4]);
-        $date = explode('/', $datetime[0]);
-        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
-
-        $idloai = $danhsachspa[$row[0]];
-
-        $sql = "select * from pet_". PREFIX ."_spanhanvien where ten = '$row[1]'";
-        if (empty($nhanvien = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_spanhanvien (ten) values ('$row[1]')";
-          $nhanvien = ['id' => $db->insertid($sql)];
-        }
-
-        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
-        if (empty($c = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
-          $c['id'] = $db->insertid($sql);
-        }
-        $idkhach = $c['id'];
-
-        $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
-        if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $nhanvien[id], $row[7], $row[8], $thoigian)";
-          $db->query($sql);
-        }
-      }
       else if (isset($usg[$row[0]])) {
         $res['vaccine'] ++;
         $dat = explode($com['value'], $row[5]);
@@ -569,6 +552,117 @@ function excel() {
             }
           }
         } 
+      }
+      else if (isset($danhsachspa[$row[0]])) {
+        $datetime = explode(' ', $row[4]);
+        $date = explode('/', $datetime[0]);
+        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
+
+        $idloai = $danhsachspa[$row[0]];
+
+        $sql = "select * from pet_". PREFIX ."_spanhanvien where ten = '$row[1]'";
+        if (empty($nhanvien = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_spanhanvien (ten) values ('$row[1]')";
+          $nhanvien = ['id' => $db->insertid($sql)];
+        }
+
+        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+        if (empty($c = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+          $c['id'] = $db->insertid($sql);
+        }
+        $idkhach = $c['id'];
+
+        $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $nhanvien[id], $row[7], $row[8], $thoigian)";
+          $db->query($sql);
+        }
+      }
+      else if (isset($danhsachthuoc[$row[0]])) {
+        $datetime = explode(' ', $row[4]);
+        $date = explode('/', $datetime[0]);
+        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
+
+        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+        if (empty($c = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+          $c['id'] = $db->insertid($sql);
+        }
+        $idkhach = $c['id'];
+        $idloai = $danhsachthuoc[$row[0]];
+
+        $sql = "select * from pet_". PREFIX ."_dieutrithuoc where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_dieutrithuoc (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $nhanvien[id], $row[7], $row[8], $thoigian)";
+          $db->query($sql);
+        }
+
+        // kiểm tra có nhắc tái khám trước đó không
+        $hantaikham = strtotime(date('Y/m/d')) + 2 * 60 * 60 * 24 - 1; // khách đến tái khám trước 1 ngày
+        $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and $thoigian < $hantaikham and trangthai = 0";
+        $danhsachtaikham = $db->arr($sql, 'id');
+        if (count($danhsachtaikham)) {
+          $sql = "update pet_". PREFIX ."_dieutritaikham set trangthai = 1 where id in (". implode(',', $danhsachtaikham) .")";
+          $db->query($sql);
+        }
+
+      }
+      else if (isset($danhsachdieutri[$row[0]])) {
+        $datetime = explode(' ', $row[4]);
+        $date = explode('/', $datetime[0]);
+        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
+
+        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+        if (empty($c = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+          $c['id'] = $db->insertid($sql);
+        }
+        $idkhach = $c['id'];
+        $res['taikhamthem'][$idkhach] = 1;
+
+        $sql = "select * from `pet_". PREFIX ."_dieutritaikham` where idkhach = $idkhach and thoigian = $thoigian";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigian, trangthai) values($idkhach, $thoigian, 0)";
+          $db->query($sql);
+        }
+      }
+      else if (isset($danhsachcong[$row[0]])) {
+        // thêm vào danh sách điều trị
+        $datetime = explode(' ', $row[4]);
+        $date = explode('/', $datetime[0]);
+        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
+
+        $idloai = $danhsachcong[$row[0]];
+
+        $sql = "select * from pet_". PREFIX ."_spanhanvien where ten = '$row[1]'";
+        if (empty($nhanvien = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_spanhanvien (ten) values ('$row[1]')";
+          $nhanvien = ['id' => $db->insertid($sql)];
+        }
+
+        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+        if (empty($c = $db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+          $c['id'] = $db->insertid($sql);
+        }
+        $idkhach = $c['id'];
+
+        $sql = "select * from pet_". PREFIX ."_dieutridichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $thoigian";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_dieutridichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $nhanvien[id], $row[7], $row[8], $thoigian)";          
+          $db->query($sql);
+          $res['taikhamden'][$idkhach] = 1;
+        }
+
+        // kiểm tra có nhắc tái khám trước đó không
+        $hantaikham = strtotime(date('Y/m/d')) + 2 * 60 * 60 * 24 - 1; // khách đến tái khám trước 1 ngày
+        $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and $thoigian < $hantaikham and trangthai = 0";
+        $danhsachtaikham = $db->arr($sql, 'id');
+        if (count($danhsachtaikham)) {
+          $sql = "update pet_". PREFIX ."_dieutritaikham set trangthai = 1 where id in (". implode(',', $danhsachtaikham) .")";
+          $db->query($sql);
+        }
       }
       else if ($row[5] == '1') {
         // var_dump($row);echo "<br>";
@@ -625,6 +719,9 @@ function excel() {
       }
     }
   }
+
+  $res['taikhamthem'] = count($res['taikhamthem']);
+  $res['taikhamden'] = count($res['taikhamden']);
 
   $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";
   $result['data'] = $res;
