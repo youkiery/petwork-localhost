@@ -894,6 +894,11 @@ function danhsachnhantin() {
   $sql = "select a.id, a.cometime, a.recall as calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and (a.status = 3 + b.sukien or a.status = 9 + b.sukien) and a.number > 0 and b.kichhoat = 1 and (a.recall between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
+  // nhắn tin tái khám
+  $sql = "select a.id, a.thoigianden as cometime, a.thoigian as calltime, a.idkhach as customerid, '' as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_dieutritaikham a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 2 and a.trangthai = 0 and b.kichhoat = 1 and (a.thoigian between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
+  // echo json_encode($danhsachmautin);die();
+
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
   $hauto = [' tái chủng', [' sinh', ' xổ giun'], ' tái khám'];

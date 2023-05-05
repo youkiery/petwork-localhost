@@ -341,6 +341,6 @@ function xuatfile() {
   $objPHPExcel->disconnectWorksheets();
 
   $result['status'] = 1;
-  $result['link'] = $filename;
+  $result['link'] = "/include/export/file-mau-vat-tu-$time.xlsx";
   return $result;
 }

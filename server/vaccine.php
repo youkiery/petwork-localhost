@@ -170,6 +170,71 @@ function updatehistory() {
   return $result;
 }
 
+function loaitru() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloaitru where idkhach = $data->id";
+  if (empty($db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_vaccineloaitru  (idkhach) values($data->id)";
+    $db->query($sql);
+  }
+
+  $sql = "select * from pet_". PREFIX ."_pet where customerid = $data->id";
+  $danhsachthucung = $db->arr($sql, 'id');
+
+  if (!empty($danhsachthucung)) {
+    $sql = "update pet_". PREFIX ."_vaccine set status = 4 where status = 0 and petid in (". implode(', ', $danhsachthucung) .")";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = "Đã đưa khách vào danh sách loại trừ";
+  $result['list'] = getlist();
+  return $result;
+}
+
+function hoiphuc() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_vaccineloaitru where idkhach = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaitru();
+  return $result;
+}
+
+function khoitaoloaitru() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaitru();
+  return $result;
+}
+
+function danhsachloaitru() {
+  global $data, $db, $result;
+
+  $sql = "select b.* from pet_". PREFIX ."_vaccineloaitru a inner join pet_". PREFIX ."_customer b on a.idkhach = b.id order by id desc";
+  return $db->all($sql);
+}
+
+function themcauhinh() {
+  global $data, $db, $result;
+
+  if (empty($data->ngay)) $data->ngay = 0;
+  foreach ($data->nhom as $idnhom) {
+    $sql = "select * from pet_". PREFIX ."_vaccinecauhinh where ngay = $data->ngay and idnhom = $idnhom";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into pet_". PREFIX ."_vaccinecauhinh (ngay, idnhom) values($data->ngay, $idnhom)";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  return $result;
+}
+
 function called() {
   global $data, $db, $result;
 
@@ -177,7 +242,7 @@ function called() {
   $v = $db->fetch($sql);
   $time = strtotime(date('Y/m/d'));
 
-  $sql = "update pet_". PREFIX ."_vaccine set status = 2, note = '". $data->note ."', called = $time, recall = calltime + 60 * 60 * 24 * 7 - 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_vaccine set status = 2, note = '". $data->note ."', called = $time where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = "Đã gọi khách, nếu khách không đến sau 7 ngày sẽ gọi lại";
@@ -193,7 +258,7 @@ function uncalled() {
   $v = $db->fetch($sql);
   $time = strtotime(date('Y/m/d'));
 
-  $sql = "update pet_". PREFIX ."_vaccine set status = 1, note = '". $data->note ."', called = $time, recall = calltime + 60 * 60 * 24 * 7 - 1 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_vaccine set status = 1, note = '". $data->note ."', called = $time where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = "Khách không nghe máy, gọi lại vào ngày hôm sau";
@@ -388,6 +453,9 @@ function excel() {
   $sql = "select * from pet_". PREFIX ."_drug";
   $danhsachthuoc = $db->obj($sql, 'code', 'id');
 
+  $sql = "select * from pet_". PREFIX ."_vaccineloaitru";
+  $danhsachloaitru = $db->all($sql);
+
   foreach ($danhsachloai as $idloai => $loai) {
     if (empty($dulieunhom[$loai['idnhom']])) $danhsachloai[$idloai]['nhom'] = '';
     else $danhsachloai[$idloai]['nhom'] = $dulieunhom[$loai['idnhom']];
@@ -460,56 +528,58 @@ function excel() {
           $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
           $c['id'] = $db->insertid($sql);
         }
-  
-        $sql = "select * from pet_". PREFIX ."_pet where customerid = $c[id] and name = '$petname'";
-        if (empty($p = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_pet (name, customerid) values ('$petname', $c[id])";
-          $p['id'] = $db->insertid($sql);
-        }
-  
-        // thay đổi trạng thái siêu âm
-        $sql = "update pet_". PREFIX ."_usg set status = 7 where customerid = $c[id] and status = 6";
-        $db->query($sql);
-    
-        $datetime = explode(' ', $row[4]);
-        $date = explode('/', $datetime[0]);
-        $cometime = strtotime("$date[2]/$date[1]/$date[0]");
-        $userid = checkExcept($doctor, $row[1]);
-        // // nếu thời gian nhập < 21 ngày, đặt lại ngày nhắc = 0
-        // if ($calltime - $cometime < $day21) {
-        //   $calltime = 0;
-        //   $dat[2] = $row[5];
-        // }
 
-        $sql = "select * from pet_". PREFIX ."_vaccine where petid = $p[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
-
-        if (empty($r = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
-          if ($db->query($sql)) {
-          // if (1) {
-            $res['insert'] ++;
-            // cập nhật nhắc vaccine có ngày nhắc trước 3 ngày
-            $xtra = $danhsachloai[$type[$row[0]]]['nhom'];
-            $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$row[2]' and a.calltime < $homnay $xtra order by a.id asc";
-            $danhsachid = $db->arr($sql, 'id');
-
-            if (count($danhsachid)) {
-              $danhsachid = implode(', ', $danhsachid);
-              $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
-              $db->query($sql);
-
-              $res['recalled'] ++;
-  
-              $sql = "insert into pet_". PREFIX ."_vaccinetaichung (idkhachhang, thoigian) values($c[id], $time)";
-              $db->query($sql);
-            }
+        if (in_array($c['id'], $danhsachloaitru) == false) {
+          $sql = "select * from pet_". PREFIX ."_pet where customerid = $c[id] and name = '$petname'";
+          if (empty($p = $db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_pet (name, customerid) values ('$petname', $c[id])";
+            $p['id'] = $db->insertid($sql);
           }
-          else {
-            $res['error'][] = array(
-              'name' => $row[3],
-              'phone' => $row[2],
-              'note' => $row[5],
-            );
+    
+          // thay đổi trạng thái siêu âm
+          $sql = "update pet_". PREFIX ."_usg set status = 7 where customerid = $c[id] and status = 6";
+          $db->query($sql);
+      
+          $datetime = explode(' ', $row[4]);
+          $date = explode('/', $datetime[0]);
+          $cometime = strtotime("$date[2]/$date[1]/$date[0]");
+          $userid = checkExcept($doctor, $row[1]);
+          // // nếu thời gian nhập < 21 ngày, đặt lại ngày nhắc = 0
+          // if ($calltime - $cometime < $day21) {
+          //   $calltime = 0;
+          //   $dat[2] = $row[5];
+          // }
+  
+          $sql = "select * from pet_". PREFIX ."_vaccine where petid = $p[id] and cometime = $cometime and calltime = $calltime and userid = $userid";
+  
+          if (empty($r = $db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($p[id], ". $type[$row[0]] .", $cometime, $calltime, '$dat[2]', 5, $calltime, $userid, ". time() .", 0)";
+            if ($db->query($sql)) {
+            // if (1) {
+              $res['insert'] ++;
+              // cập nhật nhắc vaccine có ngày nhắc trước 3 ngày
+              $xtra = $danhsachloai[$type[$row[0]]]['nhom'];
+              $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$row[2]' and a.calltime < $homnay $xtra order by a.id asc";
+              $danhsachid = $db->arr($sql, 'id');
+  
+              if (count($danhsachid)) {
+                $danhsachid = implode(', ', $danhsachid);
+                $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
+                $db->query($sql);
+  
+                $res['recalled'] ++;
+    
+                $sql = "insert into pet_". PREFIX ."_vaccinetaichung (idkhachhang, thoigian) values($c[id], $time)";
+                $db->query($sql);
+              }
+            }
+            else {
+              $res['error'][] = array(
+                'name' => $row[3],
+                'phone' => $row[2],
+                'note' => $row[5],
+              );
+            }
           }
         }
       }
@@ -609,23 +679,30 @@ function excel() {
 
       }
       else if (isset($danhsachdieutri[$row[0]])) {
-        $datetime = explode(' ', $row[4]);
-        $date = explode('/', $datetime[0]);
-        $thoigian = strtotime("$date[2]/$date[1]/$date[0] $datetime[1]");
-
-        $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
-        if (empty($c = $db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
-          $c['id'] = $db->insertid($sql);
+        $dulieungay = explode($com['value'], $row[5]);
+        $ngay = explode('/', trim($dulieungay[0]));
+        
+        if (count($ngay) == 3) {
+          $thoigian = strtotime(purenumber($ngay[2]) ."/". purenumber($ngay[1]) . "/". purenumber($ngay[0]));
+          $dulieungay = explode(' ', $row[4]);
+          $ngay = explode('/', $dulieungay[0]);
+          $thoigianden = strtotime("$ngay[2]/$ngay[1]/$ngay[0] $dulieungay[1]");
+  
+          $sql = "select * from pet_". PREFIX ."_customer where phone = '$row[2]'";
+          if (empty($c = $db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$row[3]', '$row[2]', '')";
+            $c['id'] = $db->insertid($sql);
+          }
+          $idkhach = $c['id'];
+          $res['taikhamthem'][$idkhach] = 1;
+  
+          $sql = "select * from `pet_". PREFIX ."_dieutritaikham` where idkhach = $idkhach and thoigian = $thoigian";
+          if (empty($db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigian, thoigianden, trangthai) values($idkhach, $thoigian, $thoigianden, 0)";
+            $db->query($sql);
+          }
         }
-        $idkhach = $c['id'];
-        $res['taikhamthem'][$idkhach] = 1;
 
-        $sql = "select * from `pet_". PREFIX ."_dieutritaikham` where idkhach = $idkhach and thoigian = $thoigian";
-        if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigian, trangthai) values($idkhach, $thoigian, 0)";
-          $db->query($sql);
-        }
       }
       else if (isset($danhsachcong[$row[0]])) {
         // thêm vào danh sách điều trị
@@ -870,15 +947,37 @@ function xoanhomloai() {
 function khoitaoloai() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
-  if (empty($config = $db->fetch($sql))) $ngay = 0;
-  else $ngay = $config['value'];
-
   $result['status'] = 1;
-  $result['ngay'] = $ngay;
   $result['loainhac'] = dulieuloai();
   $result['nhomloai'] = danhsachnhomloai();
+  $result['cauhinh'] = cauhinhloai();
   return $result;
+}
+
+function cauhinhloai() {
+  global $data, $db;
+
+  $sql = "select * from pet_". PREFIX ."_vaccineloainhom where active = 1";
+  $danhsachnhom = $db->obj($sql, 'id', 'name')  ;
+
+  $sql = "select * from pet_". PREFIX ."_vaccinecauhinh";
+  $danhsachngay = $db->all($sql);
+  $danhsach = [];
+  $danhsachtam = [];
+
+  foreach ($danhsachngay as $ngay) {
+    if (empty($danhsachtam[$ngay['ngay']])) $danhsachtam[$ngay['ngay']] = [
+      'danhsach' => [],
+      'thoigian' => ($ngay['ngay'] > 0 ? "Trước $ngay[ngay] ngày" : ($ngay['ngay'] < 0 ? "Sau $ngay[ngay]" : 'Đúng ngày'))
+    ];
+    $danhsachtam[$ngay['ngay']]['danhsach'] []= $danhsachnhom[$ngay['idnhom']];
+  }
+
+  foreach ($danhsachtam as $thutu => $ngay) {
+    $danhsachtam[$thutu]['danhsach'] = implode(', ', $danhsachtam[$thutu]['danhsach']);
+    $danhsach []= $ngay;
+  }
+  return $danhsach;
 }
 
 function danhsachnhomloai() {
@@ -1135,12 +1234,10 @@ function getlist($today = false) {
     $cuoingay = $homnay + 60 * 60 * 24 - 1;
     $ketthuc = $homnay - 60 * 60 * 24 * $ngay;
 
-    // danh sách gọi nhắc sau 3 ngày nhưng chưa đến
-
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and recall <= $ketthuc and (called not between $homnay and $cuoingay) $xtra order by a.calltime asc";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and recall <= $ketthuc and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra order by a.calltime asc";
     $list[0] = dataCover($db->all($sql));
     
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) $xtra and a.status < 3 order by a.calltime asc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.status < 3 order by a.calltime asc limit 50";
     $list[1] = dataCover($db->all($sql));
   }
   else {

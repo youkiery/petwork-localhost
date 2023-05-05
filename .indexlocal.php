@@ -2,26 +2,26 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
-define('DIR', str_replace('/server', '/', ROOTDIR));
-include_once(ROOTDIR . '/include/config.php');
-include_once(ROOTDIR . '/include/db.php');
-include_once(ROOTDIR . '/include/global.php');
-$db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
+// define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
+// define('DIR', str_replace('/server', '/', ROOTDIR));
+// include_once(ROOTDIR . '/include/config.php');
+// include_once(ROOTDIR . '/include/db.php');
+// include_once(ROOTDIR . '/include/global.php');
+// $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
-$sql = "select * from pet_phc_spadichvu order by thoigian";
-$danhsach = $db->all($sql);
-$thoigian = [];
+// $sql = "select * from pet_phc_spadichvu order by thoigian";
+// $danhsach = $db->all($sql);
+// $thoigian = [];
 
-foreach ($danhsach as $row) {
-  $ngay = date('d/m.y', $row['thoigian']);
-  if (empty($thoigian[$ngay])) $thoigian[$ngay] = 1;
-}
+// foreach ($danhsach as $row) {
+//   $ngay = date('d/m.y', $row['thoigian']);
+//   if (empty($thoigian[$ngay])) $thoigian[$ngay] = 1;
+// }
 
-foreach ($thoigian as $ngay => $value) {
-  echo "$ngay <br>";
-}
-die();
+// foreach ($thoigian as $ngay => $value) {
+//   echo "$ngay <br>";
+// }
+// die();
 
 // $dulieu = [];
 // $danhsachhoadon = [];
@@ -113,11 +113,11 @@ die();
 header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Credentials: true");
 
-for ($i = 0; $i < 7; $i++) { 
-  $date = time() + $i * 60 * 60 * 24;
-  echo date('N', $date) . ': '. date('d/m/Y', $date) . '<br>';
-}
-die();
+// for ($i = 0; $i < 7; $i++) { 
+//   $date = time() + $i * 60 * 60 * 24;
+//   echo date('N', $date) . ': '. date('d/m/Y', $date) . '<br>';
+// }
+// die();
 
 define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
 define('DIR', str_replace('/server', '/', ROOTDIR));

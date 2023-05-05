@@ -6,6 +6,7 @@ function khoitao() {
   $result['status'] = 1;
   $result['danhsach'] = danhsachnhomtin();
   $result['cauhinh'] = cauhinhnhantin();
+  $result['cauhinhloai'] = cauhinhloai();
   return $result;
 }
 
@@ -22,6 +23,30 @@ function cauhinhnhantin() {
   return $cauhinh;
 }
 
+function cauhinhloai() {
+  global $db;
+
+  $sqlvaccine = "select id, name from pet_". PREFIX ."_vaccineloai where active = 1";
+  $sqlusg = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
+  $sqlspa = "select id, name from pet_". PREFIX ."_config where module = 'spa' order by value asc";
+  $sqltreat = "select id, name from pet_". PREFIX ."_dieutricong where active = 1 order by id desc";
+
+  $cauhinh = [
+    'vaccine' => $db->all($sqlvaccine),
+    'usg' => $db->all($sqlusg),
+    'treat' => $db->all($sqlspa),
+    'spa' => $db->all($sqltreat),
+  ];
+
+  foreach ($cauhinh as $loai => $danhsach) {
+    foreach ($danhsach as $thutu => $dulieu) {
+      $cauhinh[$loai][$thutu]['checker'] = false;
+    }
+  }
+
+  return $cauhinh;
+}
+
 function laycauhinh($ten, $macdinh = 0) {
   global $db;
 
@@ -31,6 +56,14 @@ function laycauhinh($ten, $macdinh = 0) {
 }
 
 function chitiet() {
+  global $db, $data, $result;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachnhantin();
+  return $result;
+}
+
+function laydulieunhomtin() {
   global $db, $data, $result;
 
   $result['status'] = 1;
@@ -68,32 +101,58 @@ function themnhomtin() {
     $db->query($sql);
     $idnhomtin = $data->id;
   }
+
+  if (empty($data->dulieu[0])) $data->dulieu[0] = [];
+  if (empty($data->dulieu[1])) $data->dulieu[1] = [];
+  if (empty($data->dulieu[2])) $data->dulieu[2] = [];
+  if (empty($data->dulieu[3])) $data->dulieu[3] = [];
+
+  $xtra = [];
+  foreach ($data->dulieu as $loai => $danhsachid) {
+    foreach ($danhsachid as $idloai) {
+      // tạo query xóa những cái cùng id nhưng không cùng loại 
+      $xtra []= "(loai = $loai and idloai = $idloai)";
+      // select, nếu chưa có thì thêm
+      $sql = "select * from pet_". PREFIX ."_nhomtinloai where idnhomtin = $idnhomtin and loai = $loai and idloai = $idloai";
+      if (empty($db->fetch($sql))) {
+        $sql = "insert into pet_". PREFIX ."_nhomtinloai (idnhomtin, loai, idloai) values($idnhomtin, $loai, $idloai)";
+        $db->query($sql);
+      }
+    }
+  }
+  if (empty($xtra)) $xtra = "and 1";
+  else $xtra = "and id not in (select id from pet_". PREFIX ."_nhomtinloai where ". implode(' or ', $xtra) .")";
   
+  $sql = "delete from pet_". PREFIX ."_nhomtinloai where idnhomtin = $idnhomtin $xtra";
+  $db->query($sql);
+
   $soluong = 0;
   if (isset($_FILES['file'])) {
-    $file = $_FILES['file']['tmp_name'];
-    include DIR .'include/PHPExcel/IOFactory.php';
-      
-    $inputFileType = PHPExcel_IOFactory::identify($file);
-    $objReader = PHPExcel_IOFactory::createReader($inputFileType);
-    $objReader->setReadDataOnly(true);
-    $objPHPExcel = $objReader->load($file);
-    $sheet = $objPHPExcel->getSheet(0);
-  
-    $highestRow = $sheet->getHighestRow(); 
-    $highestColumn = $sheet->getHighestColumn();
-  
-    $danhsach = [];
-    for ($i = 2; $i < $highestRow; $i++) { 
-      $ten = $sheet->getCell("A". $i)->getValue();
-      $dienthoai = $sheet->getCell("B". $i)->getValue();
-      if (!empty($dienthoai)) {
-        $idkhachhang = kiemtrakhachhang($ten, $dienthoai);
-        $sql = "select * from pet_". PREFIX ."_nhomtinlienket where idnhomtin = $idnhomtin and idkhachhang = $idkhachhang";
-        if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_nhomtinlienket (idnhomtin, idkhachhang) values($idnhomtin, $idkhachhang)";
-          $db->query($sql);
-          $soluong ++;
+    if (file_exists($_FILES['file']['tmp_name'])) {
+      $file = $_FILES['file']['tmp_name'];
+      include DIR .'include/PHPExcel/IOFactory.php';
+        
+      $inputFileType = PHPExcel_IOFactory::identify($file);
+      $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+      $objReader->setReadDataOnly(true);
+      $objPHPExcel = $objReader->load($file);
+      $sheet = $objPHPExcel->getSheet(0);
+    
+      $highestRow = $sheet->getHighestRow(); 
+      $highestColumn = $sheet->getHighestColumn();
+    
+      $danhsach = [];
+      for ($i = 2; $i < $highestRow; $i++) { 
+        $ten = $sheet->getCell("A". $i)->getValue();
+        $dienthoai = $sheet->getCell("B". $i)->getValue();
+        if (!empty($dienthoai)) {
+          $idkhachhang = kiemtrakhachhang($ten, $dienthoai);
+          $sql = "select * from pet_". PREFIX ."_nhomtinlienket where idnhomtin = $idnhomtin and idkhachhang = $idkhachhang";
+          if (empty($db->fetch($sql))) {
+            $sql = "insert into pet_". PREFIX ."_nhomtinlienket (idnhomtin, idkhachhang) values($idnhomtin, $idkhachhang)";
+            $db->query($sql);
+            $soluong ++;
+          }
         }
       }
     }
