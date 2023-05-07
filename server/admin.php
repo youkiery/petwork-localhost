@@ -326,6 +326,7 @@ function getList() {
     'other' => 0,
     'luong' => 0,
     'accounting' => 0,
+    'vattu' => 0,
     'work' => 0,
     'nhantin' => 0,
   ];

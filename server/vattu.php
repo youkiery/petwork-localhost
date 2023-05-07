@@ -8,7 +8,20 @@ function khoitao() {
   $result['status'] = 1;
   $result['dulieu'] = dulieuvattu();
   $result['danhsachtang'] = danhsachtang();
+  $result['danhsachnhanvien'] = danhsachnhanvien();
+  $result['tongtien'] = tongtien();
   return $result;
+}
+
+function tongtien() {
+  global $db;
+
+  $sql = "select sum(giatri * soluong) as tong from pet_". PREFIX ."_vattu";
+  $tongtien = $db->fetch($sql)['tong'];
+  $sql = "select sum(tile) as tong from pet_". PREFIX ."_vattu";
+  $tongtile = $db->fetch($sql)['tong'];
+  $tongtien = $tongtien * (1 + $tongtile / 100);
+  return $tongtien;
 }
 
 function khoitaocophan() {
@@ -84,6 +97,7 @@ function xoavattu() {
   
   $result['status'] = 1;
   $result['dulieu'] = dulieuvattu();
+  $result['tongtien'] = tongtien();
   return $result;
 }
 
@@ -135,14 +149,13 @@ function themcophan() {
   global $db, $data, $result;
 
   $dulieu = $data->dulieu;
-  $dulieu->giatri = purenumber($dulieu->giatri);
-  if (!empty($dulieu->id)) {
-    $sql = "update pet_". PREFIX ."_cophan set nguoimua = '$dulieu->nguoimua', tile = $dulieu->tile, giatri = $dulieu->giatri where id = $dulieu->id";
-  }
-  else {
-    $sql = "insert into pet_". PREFIX ."_cophan (nguoimua, tile, giatri) values('$dulieu->nguoimua', $dulieu->tile, $dulieu->giatri)";
-  }
+  $sql = "delete from pet_". PREFIX ."_cophan where idnhanvien = $dulieu->idnhanvien";
   $db->query($sql);
+  foreach ($dulieu->giaodich as $giaodich) {
+    $giaodich->giatri = purenumber($giaodich->giatri);
+    $sql = "insert into pet_". PREFIX ."_cophan (idnhanvien, tile, giatri) values('$dulieu->idnhanvien', $giaodich->tile, $giaodich->giatri)";
+    $db->query($sql);
+  }
 
   $result['status'] = 1;
   $result['cophan'] = dulieucophan();
@@ -158,7 +171,7 @@ function themvattu() {
   $dulieu->thoigian = isodatetotime($dulieu->thoigian);
 
   if ($dulieu->id) {
-    $sql = "update pet_". PREFIX ."_vattu set ten = '$dulieu->ten', donvi = '$dulieu->donvi', soluong = $dulieu->soluong, thoigian = $dulieu->thoigian, giatri = $dulieu->giatri, ghichu = '$dulieu->ghichu' where id = $dulieu->id";
+    $sql = "update pet_". PREFIX ."_vattu set ten = '$dulieu->ten', donvi = '$dulieu->donvi', soluong = $dulieu->soluong, thoigian = $dulieu->thoigian, giatri = $dulieu->giatri, tile = '$dulieu->tile', ghichu = '$dulieu->ghichu' where id = $dulieu->id";
     $db->query($sql);
 
     // thêm cái không có
@@ -177,7 +190,7 @@ function themvattu() {
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $dulieu->thoigian, $dulieu->giatri, '$dulieu->ghichu')";
+    $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $dulieu->thoigian, $dulieu->giatri, '$dulieu->tile', '$dulieu->ghichu')";
     $idvattu = $db->insertid($sql);
     foreach ($dulieu->thuoctang as $idtang => $giatri) {
       $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($idvattu, $idtang)";
@@ -187,6 +200,7 @@ function themvattu() {
   
   $result['status'] = 1;
   $result['dulieu'] = dulieuvattu();
+  $result['tongtien'] = tongtien();
   return $result;
 }
 
@@ -200,16 +214,56 @@ function dulieucophan() {
     'danhsach' => []
   ];
 
-  $sql = "select * from pet_". PREFIX ."_cophan order by id desc";
-  $danhsach = $db->all($sql);
-
-  foreach ($danhsach as $thutu => $giaodich) {
-    $dulieu['tile'] += $giaodich['tile'];
-    $dulieu['giatri'] += $giaodich['giatri'];
-    $danhsach[$thutu]['giatri'] = number_format($giaodich['giatri']);
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vattu' and type = '2' and userid = $userid";
+  if (empty($db->fetch($sql))) $kiemtra = 0;
+  else {
+    $kiemtra = 1;
+    $sql = "select sum(giatri) as tong from pet_". PREFIX ."_cophan";
+    $dulieu['giatri'] = $db->fetch($sql)['tong'];
+    $sql = "select sum(tile) as tong from pet_". PREFIX ."_cophan";
+    $dulieu['tile'] = $db->fetch($sql)['tong'];
   }
-  $dulieu['danhsach'] = $danhsach;
-  $dulieu['giatri'] = number_format($dulieu['giatri']);
+
+  $sql = "select * from pet_". PREFIX ."_cophan order by id asc";
+  $danhsachtam = $db->all($sql);
+  $danhsach = [];
+  $tongtien = tongtien();
+
+  foreach ($danhsachtam as $thutu => $giaodich) {
+    if ($kiemtra || (!$kiemtra && $userid == $giaodich['idnhanvien'])) {
+      if (empty($danhsach[$giaodich['idnhanvien']])) {
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $giaodich[idnhanvien]";
+        $nhanvien = $db->fetch($sql);
+        $danhsach[$giaodich['idnhanvien']] = [
+          'idnhanvien' => $giaodich['idnhanvien'],
+          'nguoimua' => $nhanvien['fullname'],
+          'tile' => 0,
+          'hientai' => 0,
+          'giatri' => 0,
+          'giaodich' => []
+        ];
+      }
+      $danhsach[$giaodich['idnhanvien']]['tile'] += $giaodich['tile'];
+      $danhsach[$giaodich['idnhanvien']]['giatri'] += $giaodich['giatri'];
+      $danhsach[$giaodich['idnhanvien']]['giaodich'] []= [
+        'id' => $giaodich['id'],
+        'giatri' => number_format($giaodich['giatri']),
+        'tile' => $giaodich['tile'],
+      ];
+    }
+  }
+
+  foreach ($danhsach as $nhanvien) {
+    $dulieu['danhsach'] []= [
+      'idnhanvien' => $nhanvien['idnhanvien'],
+      'nguoimua' => $nhanvien['nguoimua'],
+      'tile' => $nhanvien['tile'],
+      'hientai' => number_format($nhanvien['tile'] * $tongtien / 100),
+      'giatri' => number_format($nhanvien['giatri']),
+      'giaodich' => $nhanvien['giaodich']
+    ];
+  }
 
   return $dulieu;
 }
@@ -240,6 +294,9 @@ function dulieuvattu() {
   $sql = "select * from pet_". PREFIX . "_vattu $xtra order by id desc";
   $danhsachvattu = $db->all($sql);
 
+  $sql = "select sum(giatri * soluong) as tong from pet_". PREFIX . "_vattu";
+  $tongtien = $db->fetch($sql)['tong'];
+
   foreach ($danhsachvattu as $thutu => $vattu) {
     $dulieu['tongvattu'] ++;
     $dulieu['tongsoluong'] += $vattu['soluong'];
@@ -247,7 +304,8 @@ function dulieuvattu() {
     $danhsachvattu[$thutu]['thuoctang'] = danhsachlienkettang($vattu['id']);
     $danhsachvattu[$thutu]['tang'] = dulieulienkettang($vattu['id']);
     $danhsachvattu[$thutu]['giatri'] = number_format($vattu['giatri']);
-    $danhsachvattu[$thutu]['tongtien'] = number_format($vattu['soluong'] * $vattu['giatri']);
+    $danhsachvattu[$thutu]['phantram'] = number_format($vattu['tile'] * $tongtien / 100);
+    $danhsachvattu[$thutu]['tongtien'] = number_format($vattu['soluong'] * $vattu['giatri'] + $vattu['tile'] * $tongtien / 100);
     $danhsachvattu[$thutu]['thoigian'] = date('d/m/Y', $vattu['thoigian']);
   }
   $dulieu['danhsach'] = $danhsachvattu;
@@ -257,6 +315,14 @@ function dulieuvattu() {
   $dulieu['tonggiatri'] = number_format($dulieu['tonggiatri']);
   
   return $dulieu;
+}
+
+
+function danhsachnhanvien() {
+  global $db, $data;
+
+  $sql = "select userid, fullname as name from pet_". PREFIX ."_users where active = 1 order by fullname asc";
+  return $db->all($sql);
 }
 
 function danhsachtang() {
