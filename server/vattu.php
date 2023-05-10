@@ -216,7 +216,7 @@ function dulieucophan() {
 
   $userid = checkuserid();
   $sql = "select * from pet_". PREFIX ."_user_per where module = 'vattu' and type = '2' and userid = $userid";
-  if (empty($db->fetch($sql))) $kiemtra = 0;
+  if (empty($db->fetch($sql)) && $user != 1) $kiemtra = 0;
   else {
     $kiemtra = 1;
     $sql = "select sum(giatri) as tong from pet_". PREFIX ."_cophan";

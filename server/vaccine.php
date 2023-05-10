@@ -223,6 +223,10 @@ function themcauhinh() {
   global $data, $db, $result;
 
   if (empty($data->ngay)) $data->ngay = 0;
+  if (!empty($data->ngaytruoc)) {
+    $sql = "delete from pet_". PREFIX ."_vaccinecauhinh where ngay = $data->ngaytruoc";
+    $db->query($sql);
+  }
   foreach ($data->nhom as $idnhom) {
     $sql = "select * from pet_". PREFIX ."_vaccinecauhinh where ngay = $data->ngay and idnhom = $idnhom";
     if (empty($db->fetch($sql))) {
@@ -909,6 +913,15 @@ function xoaloai() {
   return $result;
 }
 
+function xoacauhinh() {
+  global $data, $db, $result;
+  $sql = "delete from pet_". PREFIX ."_vaccinecauhinh where ngay = $data->ngay";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['cauhinh'] = cauhinhloai();
+  return $result;
+}
+
 function themnhomloai() {
   global $data, $db, $result;
   $data->name = trim($data->name);
@@ -960,15 +973,16 @@ function cauhinhloai() {
   $sql = "select * from pet_". PREFIX ."_vaccineloainhom where active = 1";
   $danhsachnhom = $db->obj($sql, 'id', 'name')  ;
 
-  $sql = "select * from pet_". PREFIX ."_vaccinecauhinh";
+  $sql = "select * from pet_". PREFIX ."_vaccinecauhinh order by ngay asc";
   $danhsachngay = $db->all($sql);
   $danhsach = [];
   $danhsachtam = [];
 
   foreach ($danhsachngay as $ngay) {
     if (empty($danhsachtam[$ngay['ngay']])) $danhsachtam[$ngay['ngay']] = [
+      'ngay' => $ngay['ngay'],
       'danhsach' => [],
-      'thoigian' => ($ngay['ngay'] > 0 ? "Trước $ngay[ngay] ngày" : ($ngay['ngay'] < 0 ? "Sau $ngay[ngay]" : 'Đúng ngày'))
+      'thoigian' => ($ngay['ngay'] > 0 ? "Trước $ngay[ngay] ngày" : ($ngay['ngay'] < 0 ? "Sau ". abs($ngay['ngay']) ." ngày" : 'Đúng ngày'))
     ];
     $danhsachtam[$ngay['ngay']]['danhsach'] []= $danhsachnhom[$ngay['idnhom']];
   }
@@ -1232,9 +1246,29 @@ function getlist($today = false) {
   
     $homnay = strtotime(date('Y/m/d'));
     $cuoingay = $homnay + 60 * 60 * 24 - 1;
-    $ketthuc = $homnay - 60 * 60 * 24 * $ngay;
 
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and recall <= $ketthuc and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra order by a.calltime asc";
+    // lấy cấu hình
+    $sql = "select * from pet_". PREFIX ."_vaccinecauhinh";
+    $danhsachcauhinh = $db->all($sql);
+    $cauhinh = [];
+
+    foreach ($danhsachcauhinh as $chitietcauhinh) {
+      if (empty($cauhinh[$chitietcauhinh['ngay']])) $cauhinh[$chitietcauhinh['ngay']] = [];
+      $cauhinh[$chitietcauhinh['ngay']] []= $chitietcauhinh['idnhom'];
+    }
+
+    // tạo query từ cấu hình
+    if (count($cauhinh)) {
+      $xtra2 = [];
+      foreach ($cauhinh as $ngay => $danhsachnhom) {
+        $gioihan = $homnay - $ngay * 60 * 60 * 24 + 60 * 60 * 24 - 1;
+        $xtra2 []= "(d.idnhom in (". implode(', ', $danhsachnhom) .") and calltime < $gioihan)";
+      }
+      $xtra2 = implode(' or ', $xtra2);
+    }
+    else $xtra2 = "0";
+
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and $xtra2 and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra order by a.calltime asc";
     $list[0] = dataCover($db->all($sql));
     
     $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.status < 3 order by a.calltime asc limit 50";
@@ -1277,22 +1311,25 @@ function getOverList() {
 }
 
 function dataCover($list, $over = 0) {
-  global $start;
-  $limit = time() - 60 * 60 * 24 * 7;
-  $v = array();
-  $stoday = strtotime(date('Y/m/d')) - 60 * 60 * 24 * 3;
-  $etoday = $stoday + 60 * 60 * 24  - 1;
+  global $start, $db;
+  $danhsach = array();
+  $homnay = strtotime(date('Y/m/d'));
+  $cuoingay = $homnay + 60 * 60 * 24  - 1;
 
   foreach ($list as $row) {
     // thời gian gọi
     $quangay = 0;
     if (!$row['called']) {
+      $sql = "select ngay from pet_". PREFIX ."_vaccineloai a inner join pet_". PREFIX ."_vaccinecauhinh b on a.idnhom = b.idnhom order by ngay asc";
+      $cauhinh = $db->fetch($sql);
+      $gioihan = $homnay - $cauhinh['ngay'] * 60 * 60 * 24;
       $called = '-';
-      if ($row['recall'] < $stoday) $quangay = 1;
+      if ($row['calltime'] < $gioihan) $quangay = 1;
     }
-    else if ($row['called'] >= $stoday && $row['called'] <= $etoday) $called = 'Hôm hay đã gọi';
+    else if ($row['called'] >= $homnay && $row['called'] <= $cuoingay) $called = 'Hôm hay đã gọi';
     else $called = date('d/m/Y', $row['called']);
-    $v []= array(
+
+    $danhsach []= array(
       'id' => $row['id'],
       'note' => $row['note'],
       'doctor' => $row['doctor'],
@@ -1310,7 +1347,7 @@ function dataCover($list, $over = 0) {
       'calltime' => date('d/m/Y', $row['calltime']),
     );
   }
-  return $v;
+  return $danhsach;
 }
 
 function gettemplist() {

@@ -322,6 +322,7 @@ function permission($userid) {
     'vattu' => 0,
     'work' => 0,
     'nhantin' => 0,
+    'loinhuan' => 0,
   ];
 
   if ($userid == 1) {

@@ -329,6 +329,7 @@ function getList() {
     'vattu' => 0,
     'work' => 0,
     'nhantin' => 0,
+    'loinhuan' => 0,
   ];
 
   $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1 and userid <> 1";
