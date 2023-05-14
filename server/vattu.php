@@ -153,7 +153,7 @@ function themcophan() {
   $db->query($sql);
   foreach ($dulieu->giaodich as $giaodich) {
     $giaodich->giatri = purenumber($giaodich->giatri);
-    $sql = "insert into pet_". PREFIX ."_cophan (idnhanvien, tile, giatri) values('$dulieu->idnhanvien', $giaodich->tile, $giaodich->giatri)";
+    $sql = "insert into pet_". PREFIX ."_cophan (idnhanvien, tile, giatri, ghichu) values('$dulieu->idnhanvien', $giaodich->tile, $giaodich->giatri, '$giaodich->ghichu')";
     $db->query($sql);
   }
 
@@ -216,7 +216,7 @@ function dulieucophan() {
 
   $userid = checkuserid();
   $sql = "select * from pet_". PREFIX ."_user_per where module = 'vattu' and type = '2' and userid = $userid";
-  if (empty($db->fetch($sql)) && $user != 1) $kiemtra = 0;
+  if (empty($db->fetch($sql)) && $userid != 1) $kiemtra = 0;
   else {
     $kiemtra = 1;
     $sql = "select sum(giatri) as tong from pet_". PREFIX ."_cophan";
@@ -237,7 +237,7 @@ function dulieucophan() {
         $nhanvien = $db->fetch($sql);
         $danhsach[$giaodich['idnhanvien']] = [
           'idnhanvien' => $giaodich['idnhanvien'],
-          'nguoimua' => $nhanvien['fullname'],
+          'nguoimua' => (empty($nhanvien['fullname']) ? '' : $nhanvien['fullname']),
           'tile' => 0,
           'hientai' => 0,
           'giatri' => 0,
@@ -250,6 +250,7 @@ function dulieucophan() {
         'id' => $giaodich['id'],
         'giatri' => number_format($giaodich['giatri']),
         'tile' => $giaodich['tile'],
+        'ghichu' => $giaodich['ghichu'],
       ];
     }
   }

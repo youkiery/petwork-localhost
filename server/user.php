@@ -320,6 +320,7 @@ function permission($userid) {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'taichinh' => 0,
     'work' => 0,
     'nhantin' => 0,
     'loinhuan' => 0,

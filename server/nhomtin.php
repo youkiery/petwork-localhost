@@ -67,8 +67,36 @@ function laydulieunhomtin() {
   global $db, $data, $result;
 
   $result['status'] = 1;
-  $result['danhsach'] = danhsachnhantin();
+  $result['dulieu'] = dulieunhomtin();
   return $result;
+}
+
+function dulieunhomtin() {
+  global $db, $data;
+
+  $sqlvaccine = "select id, name from pet_". PREFIX ."_vaccineloai where active = 1";
+  $sqlusg = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
+  $sqlspa = "select id, name from pet_". PREFIX ."_config where module = 'spa' order by value asc";
+  $sqltreat = "select id, name from pet_". PREFIX ."_dieutricong where active = 1 order by id desc";
+
+  $dulieu = [
+    'vaccine' => $db->all($sqlvaccine),
+    'usg' => $db->all($sqlusg),
+    'treat' => $db->all($sqlspa),
+    'spa' => $db->all($sqltreat),
+  ];
+
+  $rev = ['vaccine' => 0, 'usg' => 1, 'treat' => 2, 'spa' => 3];
+
+  foreach ($dulieu as $loai => $danhsach) {
+    foreach ($danhsach as $thutu => $thongtin) {
+      $sql = "select * from pet_". PREFIX . "_nhomtinloai where idnhomtin = $data->id and loai = $rev[$loai] and idloai = $thongtin[id]";
+      if (empty($db->fetch($sql))) $dulieu[$loai][$thutu]['checker'] = false;
+      else $dulieu[$loai][$thutu]['checker'] = true;
+    }
+  }
+
+  return $dulieu;
 }
 
 function danhsachnhomtin() {

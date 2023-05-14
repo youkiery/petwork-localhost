@@ -153,19 +153,11 @@
   function kiemtrachotlich() {
     global $data, $db;
 
-    $time = $data->time;
-    $ngaybatdau = strtotime(date('Y', $time) .'/'. date('m', $time) .'/1');
-    $ngayketthuc = strtotime(date('Y', $time) .'/'. (date('m', $time) + 1) .'/1') - 1;
-
+    $batdau = isodatetotime($data->batdau);
+    $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
+    $sql = "select * from pet_". PREFIX ."_luong_chotlich where (batdau between $batdau and $ketthuc) or (ketthuc between $batdau and $ketthuc)";
+    if ($chotlich = $db->fetch($sql)) return ['batdau' => date('d/m/Y', $chotlich['batdau']), 'ketthuc' => date('d/m/Y', $chotlich['ketthuc'])];
     return [];
-    // $sql = "select thoigian from pet_". PREFIX ."_luong where thoigian between $ngaybatdau and $ngayketthuc";
-    // die($sql);
-    // $danhsach = $db->arr($sql, 'thoigian');
-
-    // foreach ($danhsach as $key => $value) {
-    //   $danhsach[$key] = date('d/m/Y', $value);
-    // }
-    // return $danhsach;
   }
 
   function kiemtrakhoalich() {
@@ -500,9 +492,8 @@
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
-    $thoigian = $data->time / 1000;
-    $batdau = strtotime(date('Y/m/1', $thoigian));
-    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+    $batdau = isodatetotime($data->batdau);
+    $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
     $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
     $config = $db->fetch($sql);
     $config = json_decode($config['value']);  
@@ -576,102 +567,14 @@
   function chotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
-    $thoigian = $data->time / 1000;
+    $batdau = isodatetotime($data->batdau);
+    $ketthuc = isodatetotime($data->ketthuc);
 
-    $danhsachnhanvien = $db->all($sql);
-    $danhsach = array();
-    $dulieu = array();
-    $batdau = strtotime(date('Y/m/1', $thoigian));
-    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
-    $config = $db->fetch($sql);
-    $config = json_decode($config['value']);  
-
-    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
-    $danhsachngoaile = $db->arr($sql, 'userid');
-    if (empty($danhsachngoaile)) $ngoaile = '0';
-    else $ngoaile = implode(', ', $danhsachngoaile);
-    $tongngaynghi = [];
-
-    $danhsachid = array();
-    foreach ($danhsachnhanvien as $nhanvien) {
-      $danhsachid []= $nhanvien['userid'];
-      $sql = "select id, type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
-      $lichnghi = $db->all($sql);
-      $tongngaynghi[$nhanvien['userid']] = 0;
-
-      $dulieu[$nhanvien['userid']] = array(
-        'userid' => $nhanvien['userid'],
-        'tennhanvien' => $nhanvien['fullname'],
-        'nghi' => 0,
-        'nghiphat' => 0,
-        'nghiphat2' => 0,
-        'tongnghi' => 0,
-        'nghilo' => 0,
-      );
-
-      foreach ($lichnghi as $nghi) {
-        $tongngaynghi[$nhanvien['userid']] ++;
-        $dulieu[$nhanvien['userid']]['nghi'] ++;
-        $daungay = strtotime(date('Y/m/d', $nghi['time']));
-        $cuoingay = $daungay + 24 * 60 * 60 - 1;
-        $dangky = $nghi['reg_time'];
-        $ngaytrongtuan = date('N', $nghi['time']);
-        $gioihanngay = $config[$ngaytrongtuan]->gioihan;
-        // tìm trong type cùng ngày (trừ except) có vượt limit không
-        $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
-        $ngaynghi = $db->all($sql);
-        foreach ($ngaynghi as $thutungay => $row) {
-          if ($row['userid'] == $nghi['userid'] && ($thutungay >= $gioihanngay)) {
-            $dulieu[$nhanvien['userid']]['nghiphat'] ++;
-            $dulieu[$nhanvien['userid']]['tongnghi'] ++;
-            $thutuphat = $thutungay - $gioihanngay;
-              // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
-            $dulieu[$nhanvien['userid']]['nghiphat'] += 1 + $thutuphat;
-            $dulieu[$nhanvien['userid']]['tongnghi'] += 1 + $thutuphat;
-          }
-        }
-      }
-    }
-
-    foreach ($tongngaynghi as $userid => $ngaynghi) {
-      $nghilo = ($ngaynghi - 12) / 2;
-      $heso = round(1 + $nghilo);
-      $dulieu[$userid]['nghiphat2'] = ($nghilo > 0 ? $nghilo * $heso : 0);
-    }
-
-    foreach ($dulieu as $thutu => $thongtin) {
-      $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
-      $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
-      $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
-      $nghilo = $dulieu[$thutu]['tongnghi'] - 4;
-      if ($nghilo < 0) $nghilo = 0;
-      $dulieu[$thutu]['nghilo'] = $nghilo;
-      $danhsach []= $dulieu[$thutu];
-    }
-
-    $tongnhanvien = count($danhsach);
-
-    $sql = "insert into pet_". PREFIX ."_luong (doanhthu, loinhuan, tienchi, luongnhanvien, lairong, thoigian, trangthai) values(0, 0, 0, $tongnhanvien, 0, $thoigian, 0)";
-    $id = $db->insertid($sql);
-
-    $sql = "select value as loaichi, alt as tienchi from pet_". PREFIX ."_config where module = 'luong' and name = 'tienchi'";
-    $danhmucchi = $db->all($sql);
-    
-    foreach ($danhmucchi as $tienchi) {
-      $sql = "insert into pet_". PREFIX ."_luong_tienchi (luongid, mucchi, tienchi) values($id, '$tienchi[loaichi]', $tienchi[tienchi])";
-      $db->query($sql);
-    }
-
-    $sql = "select userid, 0 as nghilo from pet_". PREFIX ."_luong_nhanvien where userid not in (". implode(', ', $danhsachid) .")";
-    if (count($nhanvien = $db->all($sql))) {
-      $danhsach = array_merge($danhsach, $nhanvien);
-    }
-
-    foreach ($danhsach as $nhanvien) {
-      $sql = "insert into pet_". PREFIX ."_luong_tra (userid, luongid, doanhthu, loinhuan, luong, tile, tilethuong, thuong, luongphucap, phucap2, phucap, ngaynghi, nghiphep, tietkiem, nhantietkiem, tilecophan, cophan, tong, thucnhan) values($nhanvien[userid], $id, 0, 0, 0, 0, 0, 0, 0, 0, 0, $nhanvien[nghilo], 0, 0, 0, 0, 0, 0, 0)";
-      $db->query($sql);
+    $sql = "delete from pet_". PREFIX ."_luong_chotlich where (batdau between $batdau and $ketthuc) or (ketthuc between $batdau and $ketthuc)";
+    $db->query($sql);
+    foreach ($data->danhsach as $thutu => $thongtin) {
+      $sql = "insert into pet_". PREFIX ."_luong_chotlich (idnhanvien, nghilo, batdau, ketthuc) values($thongtin->userid, $thongtin->nghilo, $batdau, $ketthuc)";
+        $db->query($sql);
     }
 
     $result['status'] = 1;
