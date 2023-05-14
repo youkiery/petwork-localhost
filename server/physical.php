@@ -227,14 +227,14 @@ function getneed() {
   foreach ($list as $key => $row) {
     $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $row[xrayid]";
     $info = $db->fetch($sql);
-    $list[$key]['petname'] = $info['petname'];
-    $list[$key]['age'] = $info['age'];
-    $list[$key]['weight'] = $info['weight'];
-    $list[$key]['gender'] = $info['gender'];
-    $list[$key]['species'] = $info['species'];
-    $list[$key]['name'] = $info['name'];
-    $list[$key]['phone'] = $info['phone'];
-    $list[$key]['address'] = $info['address'];
+    $list[$key]['petname'] = (isset($info['petname']) ? $info['petname'] : '');
+    $list[$key]['age'] = (isset($info['age']) ? $info['age'] : '');
+    $list[$key]['weight'] = (isset($info['weight']) ? $info['weight'] : '');
+    $list[$key]['gender'] = (isset($info['gender']) ? $info['gender'] : '');
+    $list[$key]['species'] = (isset($info['species']) ? $info['species'] : '');
+    $list[$key]['name'] = (isset($info['name']) ? $info['name'] : '');
+    $list[$key]['phone'] = (isset($info['phone']) ? $info['phone'] : '');
+    $list[$key]['address'] = (isset($info['address']) ? $info['address'] : '');
     $list[$key]['image'] = parseimage($row['image']);
   }
 
@@ -469,41 +469,55 @@ function printword() {
       $unit = $profile['unit'];
       $range = $profile['flag'];
       $restar = $profile['tar'];
+      $giatri = floatval($profile['value']);
 
-      if ($profile['tick'] == '<') {
-          $rg = $profile['value'];
-          $rn = '';
-          $rt = '';
+      // tính giá trị thấp, cao, bình thường
+      // chia ra 3 khoảng 0-thấp nhất, thấp nhất đến cao nhất, cao nhất đến 2 x cao nhất
+      if (strpos($range, '-') !== false) {
+        $cumgiatri = explode('-', $range);
+        $thapnhat =  floatval(trim($cumgiatri[0]));
+        $caonhat =  floatval(trim($cumgiatri[1]));
+
+        if ($giatri < $thapnhat) {
+          $tile = (($giatri) / $thapnhat * 100) / 3;
+          $mau = 'red';
+        } else if ($giatri > $caonhat) {
+          $tile = ($giatri) / ($caonhat * 2) * 100 / 3 + 66;
+          $mau = 'red';
+        }
+        else {
+          $tile = ($giatri - $thapnhat) / ($caonhat - $thapnhat) * 100 / 3 + 33;
+          $mau = 'black';
+        }
+        if ($tile > 96) $tile = 96;
+        if ($tile < 0) $tile = 0;
+
+        // tính tỉ lệ, nếu 
+        $htmlgiatri = '
+          <td style="position: relative;">
+            <div style="position: absolute;width: 10px;height: 23px;background: '.$mau.';left: '.$tile.'%;"></div>
+            <table style="border: 1px solid black;width: 100%; height: 23px;border-collapse: collapse;">
+              <tr>
+                <td style="width: 33%;border-right: 1px solid black;"></td>
+                <td style="width: 33%;border-right: 1px solid black;"></td>
+                <td style="width: 33%;border-right: 1px solid black;"></td>
+              </tr>
+            </table>
+          </td>';
       }
-      else if ($profile['tick'] == '>') {
-        $rt = $profile['value'];
-        $rn = '';
-        $rg = '';
-      }
-      else {
-          $rn = $profile['value'];
-        $rt = '';
-        $rg = '';
-      }
+      else $htmlgiatri = `<td></td>`;
+
+      $h1 .= "
+        <tr class='underline'>
+          <td> $target </td>
+          <td> $giatri </td>
+          <td> $unit </td>
+          <td> $range </td>
+          $htmlgiatri
+        </tr>";
+      $h2 .= "<div>$restar</div>";
     }
-    else {
-      $target = '';
-      $rn = '';
-      $rt = '';
-      $rg = '';
-      $unit = '';
-      $range = '';
-      $restar = '';
-    }
-    $h1 .= "
-      <tr class='underline'>
-        <td> $target </td>
-        <td> <b><span>$rn</span> <span class='red'>$rt</span> <span class='blue'>$rg</span> </b> </td>
-        <td> $unit </td>
-        <td> $range </td>
-      </tr>";
-    $h2 .= "<div>$restar</div>";
-  }  
+  }
   $html = str_replace('{target}', $h1, $html);
   $html = str_replace('{restar}', $h2, $html);
 
