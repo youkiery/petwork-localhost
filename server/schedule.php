@@ -153,8 +153,15 @@
   function kiemtrachotlich() {
     global $data, $db;
 
-    $batdau = isodatetotime($data->batdau);
-    $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
+    if (!isset($data->batdau)) {
+      $batdau = strtotime(date('Y/m/1', $data->time));
+      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+    }
+    else {
+      $batdau = isodatetotime($data->batdau);
+      $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
+    }
+    
     $sql = "select * from pet_". PREFIX ."_luong_chotlich where (batdau between $batdau and $ketthuc) or (ketthuc between $batdau and $ketthuc)";
     if ($chotlich = $db->fetch($sql)) return ['batdau' => date('d/m/Y', $chotlich['batdau']), 'ketthuc' => date('d/m/Y', $chotlich['ketthuc'])];
     return [];
