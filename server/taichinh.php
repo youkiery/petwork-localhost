@@ -299,6 +299,108 @@ function luucauhinh() {
   return $result;
 }
 
+function import() {
+  global $data, $db, $result;
+  
+  switch ($data->loai) {
+    case '0':
+      importchi();
+      break;
+    case '0':
+      importno();
+      break;
+    case '0':
+      importkho();
+      break;
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã import dữ liệu';
+}
+
+function layso($chuoi) {
+  return intval(preg_replace('/[^0-9]/', '', $chuoi));
+}
+function laychu($chuoi) {
+  return preg_replace('/[^A-Z]/', '', $chuoi);
+}
+
+function docdulieu() {
+  global $db, $data, $_FILES;
+  $dir = str_replace('/server', '', ROOTDIR);
+  include $dir .'/include/PHPExcel/IOFactory.php';
+
+  $file = $_FILES['file']['tmp_name'];
+  $inputFileType = PHPExcel_IOFactory::identify($file);
+  $objReader = PHPExcel_IOFactory::createReader($inputFileType);
+  $objReader->setReadDataOnly(true);
+  $objPHPExcel = $objReader->load($file);
+  $sheet = $objPHPExcel->getSheet(0); 
+  $highestRow = $sheet->getHighestRow(); 
+  $highestColumn = $sheet->getHighestColumn();
+
+  $cauhinh = [
+    0 => [
+      'loaichi' => 'A2',
+      'tienchi' => 'B2',
+      'thoigian' => 'C2'
+    ],
+    [
+      'dienthoai' => 'A2',
+      'khachhang' => 'B2',
+      'tienno' => 'C2',
+    ],
+    [
+      'mahang' => 'A2',
+      'soluong' => 'B2',
+      'giatien' => 'C2',
+    ],
+  ];
+
+  $truong = [];
+  foreach ($cauhinh[$data->loai] as $tenbien => $giatri) {
+    $sql = "select * from pet_". PREFIX ."_config where module = 'loinhuan' and name = '$tenbien$data->loai'";
+    if (empty($config = $db->fetch($sql))) $truong[$tenbien] = [
+      'giatri' => $giatri,
+      'chu' => laychu($giatri),
+    ];
+    else $truong[$tenbien] = [
+      'giatri' => $config['value'],
+      'chu' => laychu($config['value']),
+    ];
+    $so = layso($truong[$tenbien]['giatri']);
+  }
+
+  $dulieu = array();
+  for ($j = $so; $j <= $highestRow; $j ++) {
+    $dulieutam = [];
+    foreach ($truong as $tenbien => $thongtin) {
+      $dulieutam[$tenbien] = $sheet->getCell($thongtin['chu'] . $j)->getValue();
+    }
+    $dulieu []= $dulieutam;
+  }
+  return $dulieu;
+}
+
+function importchi() {
+  global $db;
+
+  $dulieu = docdulieu();
+  echo json_encode($dulieu);die();
+}
+
+function importno() {
+
+  $dulieu = docdulieu();
+  echo json_encode($dulieu);die();
+}
+
+function importkho() {
+  
+  $dulieu = docdulieu();
+  echo json_encode($dulieu);die();
+}
+
 function laycauhinhimport() {
   global $db;
 
