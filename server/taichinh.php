@@ -9,7 +9,43 @@ function khoitao() {
   $result['danhsachloaichi'] = danhsachloaichi();
   $result['danhsachnhacungcap'] = danhsachnhacungcap();
   $result['danhsachncc'] = danhsachnoncc();
+  $result['thongke'] = thongke();
   return $result;
+}
+
+function thongke() {
+  global $data, $db;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  $mathoigian = date('mY', $thoigian);
+
+  $sql = "select sum(tienmat + nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongthu = $db->fetch($sql)['tong'];
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongchi = $db->fetch($sql)['tong'];
+
+  $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
+  if (empty($tongkho = $db->fetch($sql))) $tongkhachno = 0;
+  else $tongkhachno = $tongkho['tong'];
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongnonhacungcap = $db->fetch($sql)['tong'];
+
+  $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$mathoigian'";
+  if (empty($tongkho = $db->fetch($sql))) $tongtaisan = 0;
+  else $tongtaisan = $tongkho['tong'];
+
+  return [
+    'tongthu' => number_format($tongthu), 
+    'tongchi' => number_format($tongchi), 
+    'tongkhachno' => number_format($tongkhachno), 
+    'tongnonhacungcap' => number_format($tongnonhacungcap), 
+    'tongtaisan' => number_format($tongtaisan), 
+    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongtaisan),
+  ];
 }
 
 function danhsachnhacungcap() {
@@ -52,7 +88,7 @@ function danhsachchi() {
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang order by id desc";
+  $sql = "select * from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang order by thoigian desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $chi) {
@@ -303,19 +339,16 @@ function import() {
   global $data, $db, $result;
   
   switch ($data->loai) {
-    case '0':
-      importchi();
+    case '1':
+      $result = importno();
       break;
-    case '0':
-      importno();
+    case '2':
+      $result = importncc();
       break;
-    case '0':
-      importkho();
-      break;
+    default:
+      $result = importchi();
   }
-
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã import dữ liệu';
+  return $result;
 }
 
 function layso($chuoi) {
@@ -351,9 +384,10 @@ function docdulieu() {
       'tienno' => 'C2',
     ],
     [
-      'mahang' => 'A2',
-      'soluong' => 'B2',
-      'giatien' => 'C2',
+      'nhacungcap' => 'A2',
+      'noidung' => 'B2',
+      'giatri' => 'C2',
+      'thoigian' => 'D2',
     ],
   ];
 
@@ -383,22 +417,132 @@ function docdulieu() {
 }
 
 function importchi() {
-  global $db;
+  global $db, $result;
 
   $dulieu = docdulieu();
-  echo json_encode($dulieu);die();
+  $error = [];
+  $dathem = 0;
+  $tongcong = count($dulieu);
+  // 'loaichi' không có loại chi bỏ qua
+  // 'tienchi' không có tiền chi, hoặc tiền chi = 0, bỏ qua
+  // 'thoigian' thời gian không đúng định dạng, bỏ qua
+  foreach ($dulieu as $thutu => $thongtin) {
+    $kiemtra = false;
+    if (!empty($thongtin['loaichi'] && !empty($thongtin['tienchi']))) {
+      $ngaygio = explode(' ', $thongtin['thoigian']);
+      $ngay = explode('/', $ngaygio[0]);
+      $gio = $ngaygio[1];
+      $thoigian = strtotime("$ngay[2]/$ngay[1]/$ngay[0] $gio");
+      if ($thoigian) {
+        $idloaichi = kiemtraloaichi($thongtin['loaichi']);
+        $giatri = abs($thongtin['tienchi']);
+        $sql = "select * from pet_". PREFIX ."_taichinh_chi where idloaichi = $idloaichi and thoigian = $thoigian and giatri = $giatri";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, ghichu, thoigian) values($idloaichi, $giatri, '', $thoigian)";
+          $db->query($sql);
+          $dathem ++;
+          $kiemtra = true;
+        }
+      }
+    }
+    if (!$kiemtra) $error []= "Lỗi: dòng $thutu loại chi $thongtin[loaichi] ". number_format($thongtin['tienchi']) ." lúc $thongtin[thoigian]";
+  }
+  $result['status'] = 1;
+  $result['messenger'] = "Đã thêm $dathem/$tongcong mục chi";
+  $result['error'] = $error;
+  return $result;
+}
+
+function kiemtraloaichi($loaichi) {
+  global $db;
+  
+  $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where ten = '$loaichi'";
+  if ($dulieuloaichi = $db->fetch($sql)) return $dulieuloaichi['id'];
+
+  $sql = "insert into pet_". PREFIX ."_taichinh_loaichi (ten, kichhoat) values('$loaichi', 1)";
+  return $db->insertid($sql);
 }
 
 function importno() {
+  global $db, $result;
 
   $dulieu = docdulieu();
-  echo json_encode($dulieu);die();
+  $tongno = 0;
+  $thoigian = date('mY');
+  $error = [];
+  // 'nhacungcap' nếu không có nhà cung cấp, bỏ qua
+  // 'noidung' 
+  // 'giatri' nếu không có giá trị, bỏ qua
+  // 'thoigian' nếu thời gian bị sai, bỏ qua
+  foreach ($dulieu as $thutu => $thongtin) {
+    if (!empty($thongtin['tienno'])) {
+      $tienno = abs($thongtin['tienno']);
+      $tongno += $tienno;
+    }
+  }
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$thoigian'";
+  if (empty($cauhinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'khachno$thoigian', $tongno, 0)";
+  }
+  else $sql = "update pet_". PREFIX ."_config set value = $tongno where id = $cauhinh[id]";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = "Tổng nợ khách hàng ". number_format($tongno);
+  $result['error'] = $error;
+  return $result;
 }
 
-function importkho() {
-  
+function importncc() {
+  global $db, $result;
+
   $dulieu = docdulieu();
-  echo json_encode($dulieu);die();
+  $error = [];
+  $dathem = 0;
+  $tongcong = count($dulieu);
+  $tongno = 0;
+  // 'nhacungcap' => 'A2',
+  // 'noidung' => 'B2',
+  // 'giatri' => 'C2',
+  // 'thoigian' => 'D2',
+  foreach ($dulieu as $thutu => $thongtin) {
+    $kiemtra = false;
+    if (!empty($thongtin['nhacungcap'] && !empty($thongtin['giatri']))) {
+      $ngaygio = explode(' ', $thongtin['thoigian']);
+      $ngay = explode('/', $ngaygio[0]);
+      $gio = $ngaygio[1];
+      $thoigian = strtotime("$ngay[2]/$ngay[1]/$ngay[0] $gio");
+      if ($thoigian) {
+        $idnhacungcap = kiemtranhacungcap($thongtin['nhacungcap']);
+        $giatri = purenumber($thongtin['giatri']);
+        $tongno += $giatri;
+        $sql = "select * from pet_". PREFIX ."_taichinh_noncc where idnhacungcap = $idnhacungcap and thoigian = $thoigian and giatri = $giatri and noidung = '$thongtin[noidung]'";
+        if (empty($db->fetch($sql))) {
+          $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thanhtoan, thoigian, ghichu) values($idnhacungcap, '$thongtin[giatri]', $giatri, $giatri, $thoigian, '')";
+          $db->query($sql);
+          $dathem ++;
+          $kiemtra = true;
+        }
+      }
+    }
+    if (!$kiemtra) $error []= "Lỗi: dòng $thutu Nhà cung cấp $thongtin[nhacungcap] ". number_format($thongtin['giatri']) ." lúc $thongtin[thoigian]";
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = "Tổng nợ nhà cung cấp ". number_format($tongno);
+  $result['error'] = $error;
+  return $result;
+}
+
+function kiemtranhacungcap($nhacungcap) {
+  global $db;
+  $sql = "select * from pet_". PREFIX ."_taichinh_nhacungcap where ten = '$nhacungcap'";
+  if (empty($ncc = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_taichinh_nhacungcap (ten) values('$nhacungcap')";
+    $ncc = ['id' => $db->insertid];
+  }
+  return $ncc['id'];
 }
 
 function laycauhinhimport() {
@@ -416,9 +560,10 @@ function laycauhinhimport() {
       'tienno' => 'C2',
     ],
     [
-      'mahang' => 'A2',
-      'soluong' => 'B2',
-      'giatien' => 'C2',
+      'nhacungcap' => 'A2',
+      'noidung' => 'B2',
+      'giatri' => 'C2',
+      'thoigian' => 'D2',
     ],
   ];
 

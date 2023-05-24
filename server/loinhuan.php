@@ -41,7 +41,7 @@ function dulieunhanvien($userid) {
 
   $thoigian = isodatetotime($data->thoigian);
   $sql = "select * from pet_". PREFIX ."_user_per where module = 'loinhuan' and type = 2 and userid = $userid";
-  if (empty($quyen = $db->fetch($sql))) {
+  if (empty($quyen = $db->fetch($sql)) && $userid != 1) {
     $sql = "select * from pet_". PREFIX ."_users where userid = $userid";
   }
   else {
@@ -125,6 +125,7 @@ function danhsachnhanvien() {
     $luongnhanvien = thongtinluong($thongtin['userid'], $homnay);
     $danhsach[$thutu]['luong'] = $luongnhanvien['luong'];
     $danhsach[$thutu]['luongcoban'] = $luongnhanvien['luongcoban'];
+    $danhsach[$thutu]['tangluong'] = $luongnhanvien['tangluong'];
     $danhsach[$thutu]['lenluong'] = $luongnhanvien['lenluong'];
     $danhsach[$thutu]['phucap'] = $luongnhanvien['phucap'];
     $danhsach[$thutu]['kyhopdong'] = $luongnhanvien['kyhopdong'];
@@ -144,6 +145,7 @@ function thongtinluong($userid, $thoigian) {
     'luongcoban2' => 0,
     'phucap' => 0,
     'lenluong' => 0,
+    'tangluong' => 0,
     'tiletietkiem' => 0,
     'kyhopdong' => 'Chưa lập',
   ];
@@ -152,6 +154,7 @@ function thongtinluong($userid, $thoigian) {
     $sonam = floor(($homnay - $ngaylenluong) / 365 / 60 / 60 / 24);
 
     $thongtin['luongcoban'] = $nhanvien['luongcoban'];
+    $thongtin['tangluong'] = $sonam * $nhanvien['lenluong'];
     $thongtin['luongcoban2'] = $sonam * $nhanvien['lenluong'] + $nhanvien['luongcoban'];
     $thongtin['luong'] = $thongtin['luongcoban2'] + $nhanvien['phucap'];
     $thongtin['lenluong'] = $nhanvien['lenluong'];
@@ -329,25 +332,13 @@ function tinhluong() {
 
   foreach ($danhsach as $idnhanvien => $thongtin) {
     $luongnhanvien = thongtinluong($idnhanvien, $thoigian);
-    $thuong = $thongtin['tile'];
-    $tongluong = ($thongtin['tile'] > $luongnhanvien['luong'] ? $thongtin['tile'] - $luongnhanvien['luong'] : $luongnhanvien['luong']);
+    $thuong = ($thongtin['tile'] > $luongnhanvien['luongcoban2'] ? $thongtin['tile'] - $luongnhanvien['luongcoban2'] : 0);
+    $tongluong = $luongnhanvien['luongcoban2'] + $luongnhanvien['phucap'] + $thuong;
     $nghiphep = $tongluong * $thongtin['nghiphep'] / 60;
     $tietkiem = intval($tongluong * $luongnhanvien['tiletietkiem'] / 100);
     $thucnhan = $tongluong - $tietkiem - $nghiphep;
     $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, $thoigian)";
     $db->query($sql);
-    // $danhsachnhanvien []= [
-    //   'idnhanvien' => $idnhanvien,
-    //   'luongcoban' => $luongnhanvien['luongcoban2'],
-    //   'phucap' => $luongnhanvien['phucap'],
-    //   'doanhso' => $thongtin['doanhso'],
-    //   'nghiphep' => 0,
-    //   'thuong' => $thuong,
-    //   'tietkiem' => $tietkiem,
-    //   'tongluong' => $tongluong,
-    //   'thucnhan' => $tongluong - $tietkiem,
-    //   'cophan' => 0,
-    // ];
   }
 
   $result['status'] = 1;
