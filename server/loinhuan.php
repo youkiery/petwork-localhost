@@ -9,7 +9,48 @@ function khoitao() {
   $result['dulieunhanvien'] = dulieunhanvien($userid);
   $result['luongcoban'] = luongcoban($userid);
   $result['phucap'] = phucap($userid);
+  $result['luong'] = luongthangnay($userid);
   return $result;
+}
+
+function luongthangnay($userid) {
+  global $db, $data;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  $dulieu = [];
+
+  $sql = "select * from pet_". PREFIX ."_luong_dulieu where idnhanvien = $userid and (thoigian between $dauthang and $cuoithang)";
+  if (empty($nhanvien = $db->fetch($sql))) {
+    $dulieu['doanhsobanhang'] = 0;
+    $dulieu['doanhsospa'] = 0;
+    $dulieu['doanhso'] = 0;
+    $dulieu['luongcoban'] = 0;
+    $dulieu['thuong'] = 0;
+    $dulieu['phucap'] = 0;
+    $dulieu['nghiphep'] = 0;
+    $dulieu['tietkiem'] = 0;
+    $dulieu['tongluong'] = 0;
+    $dulieu['thucnhan'] = 0;
+    $dulieu['cophan'] = 0;
+    $dulieu['thoigian'] = 'Tháng này chưa có dữ liệu';
+  }
+  else {
+    $dulieu['luongcoban'] = $nhanvien['luongcoban'];
+    $dulieu['phucap'] = $nhanvien['phucap'];
+    $dulieu['doanhsobanhang'] = $nhanvien['doanhsobanhang'];
+    $dulieu['doanhsospa'] = $nhanvien['doanhsospa'];
+    $dulieu['doanhso'] = $nhanvien['doanhsobanhang'] + $nhanvien['doanhsospa'];
+    $dulieu['nghiphep'] = $nhanvien['nghiphep'];
+    $dulieu['thuong'] = $nhanvien['thuong'];
+    $dulieu['tietkiem'] = $nhanvien['tietkiem'];
+    $dulieu['tongluong'] = $nhanvien['tongluong'];
+    $dulieu['thucnhan'] = $nhanvien['thucnhan'];
+    $dulieu['cophan'] = $nhanvien['cophan'];
+    $dulieu['thoigian'] = date('d/m/Y H:i:s', $nhanvien['thoigian']);
+  }
+  return $dulieu;
 }
 
 function dulieuluong($idnhanvien, $thoigian) {
@@ -125,7 +166,7 @@ function danhsachnhanvien() {
     $luongnhanvien = thongtinluong($thongtin['userid'], $homnay);
     $danhsach[$thutu]['luong'] = $luongnhanvien['luong'];
     $danhsach[$thutu]['luongcoban'] = $luongnhanvien['luongcoban'];
-    $danhsach[$thutu]['tangluong'] = $luongnhanvien['tangluong'];
+    $danhsach[$thutu]['luonghientai'] = $luongnhanvien['luonghientai'];
     $danhsach[$thutu]['lenluong'] = $luongnhanvien['lenluong'];
     $danhsach[$thutu]['phucap'] = $luongnhanvien['phucap'];
     $danhsach[$thutu]['kyhopdong'] = $luongnhanvien['kyhopdong'];
@@ -145,7 +186,7 @@ function thongtinluong($userid, $thoigian) {
     'luongcoban2' => 0,
     'phucap' => 0,
     'lenluong' => 0,
-    'tangluong' => 0,
+    'luonghientai' => 0,
     'tiletietkiem' => 0,
     'kyhopdong' => 'Chưa lập',
   ];
@@ -154,7 +195,7 @@ function thongtinluong($userid, $thoigian) {
     $sonam = floor(($homnay - $ngaylenluong) / 365 / 60 / 60 / 24);
 
     $thongtin['luongcoban'] = $nhanvien['luongcoban'];
-    $thongtin['tangluong'] = $sonam * $nhanvien['lenluong'];
+    $thongtin['luonghientai'] = $nhanvien['luongcoban'] + $sonam * $nhanvien['lenluong'];
     $thongtin['luongcoban2'] = $sonam * $nhanvien['lenluong'] + $nhanvien['luongcoban'];
     $thongtin['luong'] = $thongtin['luongcoban2'] + $nhanvien['phucap'];
     $thongtin['lenluong'] = $nhanvien['lenluong'];
@@ -189,7 +230,34 @@ function khoitaotinhluong() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachtinhluong();
+  $result['thongke'] = thongketinhluong();
   return $result;
+}
+
+function thongketinhluong() {
+  global $data, $db;
+
+  $thongke = [
+    'luongnhanvien' => 0,
+    'tietkiem' => 0,
+    'thucnhan' => 0,
+    'cophan' => 0,
+  ];
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+
+  $sql = "select * from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $dulieu) {
+    $thongke['luongnhanvien'] += $dulieu['tongluong'];
+    $thongke['tietkiem'] += $dulieu['tietkiem'];
+    $thongke['thucnhan'] += $dulieu['thucnhan'];
+    $thongke['cophan'] += $dulieu['cophan'];
+  }
+
+  return $thongke;
 }
 
 function danhsachtinhluong() {
@@ -197,8 +265,11 @@ function danhsachtinhluong() {
 
   // kiểm tra lương tháng này
   // hiển thị danh sách tính lương
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1'));
+  $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
 
-  $sql = "select userid, fullname as nhanvien from pet_". PREFIX ."_users where active = 1";
+  $sql = "select userid, fullname as nhanvien from pet_". PREFIX ."_users where active = 1 and (userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0) or userid in (select idnhanvien as userid from pet_". PREFIX ."_luong_dulieu where (thoigian between $dauthang and $cuoithang)))";
   $danhsach = $db->all($sql);
 
   $thoigian = isodatetotime($data->thoigian);
@@ -295,7 +366,7 @@ function tinhluong() {
   // chietkhaudieutri
 
   // tính tổng doanh thu, lương, thưởng, phụ cấp nghỉ phép
-  $sql = "select * from pet_". PREFIX ."_users where active = 1";
+  $sql = "select * from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
   $dulieunhanvien = $db->obj($sql, 'fullname', 'userid');
 
   $danhsach = [];
@@ -337,7 +408,7 @@ function tinhluong() {
     $nghiphep = $tongluong * $thongtin['nghiphep'] / 60;
     $tietkiem = intval($tongluong * $luongnhanvien['tiletietkiem'] / 100);
     $thucnhan = $tongluong - $tietkiem - $nghiphep;
-    $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, $thoigian)";
+    $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, ". time() .")";
     $db->query($sql);
   }
 

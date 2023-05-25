@@ -34,17 +34,15 @@ function thongke() {
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
 
-  $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$mathoigian'";
-  if (empty($tongkho = $db->fetch($sql))) $tongtaisan = 0;
-  else $tongtaisan = $tongkho['tong'];
-
+  $tongkho = laydulieutonkho();
+  
   return [
     'tongthu' => number_format($tongthu), 
     'tongchi' => number_format($tongchi), 
     'tongkhachno' => number_format($tongkhachno), 
     'tongnonhacungcap' => number_format($tongnonhacungcap), 
-    'tongtaisan' => number_format($tongtaisan), 
-    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongtaisan),
+    'tongtaisan' => number_format($tongkho['thangnay']), 
+    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongkho['bandau'] - $tongkho['thangnay']),
   ];
 }
 
@@ -317,6 +315,43 @@ function khoitaoimport() {
 
   $result['status'] = 1;
   $result['cauhinh'] = laycauhinhimport();
+  $result['tonkho'] = laydulieutonkho();
+  return $result;
+}
+
+function laydulieutonkho() {
+  global $data, $db;
+
+  $thoigian = date('mY');
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
+  if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
+  if (empty($tongkhohientai = $db->fetch($sql))) $tongkhohientai = ['value' => 0];
+  return [
+    'bandau' => $tongkho['value'],
+    'thangnay' => $tongkhohientai['value']
+  ];
+}
+
+function luukhothangnay() {
+  global $data, $db, $result;
+
+  $bandau = purenumber($data->tonkho->bandau);
+  $thangnay = purenumber($data->tonkho->thangnay);
+  $thoigian = date('mY');
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho', $bandau, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkho'";
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho$thoigian', $thangnay, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $thangnay where module = 'taichinh' and name = 'tongkho$thoigian'";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
   return $result;
 }
 
