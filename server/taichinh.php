@@ -299,6 +299,36 @@ function xoanhacungcap() {
   return $result;
 }
 
+function xoachicodinh() {
+  global $db, $data, $result;
+
+  $sql = "delete from pet_". PREFIX ."_taichinh_chicodinh where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['chicodinh'] = laychicodinh();
+  return $result;
+}
+
+function luuchicodinh() {
+  global $db, $data, $result;
+
+  // kiểm tra loại chi
+  foreach ($data->chicodinh as $thutu => $loaichi) {
+    if (!(empty($loaichi->loaichi) || empty($loaichi->giatri))) {
+      $idloaichi = kiemtraloaichi($loaichi->loaichi);
+      $giatri = purenumber($loaichi->giatri);
+      if ($loaichi->id) $sql = "update pet_". PREFIX ."_taichinh_chicodinh set giatri = $giatri, idloaichi = $idloaichi where id = $loaichi->id";
+      else $sql = "insert into pet_". PREFIX ."_taichinh_chicodinh (idloaichi, giatri) values($idloaichi, $giatri)";
+      $db->query($sql);
+    }
+  }
+  
+  $result['status'] = 1;
+  $result['chicodinh'] = laychicodinh();
+  return $result;
+}
+
 function xoaloaichi() {
   global $db, $data, $result;
   
@@ -313,10 +343,26 @@ function xoaloaichi() {
 function khoitaoimport() {
   global $data, $db, $result;
 
+  $tonkho = laydulieutonkho();
   $result['status'] = 1;
+  $result['chicodinh'] = laychicodinh();
   $result['cauhinh'] = laycauhinhimport();
-  $result['tonkho'] = laydulieutonkho();
+  $result['tonkho'] = [
+    'bandau' => number_format($tonkho['bandau']),
+    'thangnay' => number_format($tonkho['thangnay']),
+  ];
   return $result;
+}
+
+function laychicodinh() {
+  global $data, $db;
+
+  $sql = "select a.*, b.ten as loaichi from pet_". PREFIX ."_taichinh_chicodinh a inner join pet_". PREFIX ."_taichinh_loaichi b on a.idloaichi = b.id";
+  $danhsach = $db->all($sql);
+  foreach ($danhsach as $thutu => $loaichi) {
+    $danhsach[$thutu]['giatri'] = number_format($loaichi['giatri']);
+  }
+  return $danhsach;
 }
 
 function laydulieutonkho() {

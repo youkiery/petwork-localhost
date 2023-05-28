@@ -151,6 +151,67 @@ function khoitaocauhinh() {
   
   $result['status'] = 1;
   $result['cauhinh'] = dulieucauhinh();
+  $result['tile'] = dulieutile();
+  $result['danhsachnhanvien'] = danhsachnhanvien();
+  return $result;
+}
+
+function dulieutile() {
+  global $data, $db;
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_tile order by khoang asc";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $value) {
+    $danhsach[$thutu]['khoang'] = number_format($value['khoang']);
+    $danhsach[$thutu]['tien'] = number_format($value['tien']);
+  }
+  return $danhsach;
+}
+
+function luutile() {
+  global $data, $db, $result;
+
+  $danhsachtile = $data->tile;
+  foreach ($danhsachtile as $thutu => $tile) {
+    $khoang = purenumber($tile->khoang);
+    $tien = purenumber($tile->tien);
+    if ($tile->id) $sql = "update pet_". PREFIX ."_taichinh_tile set khoang = $khoang, tien = $tien where id = $tile->id";
+    else $sql = "insert into pet_". PREFIX ."_taichinh_tile (khoang, tien) values($khoang, $tien)";
+    $db->query($sql);
+  }
+  
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu tỉ lệ';
+  $result['tile'] = dulieutile();
+  return $result;
+}
+
+function xoatile() {
+  global $data, $db, $result;
+ 
+  $sql = "delete from pet_". PREFIX ."_taichinh_tile where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['tile'] = dulieutile();
+  return $result;
+}
+
+function thaydoigiatri() {
+  global $db, $data, $result;
+
+  $daogiatri = intval(!$data->giatri);
+  $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $data->userid";
+  if (empty($luong = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong) values($data->userid, 0, 0, 0, 0, 0, 0, 0)";
+    $db->query($sql);
+  }
+
+  $sql = "update pet_". PREFIX ."_luong_nhanvien set $data->bien = $daogiatri where userid = $data->userid";
+  $db->query($sql);
+
+  $result['status'] = 1;
   $result['danhsachnhanvien'] = danhsachnhanvien();
   return $result;
 }
@@ -171,6 +232,8 @@ function danhsachnhanvien() {
     $danhsach[$thutu]['phucap'] = $luongnhanvien['phucap'];
     $danhsach[$thutu]['kyhopdong'] = $luongnhanvien['kyhopdong'];
     $danhsach[$thutu]['tiletietkiem'] = $luongnhanvien['tiletietkiem'];
+    $danhsach[$thutu]['tamnghi'] = $luongnhanvien['tamnghi'];
+    $danhsach[$thutu]['heluong'] = $luongnhanvien['heluong'];
   }
   return $danhsach;
 }
@@ -188,6 +251,8 @@ function thongtinluong($userid, $thoigian) {
     'lenluong' => 0,
     'luonghientai' => 0,
     'tiletietkiem' => 0,
+    'tamnghi' => 0,
+    'heluong' => 0,
     'kyhopdong' => 'Chưa lập',
   ];
   if (!empty($nhanvien = $db->fetch($sql))) {
@@ -201,6 +266,8 @@ function thongtinluong($userid, $thoigian) {
     $thongtin['lenluong'] = $nhanvien['lenluong'];
     $thongtin['phucap'] = $nhanvien['phucap'];
     $thongtin['tiletietkiem'] = $nhanvien['tiletietkiem'];
+    $thongtin['tamnghi'] = $nhanvien['tamnghi'];
+    $thongtin['heluong'] = $nhanvien['heluong'];
     $thongtin['kyhopdong'] = date('d/m/Y', $nhanvien['kyhopdong']);
   }
   return $thongtin;
@@ -216,9 +283,9 @@ function capnhatnhanvien() {
   $kyhopdong = isodatetotime($data->kyhopdong);
   $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $data->userid";
   if (empty($luong = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem) values($data->userid, $data->luongcoban, $kyhopdong, $data->lenluong, $data->phucap, $data->tiletietkiem)";
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong) values($data->userid, $data->luongcoban, $kyhopdong, $data->lenluong, $data->phucap, $data->tiletietkiem, $data->tamnghi, $data->heluong)";
   }
-  else $sql = "update pet_". PREFIX ."_luong_nhanvien set luongcoban = $data->luongcoban, kyhopdong = $kyhopdong, lenluong = $data->lenluong, phucap = $data->phucap, tiletietkiem = $data->tiletietkiem where userid = $data->userid";
+  else $sql = "update pet_". PREFIX ."_luong_nhanvien set luongcoban = $data->luongcoban, kyhopdong = $kyhopdong, lenluong = $data->lenluong, phucap = $data->phucap, tiletietkiem = $data->tiletietkiem, tamnghi = $data->tamnghi, heluong = $data->heluong where userid = $data->userid";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -372,27 +439,30 @@ function tinhluong() {
   $danhsach = [];
   foreach ($dulieunhanvien as $ten => $idnhanvien) {
     $sql = "select * from pet_". PREFIX ."_luong_chotlich where batdau >= $dauthang and ketthuc <= $cuoithang and idnhanvien = $idnhanvien";
+    
     if (empty($nghiphep = $db->fetch($sql))) $nghiphep = 0;
     else $nghiphep = $nghiphep['nghilo'];
-    $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => $nghiphep];
+    $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => $nghiphep, 'cophan' => laytilecophan($idnhanvien)];
   }
 
   foreach ($dulieushop as $nhanvien => $doanhthu) {
     if (!empty($dulieunhanvien[$nhanvien])) {
       $idnhanvien = $dulieunhanvien[$nhanvien];
-      if (empty($danhsach[$idnhanvien])) $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => 0];
-      $danhsach[$idnhanvien]['doanhsobanhang'] += intval($doanhthu);
-      $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
-      $danhsach[$idnhanvien]['tile'] += intval(intval($doanhthu) * $cauhinh['loinhuanspa'] * $cauhinh['chietkhauspa'] / 10000);
+      if (!empty($danhsach[$idnhanvien])) {
+        $danhsach[$idnhanvien]['doanhsobanhang'] += intval($doanhthu);
+        $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
+        $danhsach[$idnhanvien]['tile'] += intval(intval($doanhthu) * $cauhinh['loinhuanspa'] * $cauhinh['chietkhauspa'] / 10000);
+      }
     } 
   }
   foreach ($dulieubenhvien as $nhanvien => $doanhthu) {
     if (!empty($dulieunhanvien[$nhanvien])) {
       $idnhanvien = $dulieunhanvien[$nhanvien];
-      if (empty($danhsach[$idnhanvien])) $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => 0];
-      $danhsach[$idnhanvien]['doanhsospa'] += intval($doanhthu);
-      $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
-      $danhsach[$idnhanvien]['tile'] += intval(intval($doanhthu) * $cauhinh['loinhuandieutri'] * $cauhinh['chietkhaudieutri'] / 10000);
+      if (!empty($danhsach[$idnhanvien])) {
+        $danhsach[$idnhanvien]['doanhsospa'] += intval($doanhthu);
+        $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
+        $danhsach[$idnhanvien]['tile'] += intval(intval($doanhthu) * $cauhinh['loinhuandieutri'] * $cauhinh['chietkhaudieutri'] / 10000);
+      }
     } 
   }
 
@@ -401,21 +471,127 @@ function tinhluong() {
   $db->query($sql);
   $danhsachnhanvien = [];
 
+  $sql = "select * from pet_". PREFIX ."_taichinh_tile order by khoang asc";
+  $danhsachtile = $db->obj($sql, 'khoang', 'tien');
+
   foreach ($danhsach as $idnhanvien => $thongtin) {
     $luongnhanvien = thongtinluong($idnhanvien, $thoigian);
-    $thuong = ($thongtin['tile'] > $luongnhanvien['luongcoban2'] ? $thongtin['tile'] - $luongnhanvien['luongcoban2'] : 0);
-    $tongluong = $luongnhanvien['luongcoban2'] + $luongnhanvien['phucap'] + $thuong;
-    $nghiphep = $tongluong * $thongtin['nghiphep'] / 60;
-    $tietkiem = intval($tongluong * $luongnhanvien['tiletietkiem'] / 100);
-    $thucnhan = $tongluong - $tietkiem - $nghiphep;
+    if ($luongnhanvien['tamnghi'] > 0) {
+      $thuong = 0;
+      $tongluong = 0;
+      $nghiphep = 0;
+      $tietkiem = 0;
+      $thucnhan = 0;
+    }
+    else {
+      if ($luongnhanvien['heluong'] > 0) {
+        $thuong = 0;
+        foreach ($danhsachtile as $khoang => $tien) {
+          if ($thongtin['doanhso'] >= $khoang) $thuong = $tien;
+        }
+      }
+      else {
+        $thuong = ($thongtin['tile'] > $luongnhanvien['luongcoban2'] ? $thongtin['tile'] - $luongnhanvien['luongcoban2'] : 0);
+      }
+
+      $tongluong = $luongnhanvien['luongcoban2'] + $luongnhanvien['phucap'] + $thuong;
+      $nghiphep = $tongluong * $thongtin['nghiphep'] / 60;
+      $tietkiem = intval($tongluong * $luongnhanvien['tiletietkiem'] / 100);
+      $thucnhan = $tongluong - $tietkiem - $nghiphep;
+    }
+    
     $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, ". time() .")";
     $db->query($sql);
+  }
+
+  $sql = "delete from pet_". PREFIX ."_taichinh_chi where codinh = 1 and (thoigian between $dauthang and $cuoithang)";
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_chicodinh";
+  $danhsachchicodinh = $db->all($sql);
+
+  foreach ($danhsachchicodinh as $chicodinh) {
+    $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .")";
+    $db->query($sql);
+  }
+
+  // tính cổ phần, cập nhật
+  // tính lợi nhuận thuần = lợi nhuận - tổng lương nhân viên
+  $loinhuanthuan = tinhloinhuan() - tinhtongluongnhanvien();
+  foreach ($danhsach as $idnhanvien => $thongtin) {
+    if ($thongtin['cophan'] > 0) {
+      $cophan = intval($thongtin['cophan'] * $loinhuanthuan / 100);
+      $sql = "update pet_". PREFIX ."_luong_dulieu set cophan = $cophan where idnhanvien = $idnhanvien and (thoigian between $dauthang and $cuoithang)";
+      $db->query($sql);
+    }
   }
 
   $result['status'] = 1;
   $result['messenger'] = 'Đã tải dữ liệu lên thành công';
   $result['danhsach'] = danhsachtinhluong();
+  $result['thongke'] = thongketinhluong();
   return $result;
+}
+
+function tinhtongluongnhanvien() {
+  global $data, $db;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1'));
+  $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
+
+  $sql = "select sum(tongluong) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
+  if (empty($tongluong = $db->fetch($sql))) return 0;
+  return $tongluong['tong'];
+}
+
+function tinhloinhuan() {
+  global $data, $db;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  $mathoigian = date('mY', $thoigian);
+
+  $sql = "select sum(tienmat + nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongthu = $db->fetch($sql)['tong'];
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongchi = $db->fetch($sql)['tong'];
+
+  $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
+  if (empty($tongkho = $db->fetch($sql))) $tongkhachno = 0;
+  else $tongkhachno = $tongkho['tong'];
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongnonhacungcap = $db->fetch($sql)['tong'];
+
+  $tongkho = laydulieutonkho();
+  
+  return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongkho['bandau'] - $tongkho['thangnay'];
+}
+
+function laydulieutonkho() {
+  global $data, $db;
+
+  $thoigian = date('mY');
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
+  if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
+  if (empty($tongkhohientai = $db->fetch($sql))) $tongkhohientai = ['value' => 0];
+  return [
+    'bandau' => $tongkho['value'],
+    'thangnay' => $tongkhohientai['value']
+  ];
+}
+
+function laytilecophan($idnhanvien) {
+  global $db;
+
+  $sql = "select sum(tile) as tong from pet_". PREFIX ."_cophan where idnhanvien = $idnhanvien";
+  if (empty($cophan = $db->fetch($sql))) return 0;
+  return $cophan['tong'];
 }
 
 function phucap($userid) {
