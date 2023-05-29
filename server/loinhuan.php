@@ -15,6 +15,55 @@ function khoitao() {
   return $result;
 }
 
+function khoitaonhaplieu() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['danhsach'] = laydanhsachnhaplieu();
+  return $result;
+}
+
+function capnhatnhaplieu() {
+  global $data, $db, $result;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  foreach ($data->danhsachnhanvien as $thutu => $nhanvien) {
+    $tietkiem = str_replace(',', '', $nhanvien->tietkiem);
+    $cophan = str_replace(',', '', $nhanvien->cophan);
+    $sql = "select * from pet_". PREFIX ."_luong_dulieu where (thoigian between $dauthang and $cuoithang) and idnhanvien = $nhanvien->idnhanvien";
+    if (empty($dulieu = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($nhanvien->idnhanvien, 0, 0, 0, 0, 0, 0, $tietkiem, 0, 0, $cophan, $thoigian)";
+    else $sql = "update pet_". PREFIX ."_luong_dulieu set tietkiem = $tietkiem, cophan = $cophan where id = $dulieu[id]";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = laydanhsachnhaplieu();
+  $result['messenger'] = "Đã lưu dữ liệu";
+  return $result;
+}
+
+function laydanhsachnhaplieu() {
+  global $db, $data;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  // tìm kiếm trong csdl xem tháng đó đã chốt chưa, nếu chưa thì lấy danh sách trống để nhập
+  $sql = "select a.idnhanvien, a.tietkiem, a.cophan, b.fullname as ten from pet_". PREFIX ."_luong_dulieu a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where a.thoigian between $dauthang and $cuoithang order by b.fullname asc";
+  $danhsach = $db->all($sql);
+  if (!count($danhsach)) {
+    $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
+    $danhsach = $db->all($sql);
+  }
+  foreach ($danhsach as $thutu => $thongtin) {
+    $danhsach[$thutu]['tietkiem'] = number_format($thongtin['tietkiem']);
+    $danhsach[$thutu]['cophan'] = number_format($thongtin['cophan']);
+  } 
+  return $danhsach;
+}
+
 function layheluong($idnhanvien) {
   global $db;
 
@@ -607,7 +656,7 @@ function tinhluong() {
   $danhsachchicodinh = $db->all($sql);
 
   foreach ($danhsachchicodinh as $chicodinh) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .")";
+    $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, codinh) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .", 1)";
     $db->query($sql);
   }
 

@@ -512,6 +512,7 @@ function importchi() {
     if (!empty($thongtin['loaichi'] && !empty($thongtin['tienchi']))) {
       $ngaygio = explode(' ', $thongtin['thoigian']);
       $ngay = explode('/', $ngaygio[0]);
+      if (empty($ngaygio[1])) $ngaygio[1] = "00:00:00";
       $gio = $ngaygio[1];
       $thoigian = strtotime("$ngay[2]/$ngay[1]/$ngay[0] $gio");
       if ($thoigian) {
@@ -592,6 +593,7 @@ function importncc() {
     if (!empty($thongtin['nhacungcap'] && !empty($thongtin['giatri']))) {
       $ngaygio = explode(' ', $thongtin['thoigian']);
       $ngay = explode('/', $ngaygio[0]);
+      if (empty($ngaygio[1])) $ngaygio[1] = "00:00:00";
       $gio = $ngaygio[1];
       $thoigian = strtotime("$ngay[2]/$ngay[1]/$ngay[0] $gio");
       if ($thoigian) {
