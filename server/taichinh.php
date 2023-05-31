@@ -9,6 +9,7 @@ function khoitao() {
   $result['danhsachloaichi'] = danhsachloaichi();
   $result['danhsachnhacungcap'] = danhsachnhacungcap();
   $result['danhsachncc'] = danhsachnoncc();
+  $result['danhsachtang'] = danhsachtang();
   $result['thongke'] = thongke();
   return $result;
 }
@@ -72,11 +73,30 @@ function danhsachnoncc() {
   return $danhsach;
 }
 
+function danhsachtang() {
+  global $db, $data;
+
+  $sql = "select * from pet_". PREFIX ."_vattutang order by ten asc";
+  return $db->all($sql);
+}
+
+
 function danhsachloaichi() {
   global $db, $data;
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where kichhoat = 1 order by id asc";
-  return $db->all($sql);
+  $danhsach = [];
+  $sql = "select * from pet_". PREFIX ."_taichinh_nhomchi where kichhoat = 1 order by id asc";
+  $danhsachnhomchi = $db->all($sql);
+
+  foreach ($danhsachnhomchi as $nhomchi) {
+    $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where idnhom = $nhomchi[id] and kichhoat = 1";
+    $danhsach []= [
+      'id' => $nhomchi['id'],
+      'ten' => $nhomchi['ten'],
+      'danhsach' => $db->all($sql)
+    ];
+  }
+  return $danhsach;
 }
 
 function danhsachchi() {
@@ -86,15 +106,106 @@ function danhsachchi() {
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang order by thoigian desc";
-  $danhsach = $db->all($sql);
+  $danhsach = [
+    0 => [
+      'lanchi' => 0,
+      'tongchi' => 0,
+      'danhsach' => []
+    ],
+    [
+      'lanchi' => 0,
+      'tongchi' => 0,
+      'danhsach' => []
+    ],
+    [
+      'lanchi' => 0,
+      'tongchi' => 0,
+      'danhsach' => []
+    ],
+    []
+  ];
 
-  foreach ($danhsach as $thutu => $chi) {
-    $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where id = $chi[idloaichi]";
-    $danhsach[$thutu]['loaichi'] = $db->fetch($sql)['ten'];
-    $danhsach[$thutu]['thoigian'] = date('d/m/Y', $chi['thoigian']);
+  $sql = "select * from pet_". PREFIX ."_taichinh_chicodinh order by id desc";
+  $chicodinh = $db->all($sql);
+  
+  foreach ($chicodinh as $thutu => $thongtin) {
+    $chicodinh[$thutu]['loaichi'] = layloaichi($thongtin['idloaichi']);
+    $danhsach[0]['tongchi'] += $thongtin['giatri'];
   }
+
+  $danhsach[0]['lanchi'] = count($chicodinh);
+  $danhsach[0]['danhsach'] = $chicodinh;
+
+  $sql = "select * from pet_". PREFIX ."_vattu where thoigian between $dauthang and $cuoithang order by thoigian desc";
+  $vattu = $db->all($sql);
+
+  foreach ($vattu as $thutu => $thongtin) {
+    $vattu[$thutu]['thoigian'] = date('d/m/Y', $thongtin['thoigian']);
+    $danhsach[1]['tongchi'] += $thongtin['giatri'];
+  }
+
+  $danhsach[1]['lanchi'] = count($vattu);
+  $danhsach[1]['danhsach'] = $vattu;
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang order by thoigian desc";
+  $chinhacungcap = $db->all($sql);
+  
+  foreach ($chinhacungcap as $thutu => $thongtin) {
+    $chinhacungcap[$thutu]['nhacungcap'] = laynhacungcap($thongtin['idnhacungcap']);
+    $chinhacungcap[$thutu]['thoigian'] = date('d/m/Y', $thongtin['thoigian']);
+    $danhsach[2]['tongchi'] += $thongtin['giatri'];
+  }
+
+  $danhsach[2]['lanchi'] = count($chinhacungcap);
+  $danhsach[2]['danhsach'] = $chinhacungcap;
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_nhomchi where kichhoat = 1 order by id asc";
+  $nhomchi = $db->all($sql);
+
+  foreach ($nhomchi as $thongtin) {
+    $sql = "select * from pet_". PREFIX ."_taichinh_chi where idloaichi in (select id as idloaichi from pet_". PREFIX ."_taichinh_loaichi where idnhom = $thongtin[id]) order by thoigian desc";
+    $danhsachchi = $db->all($sql);
+    $tongchi = 0;
+
+    foreach ($danhsachchi as $thutu => $chi) {
+      $danhsachchi[$thutu]['loaichi'] = layloaichi($chi['idloaichi']);
+      $danhsachchi[$thutu]['thoigian'] = date('d/m/Y', $chi['thoigian']);
+      $tongchi += $chi['giatri'];
+    }
+    $danhsach[3] []= [
+      'ten' => $thongtin['ten'],
+      'lanchi' => count($danhsachchi),
+      'tongchi' => $tongchi,
+      'danhsach' => $danhsachchi
+    ];
+  }
+
+  // $sql = "select * from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang order by thoigian desc";
+  // $danhsach = $db->all($sql);
+
+  // foreach ($danhsach as $thutu => $chi) {
+  //   $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where id = $chi[idloaichi]";
+  //   echo("$sql <br>");
+  //   $danhsach[$thutu]['loaichi'] = $db->fetch($sql)['ten'];
+  //   $danhsach[$thutu]['thoigian'] = date('d/m/Y', $chi['thoigian']);
+  // }
   return $danhsach;
+}
+
+function laynhacungcap($idnhacungcap) {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_nhacungcap where id = $idnhacungcap";
+  $loaichi = $db->fetch($sql);
+  return $loaichi['ten'];
+}
+
+function layloaichi($idloaichi) {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where id = $idloaichi";
+  $loaichi = $db->fetch($sql);
+  return $loaichi['ten'];
 }
 
 function tongtien() {
@@ -143,7 +254,7 @@ function danhsachthu() {
   $thoigian = isodatetotime($data->thoigian);
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $sql = "select * from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by thoigian desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $taichinh) {
@@ -192,27 +303,76 @@ function themthu() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachthu();
+  $result['thongke'] = thongke();
   return $result;
 }
 
 function themchi() {
   global $db, $data, $result;
 
-  $dulieu = $data->dulieu;
-  $thoigian = isodatetotime($dulieu->thoigian);
-  $giatri = purenumber($dulieu->giatri);
+  $thoigian = isodatetotime($data->dulieu->thoigian);
 
-  if (empty($dulieu->id)) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, ghichu) values($dulieu->idloaichi, $giatri, $thoigian, '$dulieu->ghichu')";
-    $data->id = $db->insertid($sql);
-  }
-  else {
-    $sql = "update pet_". PREFIX ."_taichinh_thu set idloaichi = $dulieu->idloaichi, giatri = $giatri, thoigian = $thoigian, ghichu = '$dulieu->ghichu' where id = $dulieu->id";
-    $db->query($sql);
+  switch ($data->dulieu->loaichi) {
+    case '0':
+      // chi cố định
+      // kiểm tra loại chi với idnhom = 0
+      $dulieu = $data->dulieu->dulieu[0];
+      $giatri = purenumber($dulieu->giatri);
+      $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where ten = '$dulieu->loaichi' and idnhom = 1";
+      if (empty($loaichi = $db->fetch($sql))) {
+        $sql = "insert into pet_". PREFIX ."_taichinh_loaichi (ten, idnhom) values('$dulieu->loaichi', 0)";
+        $loaichi = ['id' => $db->insertid($sql)];
+      }
+      $sql = "insert into pet_". PREFIX ."_taichinh_chicodinh (idloaichi, giatri) values($loaichi[id], $giatri)";
+      $db->query($sql);
+    break;
+    case '-1':
+      // chi vật tư
+      $dulieu = $data->dulieu->dulieu[1];
+      $dulieu->giatri = purenumber($dulieu->giatri);
+      $dulieu->soluong = purenumber($dulieu->soluong);
+    
+      $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $thoigian, $dulieu->giatri, '0', '$dulieu->ghichu')";
+      $idvattu = $db->insertid($sql);
+
+      foreach ($dulieu->danhdau as $idtang => $giatri) {
+        if ($giatri) {
+          $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($idvattu, $idtang)";
+          $db->query($sql);
+        }
+      }
+
+    break;
+    case '-2':
+      // chi nhà cung cấp
+      $dulieu = $data->dulieu->dulieu[2];
+      $giatri = purenumber($dulieu->giatri);
+
+      $sql = "insert into pet_". PREFIX ."_taichinh_chincc (idnhacungcap, noidung, giatri, thoigian, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, '$dulieu->ghichu')";
+      $db->query($sql);
+    break;
+    default:
+      // chi khác
+      $dulieu = $data->dulieu->dulieu[3];
+      $giatri = purenumber($dulieu->giatri);
+      $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, ghichu) values($dulieu->idloaichi, $giatri, $thoigian, '$dulieu->ghichu')";
+      $data->id = $db->insertid($sql);
   }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachchi();
+  $result['thongke'] = thongke();
+  return $result;
+}
+
+function themtang() {
+  global $db, $data, $result;
+
+  $sql = "insert into pet_". PREFIX ."_vattutang (ten) values('$data->ten')";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['danhsachtang'] = danhsachtang();
   return $result;
 }
 
@@ -222,19 +382,19 @@ function themnonhacungcap() {
   $dulieu = $data->dulieu;
   $thoigian = isodatetotime($dulieu->thoigian);
   $giatri = purenumber($dulieu->giatri);
-  $thanhtoan = purenumber($dulieu->thanhtoan);
 
   if (empty($dulieu->id)) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thanhtoan, thoigian, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thanhtoan, $thoigian, '$dulieu->ghichu')";
+    $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thoigian, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, '$dulieu->ghichu')";
     $data->id = $db->insertid($sql);
   }
   else {
-    $sql = "update pet_". PREFIX ."_taichinh_noncc set idnhacungcap = $dulieu->idnhacungcap, giatri = $giatri, thanhtoan = $thanhtoan, thoigian = $thoigian, ghichu = '$dulieu->ghichu' where id = $dulieu->id";
+    $sql = "update pet_". PREFIX ."_taichinh_noncc set idnhacungcap = $dulieu->idnhacungcap, giatri = $giatri, thoigian = $thoigian, ghichu = '$dulieu->ghichu' where id = $dulieu->id";
     $db->query($sql);
   }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachnoncc();
+  $result['thongke'] = thongke();
   return $result;
 }
 
@@ -263,11 +423,22 @@ function xoanoncc() {
 function themloaichi() {
   global $db, $data, $result;
   
-  $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where ten = '$data->ten'";
+  $sql = "select * from pet_". PREFIX ."_taichinh_loaichi where ten = '$data->ten' and idnhom = $data->nhomchi";
   if (empty($db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_loaichi (ten) values('$data->ten')";
+    $sql = "insert into pet_". PREFIX ."_taichinh_loaichi (ten, idnhom) values('$data->ten', $data->nhomchi)";
     $db->query($sql);
   }
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaichi();
+  return $result;
+}
+
+function xoaloaichi() {
+  global $db, $data, $result;
+  
+  $sql = "update pet_". PREFIX ."_taichinh_loaichi set kichhoat = 0 where id = $data->id";
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachloaichi();
@@ -329,10 +500,21 @@ function luuchicodinh() {
   return $result;
 }
 
-function xoaloaichi() {
+function themnhomchi() {
   global $db, $data, $result;
   
-  $sql = "update pet_". PREFIX ."_taichinh_loaichi set kichhoat = 0 where id = $data->id";
+  $sql = "insert into pet_". PREFIX ."_taichinh_nhomchi (ten) values('$data->ten')";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachloaichi();
+  return $result;
+}
+
+function xoanhomchi() {
+  global $db, $data, $result;
+  
+  $sql = "update pet_". PREFIX ."_taichinh_nhomchi set kichhoat = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -602,7 +784,7 @@ function importncc() {
         $tongno += $giatri;
         $sql = "select * from pet_". PREFIX ."_taichinh_noncc where idnhacungcap = $idnhacungcap and thoigian = $thoigian and giatri = $giatri and noidung = '$thongtin[noidung]'";
         if (empty($db->fetch($sql))) {
-          $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thanhtoan, thoigian, ghichu) values($idnhacungcap, '$thongtin[giatri]', $giatri, $giatri, $thoigian, '')";
+          $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thoigian, ghichu) values($idnhacungcap, '$thongtin[giatri]', $giatri, $thoigian, '')";
           $db->query($sql);
           $dathem ++;
           $kiemtra = true;
