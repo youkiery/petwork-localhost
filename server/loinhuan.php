@@ -253,7 +253,7 @@ function laytilespa($idnhanvien) {
   ];
 
   $sql = "select * from pet_". PREFIX ."_taichinh_tilespa where idnhanvien = $idnhanvien";
-  if (empty($tilespa = $db->fetch($sql))) {
+  if (!empty($tilespa = $db->fetch($sql))) {
     $cauhinh['loinhuanbanhang'] = number_format($tilespa['loinhuanbanhang']);
     $cauhinh['loinhuanspa'] = number_format($tilespa['loinhuanspa']);
     $cauhinh['chietkhaubanhang'] = number_format($tilespa['chietkhaubanhang']);
@@ -649,20 +649,20 @@ function tinhluong() {
     $db->query($sql);
   }
 
-  $sql = "delete from pet_". PREFIX ."_taichinh_chi where codinh = 1 and (thoigian between $dauthang and $cuoithang)";
-  $db->query($sql);
+  // $sql = "delete from pet_". PREFIX ."_taichinh_chi where codinh = 1 and (thoigian between $dauthang and $cuoithang)";
+  // $db->query($sql);
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_chicodinh";
-  $danhsachchicodinh = $db->all($sql);
+  // $sql = "select * from pet_". PREFIX ."_taichinh_chicodinh";
+  // $danhsachchicodinh = $db->all($sql);
 
-  foreach ($danhsachchicodinh as $chicodinh) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, codinh) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .", 1)";
-    $db->query($sql);
-  }
+  // foreach ($danhsachchicodinh as $chicodinh) {
+  //   $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, codinh) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .", 1)";
+  //   $db->query($sql);
+  // }
 
   // tính cổ phần, cập nhật
   // tính lợi nhuận thuần = lợi nhuận - tổng lương nhân viên
-  $loinhuanthuan = tinhloinhuan() - tinhtongluongnhanvien();
+  $loinhuanthuan = tinhloinhuan();
   foreach ($danhsach as $idnhanvien => $thongtin) {
     if ($thongtin['cophan'] > 0) {
       $cophan = intval($thongtin['cophan'] * $loinhuanthuan / 100);
@@ -678,18 +678,6 @@ function tinhluong() {
   return $result;
 }
 
-function tinhtongluongnhanvien() {
-  global $data, $db;
-
-  $thoigian = isodatetotime($data->thoigian);
-  $dauthang = strtotime(date('Y/m/1'));
-  $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
-
-  $sql = "select sum(tongluong) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
-  if (empty($tongluong = $db->fetch($sql))) return 0;
-  return $tongluong['tong'];
-}
-
 function tinhloinhuan() {
   global $data, $db;
 
@@ -701,18 +689,34 @@ function tinhloinhuan() {
   $sql = "select sum(tienmat + nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
   $tongthu = $db->fetch($sql)['tong'];
 
-  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where (thoigian between $dauthang and $cuoithang) order by id desc";
-  $tongchi = $db->fetch($sql)['tong'];
-
   $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
   if (empty($tongkho = $db->fetch($sql))) $tongkhachno = 0;
   else $tongkhachno = $tongkho['tong'];
 
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
-
   $tongkho = laydulieutonkho();
-  
+ 
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
+  $chithuongxuyen = intval($db->fetch($sql)['tong']);
+
+  $sql = "select sum(tongluong) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
+  $chiluongthuong = intval($db->fetch($sql)['tong']);
+
+  $sql = "select sum(cophan) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
+  $cophan = intval($db->fetch($sql)['tong']);
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang";
+  $chinhacungcap = intval($db->fetch($sql)['tong']);
+
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chicodinh";
+  $chicodinh = intval($db->fetch($sql)['tong']);
+
+  $sql = "select sum(giatri * soluong) as tong from pet_". PREFIX ."_taichinh_chivattu where thoigian between $dauthang and $cuoithang";
+  $chitaisan = intval($db->fetch($sql)['tong']);
+
+  $tongchi = $chithuongxuyen + $chiluongthuong + $chinhacungcap + $chitaisan + $chicodinh;
+
   return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongkho['bandau'] - $tongkho['thangnay'];
 }
 

@@ -3,7 +3,7 @@
 // ini_set('display_errors', 1);
 
 include './include/PHPExcel/IOFactory.php';
-$file = './include/file.xlsx';
+$file = './include/file2.xlsx';
 $inputFileType = PHPExcel_IOFactory::identify($file);
 $objReader = PHPExcel_IOFactory::createReader($inputFileType);
 $objReader->setReadDataOnly(true);
@@ -17,12 +17,11 @@ $objPHPExcel = $objReader->load($file);
 
 $danhsach = [];
 $sheet = $objPHPExcel->getSheet(0); 
+$row = $sheet->getHighestRow(); 
 
-for ($j = 2; $j < 51; $j++) { 
+for ($j = 2; $j < $row; $j++) { 
   $danhsach[]= [
     'nguoiban' => $sheet->getCell("A$j")->getValue(),
-    'mahang' => $sheet->getCell("B$j")->getValue(),
-    'tenhang' => $sheet->getCell("C$j")->getValue(),
     'soluong' => $sheet->getCell("D$j")->getValue(),
   ];
 }
@@ -30,25 +29,13 @@ for ($j = 2; $j < 51; $j++) {
 $dulieu = [];
 
 foreach ($danhsach as $row) {
-  if (empty($dulieu[$row['nguoiban']])) $dulieu[$row['nguoiban']] = [
-    'X Xịt khử mùi Epetcare 50ml' => ['tenhang' => 'SP4197087', 'soluong' => 0],
-    'X Xịt khử mùi Epetcare 100ml' => ['tenhang' => 'SP4197348', 'soluong' => 0],
-    'X Xịt khử mùi Epetcare 200ml' => ['tenhang' => 'SP4197086', 'soluong' => 0],
-    'X Xịt vết thương Epetcare 50ml' => ['tenhang' => 'SP4195733', 'soluong' => 0],
-    'X Xịt vết thương Epetcare 100ml' => ['tenhang' => 'SP4197349', 'soluong' => 0],
-    'X xịt vết thương Epetcare 200ml' => ['tenhang' => 'SP4195705', 'soluong' => 0],
-  ];
-
-  if (!empty($dulieu[$row['nguoiban']][$row['tenhang']])) $dulieu[$row['nguoiban']][$row['tenhang']]['soluong'] += $row['soluong'];
-  
+  if (empty($dulieu[$row['nguoiban']])) $dulieu[$row['nguoiban']] = 0;
+  $dulieu[$row['nguoiban']] += $row['soluong'];
 }
 
 echo "<pre>";
 foreach ($dulieu as $nhanvien => $hanghoa) {
-  echo "$nhanvien";
-  foreach ($hanghoa as $thongtin) {
-    echo "&#9;$thongtin[soluong]";
-  }
+  echo "$nhanvien&#9;$hanghoa";
   echo "<br>";
 }
 echo "</pre>";

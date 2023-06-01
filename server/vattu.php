@@ -1,7 +1,6 @@
 <?php
 
 // post
-
 function khoitao() {
   global $db, $data, $result;
   
@@ -292,7 +291,7 @@ function dulieuvattu() {
   }
   $danhsachtang = $db->all($sql);
 
-  $sql = "select * from pet_". PREFIX . "_vattu $xtra order by id desc";
+  $sql = "select * from pet_". PREFIX . "_vattu $xtra order by thoigian desc";
   $danhsachvattu = $db->all($sql);
 
   $sql = "select sum(giatri * soluong) as tong from pet_". PREFIX . "_vattu";
@@ -317,7 +316,6 @@ function dulieuvattu() {
   
   return $dulieu;
 }
-
 
 function danhsachnhanvien() {
   global $db, $data;
