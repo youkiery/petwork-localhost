@@ -108,7 +108,7 @@ function luongthangnay($userid) {
     $dulieu['tongluong'] = $nhanvien['tongluong'];
     $dulieu['thucnhan'] = $nhanvien['thucnhan'];
     $dulieu['cophan'] = $nhanvien['cophan'];
-    $dulieu['thoigian'] = date('d/m/Y H:i:s', $nhanvien['thoigian']);
+    $dulieu['thoigian'] = date('d/m/Y H:i:s', $nhanvien['thoigianthem']);
   }
   return $dulieu;
 }
@@ -645,7 +645,7 @@ function tinhluong() {
       $thucnhan = $tongluong - $tietkiem - $nghiphep;
     }
     
-    $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, ". time() .")";
+    $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian, thoigianthem) values($idnhanvien, $luongnhanvien[luongcoban2], $luongnhanvien[phucap], $thongtin[doanhsobanhang], $thongtin[doanhsospa], $nghiphep, $thuong, $tietkiem, $tongluong, $thucnhan, 0, $thoigian, ". time() .")";
     $db->query($sql);
   }
 
@@ -716,8 +716,10 @@ function tinhloinhuan() {
   $chitaisan = intval($db->fetch($sql)['tong']);
 
   $tongchi = $chithuongxuyen + $chiluongthuong + $chinhacungcap + $chitaisan + $chicodinh;
+  if (empty($tongkho['thangnay'])) $kho = 0;
+  else $kho = $tongkho['bandau'] - $tongkho['thangnay'];
 
-  return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongkho['bandau'] - $tongkho['thangnay'];
+  return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $kho;
 }
 
 function laydulieutonkho() {

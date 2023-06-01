@@ -52,7 +52,14 @@ function thongke() {
   $chitaisan = intval($db->fetch($sql)['tong']);
 
   $tongchi = $chithuongxuyen + $chiluongthuong + $chinhacungcap + $chitaisan + $chicodinh;
+  if (empty($tongkho['thangnay'])) $kho = 0;
+  else $kho = $tongkho['bandau'] - $tongkho['thangnay'];
 
+  // var_dump($tongthu);
+  // var_dump($tongchi);
+  //   var_dump($tongkhachno);
+  //     var_dump($tongnonhacungcap);
+  //     var_dump($kho);
   return [
     'tongthu' => number_format($tongthu), 
     'chithuongxuyen' => number_format($chithuongxuyen),
@@ -65,7 +72,7 @@ function thongke() {
     'tongkhachno' => number_format($tongkhachno), 
     'tongnonhacungcap' => number_format($tongnonhacungcap), 
     'tongtaisan' => number_format($tongkho['thangnay']), 
-    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $tongkho['bandau'] - $tongkho['thangnay']),
+    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $kho),
   ];
 }
 
@@ -162,6 +169,7 @@ function danhsachchi() {
   $vattu = $db->all($sql);
 
   foreach ($vattu as $thutu => $thongtin) {
+    $vattu[$thutu]['tong'] = $thongtin['soluong'] * $thongtin['giatri'];
     $vattu[$thutu]['thoigian'] = date('d/m/Y', $thongtin['thoigian']);
     $danhsach[1]['tongchi'] += $thongtin['giatri'];
   }
