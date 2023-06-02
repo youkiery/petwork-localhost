@@ -53,10 +53,17 @@ function laydanhsachnhaplieu() {
   // tìm kiếm trong csdl xem tháng đó đã chốt chưa, nếu chưa thì lấy danh sách trống để nhập
   $sql = "select a.idnhanvien, a.tietkiem, a.cophan, b.fullname as ten from pet_". PREFIX ."_luong_dulieu a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where a.thoigian between $dauthang and $cuoithang order by b.fullname asc";
   $danhsach = $db->all($sql);
-  if (!count($danhsach)) {
-    $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
-    $danhsach = $db->all($sql);
+  
+  $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
+  $danhsachtam = $db->all($sql);
+  foreach ($danhsachtam as $thongtin) {
+    $kiemtra = false;
+    foreach ($danhsach as $thutu => $thongtin2) {
+    if ($thongtin['idnhanvien'] == $thongtin2['idnhanvien']) $kiemtra = true;
+    }
+    if (!$kiemtra) $danhsach []= $thongtin;
   }
+
   foreach ($danhsach as $thutu => $thongtin) {
     $danhsach[$thutu]['tietkiem'] = number_format($thongtin['tietkiem']);
     $danhsach[$thutu]['cophan'] = number_format($thongtin['cophan']);
@@ -162,8 +169,8 @@ function dulieunhanvien($userid) {
     // nếu tháng này <= 2 thì lấy từ tháng 2 năm nay đến tháng 3 năm ngoái
     // nếu tháng này > 2 thì lấy từ tháng 2 đến tháng này
     $thangnay = date('m', $thoigian);
-    if ($thangnay <= 2) $tiep = strtotime(date((date('Y', $thoigian) - 1) .'/3/1'));
-    else $tiep = strtotime(date(date('Y', $thoigian) .'/3/1'));
+    if ($thangnay <= 1) $tiep = strtotime(date((date('Y', $thoigian) - 1) .'/2/1'));
+    else $tiep = strtotime(date(date('Y', $thoigian) .'/2/1'));
   
     for ($i = 0; $i < 12; $i++) { 
       $luong = dulieuluong($userid, $tiep);

@@ -780,7 +780,7 @@ function danhsachmautin() {
 
   $sql = "select * from pet_". PREFIX ."_vaccinemautin where kichhoat = 1 order by lich desc, id desc";
   $danhsach = $db->all($sql);
-  $hauto = [' tái chủng', [' sinh', ' xổ giun'], ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine mũi đầu'], ' tái khám'];
 
   foreach ($danhsach as $thutu => $mautin) {
     if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
@@ -889,12 +889,12 @@ function danhsachnhantin() {
 
   // lấy từ mẫu tin, kiểm tra những mục cần nhắn
   // nhắn tin vaccine
-  $sql = "select a.*, c.idmautin, d.mautin, d.lich, d.loainhac from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccineloai b on a.typeid = b.id inner join pet_". PREFIX ."_vaccinelienketmautin c on b.idnhom = c.idnhom inner join pet_". PREFIX ."_vaccinemautin d on c.idmautin = d.id and d.loainhac = 0 and (a.status < 3 or a.status = 5) and d.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * d.lich * -1) and ($homnay + 60 * 60 * 24 * (d.lich * -1 + 1) - 1))";
+  $sql = "select a.*, c.idmautin, d.mautin, d.lich, d.loainhac, 0 as sukien from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_vaccineloai b on a.typeid = b.id inner join pet_". PREFIX ."_vaccinelienketmautin c on b.idnhom = c.idnhom inner join pet_". PREFIX ."_vaccinemautin d on c.idmautin = d.id and d.loainhac = 0 and (a.status < 3 or a.status = 5) and d.kichhoat = 1 and (a.calltime between ($homnay + 60 * 60 * 24 * d.lich * -1) and ($homnay + 60 * 60 * 24 * (d.lich * -1 + 1) - 1))";
   $danhsachmautin = $db->all($sql);
 
   // nhắn tin siêu âm
   // nếu sự kiện = 0 thì dùng birthday, nếu sự kiện = 1 thì deworm
-  $sql = "select a.id, a.cometime, a.recall as calltime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and (a.status = 3 + b.sukien or a.status = 9 + b.sukien) and a.number > 0 and b.kichhoat = 1 and (a.recall between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $sql = "select a.id, a.cometime, a.recall as calltime, a.vaccinetime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and ((b.sukien = 2 and b.kichhoat = 1 and (a.vaccinetime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))) or (b.sukien < 2 and (a.status = 3 + b.sukien or a.status = 9 + b.sukien) and a.number > 0 and b.kichhoat = 1 and (a.recall between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   // nhắn tin tái khám
@@ -904,7 +904,7 @@ function danhsachnhantin() {
 
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
-  $hauto = [' tái chủng', [' sinh', ' xổ giun'], ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine'], ' tái khám'];
   $danhsachloai = [1 => ' siêu âm', ' tái khám'];
 
   // lọc loại bỏ những mục đã nhắn tin
@@ -940,6 +940,7 @@ function danhsachnhantin() {
       $mautin['loainhac'] = $loaitiem['name'];
       $mautin['thoigiantoi'] = date('d/m/Y', $mautin['cometime']);
       $mautin['thoigiannhac'] = date('d/m/Y', $mautin['calltime']);
+      if (isset($mautin['vaccinetime']) && !empty($mautin['vaccinetime'])) $mautin['thoigiannhac'] = date('d/m/Y', $mautin['vaccinetime']);
       $mautin['idkhachhang'] = $khachhang['id'];
       $mautin['dienthoai'] = $khachhang['phone'];
       $mautin['thucung'] = $khachhang['thucung'];
@@ -1125,10 +1126,20 @@ function khoitaothongke() {
       foreach ($danhsach as $nhantin) {
         $dulieu['tongnhan'] ++;
     
-        $sql = "select a.customerid, c.name as khachhang, c.phone as dienthoai, a.userid from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $nhantin[idvaccine]";
+        $sql = "select a.customerid, c.name as khachhang, c.phone as dienthoai, a.userid, a.daden, a.number, a.calltime, a.recall, a.status, a.vaccinetime from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $nhantin[idvaccine]";
         $khachhang = $db->fetch($sql);
         $khachhang['nhanvien'] = $dulieunhanvien[$khachhang['userid']];
-        $dulieu['danhsachden'] []= $khachhang;
+        $khachhang['xogiun'] = '';
+        $khachhang['vaccinetime'] = '';
+        if ($khachhang['status'] == 4) {
+          $khachhang['dade'] = date('d/m/Y', $khachhang['calltime']);
+          $khachhang['xogiun'] = date('d/m/Y', $khachhang['recall']);
+          if (!empty($khachhang['vaccinetime'])) $khachhang['vaccinetime'] = date('d/m/Y', $khachhang['vaccinetime']);
+        }
+        else $khachhang['dade'] = 'Chưa';
+        if ($khachhang['daden']) $dulieu['danhsachden'] []= $khachhang;
+        else $dulieu['danhsachkhongden'] []= $khachhang;
+        // đã đẻ, đã quay lại, số con, ngày xổ giun, ngày tiêm vaccine
       }
     
       $dulieu['tongkhach'] = count($danhsachkhach);

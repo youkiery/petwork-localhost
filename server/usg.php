@@ -293,8 +293,10 @@ function birth() {
   $calltime = isodatetotime($data->calltime);
   $recall = isodatetotime($data->deworm);
   $time = time();
+  if (!empty($data->vaccine)) $vaccine = isodatetotime($data->vaccine);
+  else $vaccine = 0;
 
-  $sql = "update pet_". PREFIX ."_usg set status = 4, called = $time, note = '". $data->note ."', number = $data->number, calltime = $calltime, recall = $recall where id = $data->id";
+  $sql = "update pet_". PREFIX ."_usg set vaccinetime = $vaccine, status = 4, called = $time, note = '". $data->note ."', number = $data->number, calltime = $calltime, recall = $recall where id = $data->id";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = "Đã thay đổi trạng thái";

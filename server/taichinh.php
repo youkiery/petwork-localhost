@@ -193,7 +193,7 @@ function danhsachchi() {
   $nhomchi = $db->all($sql);
 
   foreach ($nhomchi as $thongtin) {
-    $sql = "select * from pet_". PREFIX ."_taichinh_chi where idloaichi in (select id as idloaichi from pet_". PREFIX ."_taichinh_loaichi where idnhom = $thongtin[id]) order by thoigian desc";
+    $sql = "select * from pet_". PREFIX ."_taichinh_chi where idloaichi in (select id as idloaichi from pet_". PREFIX ."_taichinh_loaichi where idnhom = $thongtin[id]) and thoigian between $dauthang and $cuoithang order by thoigian desc";
     $danhsachchi = $db->all($sql);
     $tongchi = 0;
 
