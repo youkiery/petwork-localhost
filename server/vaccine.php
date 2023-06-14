@@ -691,9 +691,9 @@ function kiemtrasieuam($dulieu, $dulieusieuam, $danhsachbacsi, $ngatdong) {
       $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
 
       $cuoingay = strtotime(date('Y/m/d')) + 7 * 60 * 60 * 24 - 1;
-      $sql = "select * from pet_". PREFIX ."_usg where customerid = $idkhach and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
       $sql = "update pet_". PREFIX ."_usg set daden = 1 where status < 6 and calltime < $cuoingay";
       $db->query($sql);
+      $sql = "select * from pet_". PREFIX ."_usg where customerid = $idkhach and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
       if (empty($r = $db->fetch($sql))) {
         $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($idkhach, $idnhanvien, $ngayden, $thongtin[ngaynhac], $thongtin[ngaynhac], '$thongtin[thucung]', 9, '$thongtin[ghichu]', ". time() .", 0)";
         $db->query($sql);
@@ -1238,7 +1238,7 @@ function getlist($today = false) {
         $gioihan = $homnay - $ngay * 60 * 60 * 24 + 60 * 60 * 24 - 1;
         $xtra2 []= "(d.idnhom in (". implode(', ', $danhsachnhom) .") and calltime < $gioihan)";
       }
-      $xtra2 = implode(' or ', $xtra2);
+      $xtra2 = "(". implode(' or ', $xtra2) .")";
     }
     else $xtra2 = "0";
 

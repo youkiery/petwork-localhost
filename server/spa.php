@@ -225,16 +225,7 @@ function remove() {
 function done() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 1 where id = $data->id";
-  else {
-    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
-    $s = $db->fetch($sql);
-    if (!$s['duser']) {
-      $userid = checkuserid();
-      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
-    }
-    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1 where id = $data->id";
-  } 
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 1 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -271,16 +262,8 @@ function picktrans() {
 function called() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 2 where id = $data->id";
-  else {
-    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
-    $s = $db->fetch($sql);
-    if (!$s['duser']) {
-      $userid = checkuserid();
-      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
-    }
-    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 2 where id = $data->id";
-  }
+  $userid = checkuserid();
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 2 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 2;
@@ -293,16 +276,7 @@ function called() {
 function returned() {
   global $data, $db, $result;
 
-  if (!empty($data->uid)) $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->uid, status = 3 where id = $data->id";
-  else {
-    $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
-    $s = $db->fetch($sql);
-    if (!$s['duser']) {
-      $userid = checkuserid();
-      $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 1, duser = $userid where id = $data->id";
-    }
-    else $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", status = 3 where id = $data->id";
-  }
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 3 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 3;

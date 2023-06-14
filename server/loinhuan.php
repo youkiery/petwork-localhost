@@ -585,8 +585,8 @@ function tinhluong() {
   $dulieubenhvien = docdulieu($_FILES['benhvien']['tmp_name']);
 
   $thoigian = isodatetotime($data->thoigian);
-  $dauthang = strtotime(date('Y/m/1'));
-  $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
+  $dauthang = strtotime(date('Y/m/1', $thoigian));
+  $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
   // tính tổng doanh thu, lương, thưởng, phụ cấp nghỉ phép
   $sql = "select * from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
