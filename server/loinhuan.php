@@ -648,7 +648,7 @@ function tinhluong() {
 
       $tongluong = $luongnhanvien['luongcoban2'] + $luongnhanvien['phucap'] + $thuong;
       $nghiphep = $tongluong * $thongtin['nghiphep'] / 60;
-      $tietkiem = intval($tongluong * $luongnhanvien['tiletietkiem'] / 100);
+      $tietkiem = intval($luongnhanvien['luongcoban2'] * $luongnhanvien['tiletietkiem'] / 100);
       $thucnhan = $tongluong - $tietkiem - $nghiphep;
     }
     
@@ -673,6 +673,7 @@ function tinhluong() {
   foreach ($danhsach as $idnhanvien => $thongtin) {
     if ($thongtin['cophan'] > 0) {
       $cophan = intval($thongtin['cophan'] * $loinhuanthuan / 100);
+      if ($cophan) $cophan = 0;
       $sql = "update pet_". PREFIX ."_luong_dulieu set cophan = $cophan where idnhanvien = $idnhanvien and (thoigian between $dauthang and $cuoithang)";
       $db->query($sql);
     }

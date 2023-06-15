@@ -488,7 +488,10 @@ function insert() {
       $db->query($sql);
     }
   }
-  
+
+  $sql = "update pet_". PREFIX ."_customer set tinhcach = '$data->tinhcach' where id = $customerid";
+  $db->query($sql);
+
   $result['time'] = time();
   $result['list'] = getList();
   $result['status'] = 1;
@@ -756,6 +759,9 @@ function update() {
     $sql = "insert into pet_". PREFIX ."_spa_row (spaid, typeid) values($data->id, $value)";
     $db->query($sql);
   }
+
+  $sql = "update pet_". PREFIX ."_customer set tinhcach = '$data->tinhcach' where id = $customer[id]";
+  $db->query($sql);
   
   $result['time'] = time();
   $result['list'] = getList();
@@ -829,10 +835,10 @@ function getList() {
   $filter = $data->filter;
   $start = isodatetotime($filter->start);
   $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
   $spa = $db->all($sql);
   
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
   $spa = array_merge($spa, $db->all($sql));
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'spa'";
@@ -870,6 +876,7 @@ function getList() {
       'phone' => $row['phone'],
       'name2' => (empty($c['name']) ? '' : $c['name']),
       'phone2' => (empty($c['phone']) ? '' : $c['phone']),
+      'tinhcach' => $row['tinhcach'],
       'user' => $row['user'],
       'note' => $row['note'],
       'ltime' => (empty($u['name']) ? '' : date('d/m H:i', $row['ltime'])),
