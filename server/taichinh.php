@@ -22,8 +22,11 @@ function thongke() {
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
   $mathoigian = date('mY', $thoigian);
 
-  $sql = "select sum(tienmat + nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
-  $tongthu = $db->fetch($sql)['tong'];
+  $sql = "select sum(tienmat) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongtienmat = $db->fetch($sql)['tong'];
+
+  $sql = "select sum(nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongnganhang = $db->fetch($sql)['tong'];
 
   $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
   if (empty($tongkho = $db->fetch($sql))) $tongkhachno = 0;
@@ -61,7 +64,9 @@ function thongke() {
   //     var_dump($tongnonhacungcap);
   //     var_dump($kho);
   return [
-    'tongthu' => number_format($tongthu), 
+    'tienmat' => number_format($tongtienmat), 
+    'nganhang' => number_format($tongnganhang), 
+    'tongthu' => number_format($tongtienmat + $tongnganhang), 
     'chithuongxuyen' => number_format($chithuongxuyen),
     'chiluongthuong' => number_format($chiluongthuong),
     'chinhacungcap' => number_format($chinhacungcap),
@@ -72,7 +77,7 @@ function thongke() {
     'tongkhachno' => number_format($tongkhachno), 
     'tongnonhacungcap' => number_format($tongnonhacungcap), 
     'tongtaisan' => number_format($tongkho['thangnay']), 
-    'loinhuan' => number_format($tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $kho),
+    'loinhuan' => number_format($tongtienmat + $tongnganhang - $tongchi + $tongkhachno - $tongnonhacungcap + $kho),
   ];
 }
 
@@ -611,7 +616,7 @@ function laychicodinh() {
 function laydulieutonkho() {
   global $data, $db;
 
-  $thoigian = date('mY');
+  $thoigian = date('mY', isodatetotime($data->thoigian));
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
   if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
 
@@ -628,7 +633,7 @@ function luukhothangnay() {
 
   $bandau = purenumber($data->tonkho->bandau);
   $thangnay = purenumber($data->tonkho->thangnay);
-  $thoigian = date('mY');
+  $thoigian = date('mY', isodatetotime($data->thoigian));
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
   if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho', $bandau, 1)";
   else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkho'";

@@ -23,6 +23,31 @@ function khoitaonhaplieu() {
   return $result;
 }
 
+function laythongtincophan() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_cophan where idnhanvien = $data->userid order by id desc";
+  $danhsach = $db->all($sql);
+  $giaodich = [];
+
+  foreach ($danhsach as $thutu => $cophan) {
+    $giaodich []= [
+      'id' => $cophan['id'],
+      'giatri' => number_format($cophan['giatri']),
+      'tile' => $cophan['tile'],
+      'ghichu' => $cophan['ghichu'],
+    ];
+  }
+
+  $result['status'] = 1;
+  $result['dulieu'] = [
+    'capnhat' => true,
+    'idnhanvien' => $data->userid,
+    'giaodich' => $giaodich,
+  ];
+  return $result;
+}
+
 function capnhatnhaplieu() {
   global $data, $db, $result;
 
@@ -316,6 +341,7 @@ function thaydoigiatri() {
   return $result;
 }
 
+
 function danhsachnhanvien() {
   global $db;
 
@@ -324,6 +350,10 @@ function danhsachnhanvien() {
 
   $homnay = time();
   foreach ($danhsach as $thutu => $thongtin) {
+    $sql = "select sum(tile) as cophan from pet_". PREFIX ."_cophan where idnhanvien = $thongtin[userid]";
+    $cophan = $db->fetch($sql);
+    if (empty($cophan)) $cophan = 0;
+    else $cophan = $cophan['cophan'];
     $luongnhanvien = thongtinluong($thongtin['userid'], $homnay);
     $danhsach[$thutu]['luong'] = $luongnhanvien['luong'];
     $danhsach[$thutu]['luongcoban'] = $luongnhanvien['luongcoban'];
@@ -333,6 +363,7 @@ function danhsachnhanvien() {
     $danhsach[$thutu]['kyhopdong'] = $luongnhanvien['kyhopdong'];
     $danhsach[$thutu]['tiletietkiem'] = $luongnhanvien['tiletietkiem'];
     $danhsach[$thutu]['tamnghi'] = $luongnhanvien['tamnghi'];
+    $danhsach[$thutu]['cophan'] = $cophan;
     $danhsach[$thutu]['heluong'] = $luongnhanvien['heluong'];
     $danhsach[$thutu]['tilethuong'] = laytilethuong($thongtin['userid'], $luongnhanvien['heluong']);
   }
