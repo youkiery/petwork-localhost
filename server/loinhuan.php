@@ -191,11 +191,7 @@ function dulieunhanvien($userid) {
     $danhsachtietkiem = [];
     $danhsachcophan = [];
   
-    // nếu tháng này <= 2 thì lấy từ tháng 2 năm nay đến tháng 3 năm ngoái
-    // nếu tháng này > 2 thì lấy từ tháng 2 đến tháng này
-    $thangnay = date('m', $thoigian);
-    if ($thangnay <= 1) $tiep = strtotime(date((date('Y', $thoigian) - 1) .'/2/1'));
-    else $tiep = strtotime(date(date('Y', $thoigian) .'/2/1'));
+    $tiep = strtotime(date('Y/1/1'));
   
     for ($i = 0; $i < 12; $i++) { 
       $luong = dulieuluong($userid, $tiep);
@@ -345,16 +341,17 @@ function thaydoigiatri() {
 function danhsachnhanvien() {
   global $db;
 
-  $sql = "select userid, fullname from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
+  $sql = "select userid, fullname from pet_". PREFIX ."_users where active = 1 and userid > 1 order by userid asc";
   $danhsach = $db->all($sql);
 
   $homnay = time();
   foreach ($danhsach as $thutu => $thongtin) {
     $sql = "select sum(tile) as cophan from pet_". PREFIX ."_cophan where idnhanvien = $thongtin[userid]";
     $cophan = $db->fetch($sql);
-    if (empty($cophan)) $cophan = 0;
+    if (!isset($cophan['cophan'])) $cophan = 0;
     else $cophan = $cophan['cophan'];
-    $luongnhanvien = thongtinluong($thongtin['userid'], $homnay);
+    $luongnhanvien = thongtinluong($thongtin['userid'], $homnay, $thongtin['fullname']);
+    $danhsach[$thutu]['tenkiot'] = $luongnhanvien['tenkiot'];
     $danhsach[$thutu]['luong'] = $luongnhanvien['luong'];
     $danhsach[$thutu]['luongcoban'] = $luongnhanvien['luongcoban'];
     $danhsach[$thutu]['luonghientai'] = $luongnhanvien['luonghientai'];
@@ -405,12 +402,13 @@ function laytilethuong($idnhanvien, $heluong) {
   return $tile;
 }
 
-function thongtinluong($userid, $thoigian) {
+function thongtinluong($userid, $thoigian, $fullname = '') {
   global $db;
 
   $homnay = strtotime(date('Y/m/1', $thoigian));
   $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $userid";
   $thongtin = [
+    'tenkiot' => $fullname,
     'luong' => 0,
     'luongcoban' => 0,
     'luongcoban2' => 0,
@@ -425,6 +423,7 @@ function thongtinluong($userid, $thoigian) {
   if (!empty($nhanvien = $db->fetch($sql))) {
     $ngaylenluong = strtotime(date('Y/m/1', $nhanvien['kyhopdong']));
     $sonam = floor(($homnay - $ngaylenluong) / 365 / 60 / 60 / 24);
+    if (!empty($nhanvien['tenkiot'])) $thongtin['tenkiot'] = $nhanvien['tenkiot'];
 
     $thongtin['luongcoban'] = $nhanvien['luongcoban'];
     $thongtin['luonghientai'] = $nhanvien['luongcoban'] + $sonam * $nhanvien['lenluong'];
@@ -450,9 +449,9 @@ function capnhatnhanvien() {
   $kyhopdong = isodatetotime($data->kyhopdong);
   $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $data->userid";
   if (empty($luong = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong) values($data->userid, $data->luongcoban, $kyhopdong, $data->lenluong, $data->phucap, $data->tiletietkiem, $data->tamnghi, $data->heluong)";
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, tenkiot, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong) values($data->userid, '$data->tenkiot', $data->luongcoban, $kyhopdong, $data->lenluong, $data->phucap, $data->tiletietkiem, $data->tamnghi, $data->heluong)";
   }
-  else $sql = "update pet_". PREFIX ."_luong_nhanvien set luongcoban = $data->luongcoban, kyhopdong = $kyhopdong, lenluong = $data->lenluong, phucap = $data->phucap, tiletietkiem = $data->tiletietkiem, tamnghi = $data->tamnghi, heluong = $data->heluong where userid = $data->userid";
+  else $sql = "update pet_". PREFIX ."_luong_nhanvien set tenkiot = '$data->tenkiot', luongcoban = $data->luongcoban, kyhopdong = $kyhopdong, lenluong = $data->lenluong, phucap = $data->phucap, tiletietkiem = $data->tiletietkiem, tamnghi = $data->tamnghi, heluong = $data->heluong where userid = $data->userid";
   $db->query($sql);
 
   if ($data->heluong) {
@@ -489,8 +488,174 @@ function khoitaotinhluong() {
   global $data, $db, $result;
 
   $result['status'] = 1;
+  $result['danhsachchotlich'] = danhsachchotlich();
+  $result['cauhinh'] = laycauhinhimport();
+  $result['tonkho'] = laytonkho();
+  return $result;
+}
+
+function laytonkho() {
+  global $data, $db;
+
+  $thoigian = date('mY', isodatetotime($data->thoigian));
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
+  if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
+  if (empty($tongkhohientai = $db->fetch($sql))) $tongkhohientai = ['value' => 0];
+  return [
+    'bandau' => number_format($tongkho['value']),
+    'thangnay' => number_format($tongkhohientai['value']),
+  ];
+}
+
+function chotlichnghi() {
+  global $db, $data, $result;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $batdau = strtotime(date('Y/m/1', $thoigian));
+  $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+
+  $sql = "delete from pet_". PREFIX ."_luong_chotlich where (batdau between $batdau and $ketthuc) or (ketthuc between $batdau and $ketthuc)";
+  $db->query($sql);
+  foreach ($data->danhsach as $thutu => $thongtin) {
+    $sql = "insert into pet_". PREFIX ."_luong_chotlich (idnhanvien, nghilo, batdau, ketthuc) values($thongtin->userid, $thongtin->nghilo, $batdau, $ketthuc)";
+      $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  return $result;
+}
+
+function laycauhinhimport() {
+  global $db;
+
+  $cauhinh = [
+    0 => [
+      'loaichi' => 'A2',
+      'tienchi' => 'B2',
+      'thoigian' => 'C2'
+    ],
+    [
+      'dienthoai' => 'A2',
+      'khachhang' => 'B2',
+      'tienno' => 'C2',
+    ],
+    [
+      'nhacungcap' => 'A2',
+      'noidung' => 'B2',
+      'thanhtoan' => 'C2',
+      'noncc' => 'D2',
+      'thoigian' => 'E2',
+    ],
+  ];
+
+  foreach ($cauhinh as $loai => $dulieu) {
+    foreach ($dulieu as $tenbien => $giatri) {
+      $sql = "select * from pet_". PREFIX ."_config where module = 'loinhuan' and name = '$tenbien$loai'";
+      $dulieucauhinh = $db->fetch($sql);
+      if (isset($dulieucauhinh['value']) && !empty($dulieucauhinh['value'])) $cauhinh[$loai][$tenbien] = $dulieucauhinh['value'];
+    }
+  }
+  return $cauhinh;
+}
+
+function danhsachchotlich() {
+  global $data, $db;
+
+  $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+  $danhsachnhanvien = $db->all($sql);
+  $danhsach = array();
+  $dulieu = array();
+  $thoigian = isodatetotime($data->thoigian);
+  $batdau = strtotime(date('Y/m/1', $thoigian));
+  $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
+  $config = $db->fetch($sql);
+  $config = json_decode($config['value']);  
+
+  $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
+  $danhsachngoaile = $db->arr($sql, 'userid');
+  if (empty($danhsachngoaile)) $ngoaile = '0';
+  else $ngoaile = implode(', ', $danhsachngoaile);
+  $tongngaynghi = [];
+
+  foreach ($danhsachnhanvien as $nhanvien) {
+    $sql = "select id, type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (time between $batdau and $ketthuc) and type > 1";
+    $lichnghi = $db->all($sql);
+    $tongngaynghi[$nhanvien['userid']] = 0;
+
+    $dulieu[$nhanvien['userid']] = array(
+      'userid' => $nhanvien['userid'],
+      'tennhanvien' => $nhanvien['fullname'],
+      'nghi' => 0,
+      'nghiphat' => 0,
+      'nghiphat2' => 0,
+      'tongnghi' => 0,
+      'nghilo' => 0,
+    );
+
+    foreach ($lichnghi as $nghi) {
+      $tongngaynghi[$nhanvien['userid']] ++;
+      $dulieu[$nhanvien['userid']]['nghi'] ++;
+      $daungay = strtotime(date('Y/m/d', $nghi['time']));
+      $cuoingay = $daungay + 24 * 60 * 60 - 1;
+      $dangky = $nghi['reg_time'];
+      $ngaytrongtuan = date('N', $nghi['time']);
+      $gioihanngay = $config[$ngaytrongtuan]->gioihan;
+      // tìm trong type cùng ngày (trừ except) có vượt limit không
+      $sql = "select user_id as userid, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type = $nghi[type] and (time between $daungay and $cuoingay) order by reg_time asc";
+      $ngaynghi = $db->all($sql);
+      foreach ($ngaynghi as $thutungay => $row) {
+        if ($row['userid'] == $nghi['userid'] && ($thutungay >= $gioihanngay)) {
+          $dulieu[$nhanvien['userid']]['nghiphat'] ++;
+          $dulieu[$nhanvien['userid']]['tongnghi'] ++;
+          $thutuphat = $thutungay - $gioihanngay;
+          // nếu là t7 cn, người nghỉ thứ 2, +1, thứ 3 + 2
+          $dulieu[$nhanvien['userid']]['nghiphat'] += 1 + $thutuphat;
+          $dulieu[$nhanvien['userid']]['tongnghi'] += 1 + $thutuphat;
+        }
+      }
+    }
+  }
+
+  foreach ($tongngaynghi as $userid => $ngaynghi) {
+    $nghilo = ($ngaynghi - 12) / 2;
+    $heso = round(1 + $nghilo);
+    $dulieu[$userid]['nghiphat2'] = ($nghilo > 0 ? $nghilo * $heso : 0);
+  }
+
+  foreach ($dulieu as $thutu => $thongtin) {
+    $dulieu[$thutu]['nghi'] = $thongtin['nghi'] / 2;
+    $dulieu[$thutu]['nghiphat'] = $thongtin['nghiphat'] / 2;
+    $dulieu[$thutu]['tongnghi'] = $dulieu[$thutu]['nghi'] + $dulieu[$thutu]['nghiphat'] + $dulieu[$thutu]['nghiphat2'];
+    $nghilo = $dulieu[$thutu]['tongnghi'] - 4;
+    if ($nghilo < 0) $nghilo = 0;
+    $dulieu[$thutu]['nghilo'] = $nghilo;
+    $danhsach []= $dulieu[$thutu];
+  }
+
+  return $danhsach;
+}
+
+function luukhothangnay() {
+  global $data, $db, $result;
+
+  $bandau = purenumber($data->tonkho->bandau);
+  $thangnay = purenumber($data->tonkho->thangnay);
+  $thoigian = date('mY', isodatetotime($data->thoigian));
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho', $bandau, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkho'";
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho$thoigian', $thangnay, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $thangnay where module = 'taichinh' and name = 'tongkho$thoigian'";
+  $db->query($sql);
+
+  $result['status'] = 1;
   $result['danhsach'] = danhsachtinhluong();
-  $result['thongke'] = thongketinhluong();
   return $result;
 }
 
@@ -529,42 +694,66 @@ function danhsachtinhluong() {
   $dauthang = strtotime(date('Y/m/1'));
   $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
 
-  $sql = "select userid, fullname as nhanvien from pet_". PREFIX ."_users where active = 1 and (userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0) or userid in (select idnhanvien as userid from pet_". PREFIX ."_luong_dulieu where (thoigian between $dauthang and $cuoithang)))";
+  $sql = "select userid, fullname as nhanvien from pet_". PREFIX ."_users where active = 1 and userid > 1";
   $danhsach = $db->all($sql);
 
   $thoigian = isodatetotime($data->thoigian);
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+  $tinhluong = [];
   foreach ($danhsach as $thutu => $thongtin) {
     $sql = "select * from pet_". PREFIX ."_luong_dulieu where idnhanvien = $thongtin[userid] and (thoigian between $dauthang and $cuoithang)";
-    if (empty($nhanvien = $db->fetch($sql))) {
-      $danhsach[$thutu]['doanhsobanhang'] = 0;
-      $danhsach[$thutu]['doanhsospa'] = 0;
-      $danhsach[$thutu]['doanhso'] = 0;
-      $danhsach[$thutu]['luongcoban'] = 0;
-      $danhsach[$thutu]['thuong'] = 0;
-      $danhsach[$thutu]['phucap'] = 0;
-      $danhsach[$thutu]['nghiphep'] = 0;
-      $danhsach[$thutu]['tietkiem'] = 0;
-      $danhsach[$thutu]['tongluong'] = 0;
-      $danhsach[$thutu]['thucnhan'] = 0;
-      $danhsach[$thutu]['cophan'] = 0;
-    }
-    else {
-      $danhsach[$thutu]['luongcoban'] = $nhanvien['luongcoban'];
-      $danhsach[$thutu]['phucap'] = $nhanvien['phucap'];
-      $danhsach[$thutu]['doanhsobanhang'] = $nhanvien['doanhsobanhang'];
-      $danhsach[$thutu]['doanhsospa'] = $nhanvien['doanhsospa'];
-      $danhsach[$thutu]['doanhso'] = $nhanvien['doanhsobanhang'] + $nhanvien['doanhsospa'];
-      $danhsach[$thutu]['nghiphep'] = $nhanvien['nghiphep'];
-      $danhsach[$thutu]['thuong'] = $nhanvien['thuong'];
-      $danhsach[$thutu]['tietkiem'] = $nhanvien['tietkiem'];
-      $danhsach[$thutu]['tongluong'] = $nhanvien['tongluong'];
-      $danhsach[$thutu]['thucnhan'] = $nhanvien['thucnhan'];
-      $danhsach[$thutu]['cophan'] = $nhanvien['cophan'];
+    $nhanvien = $db->fetch($sql);
+    $sql = "select tamnghi from pet_". PREFIX ."_luong_nhanvien where userid = $thongtin[userid]";
+    $thongtinnhanvien = $db->fetch($sql);
+    $sql = "select * from pet_". PREFIX ."_cophan where idnhanvien = $thongtin[userid]";
+    $thongtincophan = $db->fetch($sql);
+    if (isset($thongtinnhanvien) && $thongtinnhanvien['tamnghi'] == 1) $nhanvien = [];
+
+    // nhân viên có doanh số
+    // nhân viên có cổ phần
+    // nhân viên không tạm nghỉ
+    if (empty($nhanvien) || !empty($thongtincophan) || (isset($thongtinnhanvien) && isset($thongtinnhanvien['tamnghi']) && $thongtinnhanvien['tamnghi'] == 0)) {
+      $danhsach[$thutu]['doanhsobanhang'] = (isset($nhanvien['doanhsobanhang']) ? $nhanvien['doanhsobanhang'] : 0);
+      $danhsach[$thutu]['doanhsospa'] = (isset($nhanvien['doanhsospa']) ? $nhanvien['doanhsospa'] : 0);
+      $danhsach[$thutu]['doanhso'] = (isset($nhanvien['doanhsospa']) ? $nhanvien['doanhsobanhang'] + $nhanvien['doanhsospa'] : 0);
+      $danhsach[$thutu]['luongcoban'] = (isset($nhanvien['luongcoban']) ? $nhanvien['luongcoban'] : 0);
+      $danhsach[$thutu]['thuong'] = (isset($nhanvien['thuong']) ? $nhanvien['thuong'] : 0);
+      $danhsach[$thutu]['phucap'] = (isset($nhanvien['phucap']) ? $nhanvien['phucap'] : 0);
+      $danhsach[$thutu]['nghiphep'] = (isset($nhanvien['nghiphep']) ? $nhanvien['nghiphep'] : 0);
+      $danhsach[$thutu]['tietkiem'] = (isset($nhanvien['tietkiem']) ? $nhanvien['tietkiem'] : 0);
+      $danhsach[$thutu]['tongluong'] = (isset($nhanvien['tongluong']) ? $nhanvien['tongluong'] : 0);
+      $danhsach[$thutu]['thucnhan'] = (isset($nhanvien['thucnhan']) ? $nhanvien['thucnhan'] : 0);
+      $danhsach[$thutu]['cophan'] = tinhcophan($thongtin['userid'], $dauthang, $cuoithang);
+      $tinhluong []= $danhsach[$thutu];
     }
   }
-  return $danhsach;
+  return $tinhluong;
+}
+
+function tinhcophan($userid, $dauthang, $cuoithang) {
+  global $db;
+
+  $sql = "select sum(tile) as tong from pet_". PREFIX ."_cophan where idnhanvien = $userid";
+  $cophan = $db->fetch($sql);
+
+  if (empty($cophan)) return 0;
+  $tilecophan = $cophan['tong'];
+  $loinhuan = tinhloinhuan();
+  
+  $sql = "select * from pet_". PREFIX ."_luong_dulieu where idnhanvien = $userid and (thoigian between $dauthang and $cuoithang)";
+  $nhanvien = $db->fetch($sql);
+  $cophan = $loinhuan * $tilecophan / 100;
+
+  if (empty($nhanvien)) {
+    $sql = "insert into pet_". PREFIX ."_luong_dulieu (idnhanvien, luongcoban, phucap, doanhsobanhang, doanhsospa, nghiphep, thuong, tietkiem, tongluong, thucnhan, cophan, thoigian, thoigianthem) values($userid, 0, 0, 0, 0, 0, 0, 0, 0, 0, ". $cophan .", $dauthang, ". time() .")";
+    $db->query($sql);
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_luong_dulieu set cophan = $cophan where id = $nhanvien[id]";
+    $db->query($sql);
+  }
+  return intval($cophan);
 }
 
 function layso($chuoi) {
@@ -620,16 +809,26 @@ function tinhluong() {
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
   // tính tổng doanh thu, lương, thưởng, phụ cấp nghỉ phép
-  $sql = "select * from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
-  $dulieunhanvien = $db->obj($sql, 'fullname', 'userid');
+  $sql = "select userid, fullname from pet_". PREFIX ."_users where active = 1 and userid > 1";
+  $dulieunhanvien = $db->all($sql);
 
   $danhsach = [];
-  foreach ($dulieunhanvien as $ten => $idnhanvien) {
+  foreach ($dulieunhanvien as $nhanvien) {
+    $idnhanvien = $nhanvien['userid'];
+    $ten = $nhanvien['fullname'];
+    $sql = "select tenkiot, tamnghi from pet_". PREFIX ."_luong_nhanvien where userid = $idnhanvien";
+    $tennhanvien = $db->fetch($sql);
+    if (!empty($tennhanvien) && !empty($tennhanvien['tenkiot'])) $ten = $tennhanvien['tenkiot'];
     $sql = "select * from pet_". PREFIX ."_luong_chotlich where batdau >= $dauthang and ketthuc <= $cuoithang and idnhanvien = $idnhanvien";
-    
-    if (empty($nghiphep = $db->fetch($sql))) $nghiphep = 0;
-    else $nghiphep = $nghiphep['nghilo'];
-    $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => $nghiphep, 'cophan' => laytilecophan($idnhanvien), 'tilespa' => laytilespa($idnhanvien), 'tilebanhang' => laytilebanhang2($idnhanvien)];
+
+    if (empty($tennhanvien)) $tennhanvien['tamnghi'] = 0;
+
+    if ($tennhanvien['tamnghi'] == 0) {
+      if (empty($nghiphep = $db->fetch($sql))) $nghiphep = 0;
+      else $nghiphep = $nghiphep['nghilo'];
+  
+      $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => $nghiphep, 'cophan' => laytilecophan($idnhanvien), 'tilespa' => laytilespa($idnhanvien), 'tilebanhang' => laytilebanhang2($idnhanvien)];
+    }
   }
 
   foreach ($dulieushop as $nhanvien => $doanhthu) {
@@ -687,33 +886,7 @@ function tinhluong() {
     $db->query($sql);
   }
 
-  // $sql = "delete from pet_". PREFIX ."_taichinh_chi where codinh = 1 and (thoigian between $dauthang and $cuoithang)";
-  // $db->query($sql);
-
-  // $sql = "select * from pet_". PREFIX ."_taichinh_chicodinh";
-  // $danhsachchicodinh = $db->all($sql);
-
-  // foreach ($danhsachchicodinh as $chicodinh) {
-  //   $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, thoigian, codinh) values($chicodinh[idloaichi], $chicodinh[giatri], ". time() .", 1)";
-  //   $db->query($sql);
-  // }
-
-  // tính cổ phần, cập nhật
-  // tính lợi nhuận thuần = lợi nhuận - tổng lương nhân viên
-  $loinhuanthuan = tinhloinhuan();
-  foreach ($danhsach as $idnhanvien => $thongtin) {
-    if ($thongtin['cophan'] > 0) {
-      $cophan = intval($thongtin['cophan'] * $loinhuanthuan / 100);
-      if ($cophan) $cophan = 0;
-      $sql = "update pet_". PREFIX ."_luong_dulieu set cophan = $cophan where idnhanvien = $idnhanvien and (thoigian between $dauthang and $cuoithang)";
-      $db->query($sql);
-    }
-  }
-
   $result['status'] = 1;
-  $result['messenger'] = 'Đã tải dữ liệu lên thành công';
-  $result['danhsach'] = danhsachtinhluong();
-  $result['thongke'] = thongketinhluong();
   return $result;
 }
 

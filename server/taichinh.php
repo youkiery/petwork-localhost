@@ -863,7 +863,6 @@ function importncc() {
         $sql = "select * from pet_". PREFIX ."_taichinh_$table where idnhacungcap = $idnhacungcap and giatri = $giatri and thoigian = $thoigian";
         if (empty($taichinh = $db->fetch($sql))) {
           $sql = "insert into pet_". PREFIX ."_taichinh_$table (idnhacungcap, noidung, giatri, thoigian, ghichu) values($idnhacungcap, '$thongtin[noidung]', $giatri, $thoigian, '')";
-          if (!empty($thongtin['noncc'])) echo "$sql <br>";        
         }
         else {
           $sql = "update pet_". PREFIX ."_taichinh_$table set idnhacungcap = $idnhacungcap, giatri = $giatri, thoigian = $thoigian, noidung = '$thongtin[noidung]' where id = $taichinh[id]";
