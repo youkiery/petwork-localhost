@@ -225,7 +225,8 @@ function remove() {
 function done() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 1 where id = $data->id";
+  $userid = checkuserid();
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $userid, status = 1 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -263,7 +264,7 @@ function called() {
   global $data, $db, $result;
 
   $userid = checkuserid();
-  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 2 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $userid, status = 2 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 2;
@@ -276,7 +277,13 @@ function called() {
 function returned() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = doctorid, status = 3 where id = $data->id";
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
+  $spa = $db->fetch($sql);
+  if (empty($spa['duser'])) $xtra = " duser = doctorid,";
+  else $xtra = "";
+
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", $xtra status = 3 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 3;

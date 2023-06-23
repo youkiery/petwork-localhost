@@ -142,6 +142,23 @@ function luongthangnay($userid) {
     $dulieu['cophan'] = $nhanvien['cophan'];
     $dulieu['thoigian'] = date('d/m/Y H:i:s', $nhanvien['thoigianthem']);
   }
+
+  $tongluongnam = 0;
+  $tongtietkiemnam = 0;
+
+  $daunam = strtotime(date('Y/1/1', $thoigian));
+  $cuoinam = strtotime((date('Y', $thoigian) + 1) .'/'. date('1/1', $thoigian)) - 1;
+  $sql = "select * from pet_". PREFIX ."_luong_dulieu where thoigian between $daunam and $cuoinam";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $luong) {
+    $tongluongnam += $luong['thucnhan'];
+    $tongtietkiemnam += $luong['tietkiem'];
+  }
+
+  $dulieu['tongluongnam'] = number_format($tongluongnam);
+  $dulieu['tongtietkiemnam'] = number_format($tongtietkiemnam);
+
   return $dulieu;
 }
 
@@ -191,12 +208,16 @@ function dulieunhanvien($userid) {
     $danhsachtietkiem = [];
     $danhsachcophan = [];
   
-    $tiep = strtotime(date('Y/1/1'));
+    $sql = "select * from pet_". PREFIX ."_luong_chot where thoigiandau <= $thoigian and thoigiancuoi >= $thoigian";
+    if (!empty($chot = $db->fetch($sql))) {
+      $tiep = $chot['thoigiandau'];
+    }
+    else $tiep = strtotime(date('Y/1/1', $thoigian));
   
     for ($i = 0; $i < 12; $i++) { 
       $luong = dulieuluong($userid, $tiep);
       $tongtietkiem += $luong['tietkiem'];
-      $tongcophan += $luong['cophan'];
+      $tongcophan += ($luong['cophan'] > 0 ? $luong['cophan'] : 0);
       $danhsachtamtietkiem[date('m', $tiep)] = number_format($luong['tietkiem']);
       $danhsachtamcophan[date('m', $tiep)] = number_format($luong['cophan']);
       $tiep = strtotime('first day of next month', $tiep);
@@ -325,7 +346,10 @@ function thaydoigiatri() {
   $daogiatri = intval(!$data->giatri);
   $sql = "select * from pet_". PREFIX ."_luong_nhanvien where userid = $data->userid";
   if (empty($luong = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong) values($data->userid, 0, 0, 0, 0, 0, 0, 0)";
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $data->userid";
+    $nhanvien = $db->fetch($sql);
+
+    $sql = "insert into pet_". PREFIX ."_luong_nhanvien (userid, luongcoban, kyhopdong, lenluong, phucap, tiletietkiem, tamnghi, heluong, tenkiot) values($data->userid, 0, 0, 0, 0, 0, 0, 0, '$nhanvien[fullname]')";
     $db->query($sql);
   }
 
@@ -487,6 +511,14 @@ function capnhatnhanvien() {
 function khoitaotinhluong() {
   global $data, $db, $result;
 
+  $tungay = isodatetotime($data->tungay);
+  $denngay = isodatetotime($data->denngay);
+  $sql = "select * from pet_". PREFIX ."_luong_chot where thoigiandau >= $tungay and thoigiancuoi <= $denngay";
+  if (empty($db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_luong_chot (thoigiandau, thoigiancuoi) values($tungay, $denngay)";
+    $db->query($sql);
+  }
+
   $result['status'] = 1;
   $result['danhsachchotlich'] = danhsachchotlich();
   $result['cauhinh'] = laycauhinhimport();
@@ -534,7 +566,8 @@ function laycauhinhimport() {
     0 => [
       'loaichi' => 'A2',
       'tienchi' => 'B2',
-      'thoigian' => 'C2'
+      'thoigian' => 'C2',
+      'ghichu' => 'D2',
     ],
     [
       'dienthoai' => 'A2',
@@ -655,6 +688,7 @@ function luukhothangnay() {
   $db->query($sql);
 
   $result['status'] = 1;
+  $result['thongke'] = thongketinhluong();
   $result['danhsach'] = danhsachtinhluong();
   return $result;
 }
@@ -690,10 +724,6 @@ function danhsachtinhluong() {
 
   // kiểm tra lương tháng này
   // hiển thị danh sách tính lương
-  $thoigian = isodatetotime($data->thoigian);
-  $dauthang = strtotime(date('Y/m/1'));
-  $cuoithang = strtotime(date('Y/m/t')) + 60 * 60 * 24 - 1;
-
   $sql = "select userid, fullname as nhanvien from pet_". PREFIX ."_users where active = 1 and userid > 1";
   $danhsach = $db->all($sql);
 
@@ -907,7 +937,7 @@ function tinhloinhuan() {
 
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
-  $tongkho = laydulieutonkho();
+  $tongkho = laydulieutonkho($thoigian);
  
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
   $chithuongxuyen = intval($db->fetch($sql)['tong']);
@@ -934,10 +964,10 @@ function tinhloinhuan() {
   return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $kho;
 }
 
-function laydulieutonkho() {
+function laydulieutonkho($thoigian) {
   global $data, $db;
 
-  $thoigian = date('mY');
+  $thoigian = date('mY', $thoigian);
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
   if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
 
@@ -979,6 +1009,24 @@ function luongcoban($userid) {
   $sonam = floor(($homnay - $dauthanglenluong) / 365 / 60 / 60 / 24);
 
   return $sonam * $luong['lenluong'] + $luong['luongcoban'];
+}
+
+function layngaychot() {
+  global $data, $db, $result;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $sql = "select * from pet_". PREFIX ."_luong_chot where thoigiandau >= $thoigian and thoigiancuoi <= $thoigian order by id desc";
+  $chotluong = $db->fetch($sql);
+  if (empty($chotluong)) {
+    $result['tungay'] = date('1/1/Y', $thoigian);
+    $result['denngay'] = date(date('t', strtotime(date('Y/12/1', $thoigian))). '/12/Y');
+  }
+  else {
+    $result['tungay'] = $chotluong['thoigiandau'];
+    $result['denngay'] = $chotluong['thoigiancuoi'];
+  }
+  $result['status'] = 1;
+  return $result;
 }
 
 function luucauhinh() {

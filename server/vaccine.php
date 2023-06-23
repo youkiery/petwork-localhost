@@ -1,4 +1,15 @@
 <?php
+$res = array(
+  'on' => 1, 
+  'total' => 0, 
+  'vaccine' => 0, 
+  'recalled' => 0, 
+  'insert' => 0, 
+  'taikhamthem' => 0, 
+  'taikhamden' => 0,
+  'error' => array(), 
+);
+
 function auto() {
   global $data, $db, $result;
 
@@ -391,7 +402,7 @@ function donerecall() {
 }
 
 function excel() {
-  global $data, $db, $result, $_FILES;
+  global $data, $db, $result, $_FILES, $res;
 
   $raw = $_FILES['file']['tmp_name'];
   $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
@@ -502,14 +513,9 @@ function excel() {
     $exdata []= $temp;
   }
 
-  $res = array(
-    'on' => 1, 'total' => [], 'vaccine' => [], 'recalled' => [], 'insert' => [], 'error' => array(), 'taikhamthem' => [], 'taikhamden' => []
-  );
-
   foreach ($exdata as $row) {
-    if ($row[2] == '') {
-      // nếu sđt rỗng thì bỏ qua
-    }
+    $res['total'] ++;
+    if (empty($row[2])) { }
     else {
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
@@ -519,6 +525,9 @@ function excel() {
     }
   }
 
+  $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";
+  $result['data'] = $res;
+  return $result;
   // $today = strtotime(date('Y/m/d'));
   // if (count($his)) {
   //   $sql = "select * from pet_". PREFIX ."_xray_disease order by id asc limit 1";
@@ -566,17 +575,6 @@ function excel() {
   //     }
   //   }
   // }
-
-  $res['taikhamthem'] = count($res['taikhamthem']);
-  $res['taikhamden'] = count($res['taikhamden']);
-  $res['total'] = count($res['total']);
-  $res['vaccine'] = count($res['vaccine']);
-  $res['recalled'] = count($res['recalled']);
-  $res['insert'] = count($res['insert']);
-
-  $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";
-  $result['data'] = $res;
-  return $result;
 }
 
 function tachthongtin($cumthongtin, $ngatdong) {
@@ -662,6 +660,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
       if (empty($db->fetch($sql))) {
         $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$thongtin[ghichu]', 5, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
+          $res['vaccine'] ++;
           $homnay = strtotime(date('Y/m/d')) + 8 * 60 * 60 * 24 - 1;
           // cập nhật nhắc vaccine có ngày nhắc trước 7 ngày
           $xtra = $danhsachloai[$dulieuvaccine[$dulieu[0]]]['nhom'];
@@ -669,6 +668,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
           $danhsachid = $db->arr($sql, 'id');
 
           if (count($danhsachid)) {
+            $res['recalled'] += count($danhsachid);
             $danhsachid = implode(', ', $danhsachid);
             $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in ($danhsachid)";
             $db->query($sql);
@@ -720,7 +720,7 @@ function kiemtraspa($dulieu, $danhsachspa) {
 }
 
 function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong) {
-  global $db;
+  global $db, $res;
 
   if (isset($danhsachcong[$dulieu[0]])) {
     // thêm vào danh sách điều trị
@@ -740,6 +740,7 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
     $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and $ngayden < $hantaikham and trangthai = 0";
     $danhsachtaikham = $db->arr($sql, 'id');
     if (count($danhsachtaikham)) {
+      $res['taikhamden']++;
       $sql = "update pet_". PREFIX ."_dieutritaikham set trangthai = 1 where id in (". implode(',', $danhsachtaikham) .")";
       $db->query($sql);
     }
@@ -762,6 +763,7 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
     $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and $ngayden < $hantaikham and trangthai = 0";
     $danhsachtaikham = $db->arr($sql, 'id');
     if (count($danhsachtaikham)) {
+      $res['taikhamden']++;
       $sql = "update pet_". PREFIX ."_dieutritaikham set trangthai = 1 where id in (". implode(',', $danhsachtaikham) .")";
       $db->query($sql);
     }
@@ -776,6 +778,7 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
 
       $sql = "select * from `pet_". PREFIX ."_dieutritaikham` where idkhach = $idkhach and thoigian = $thongtin[ngaynhac]";
       if (empty($db->fetch($sql))) {
+        $res['taikhamthem']++;
         $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigian, thoigianden, trangthai) values($idkhach, $thongtin[ngaynhac], $ngayden, 0)";
         $db->query($sql);
       }

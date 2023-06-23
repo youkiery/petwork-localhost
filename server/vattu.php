@@ -100,6 +100,24 @@ function xoavattu() {
   return $result;
 }
 
+function chivattu() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_". PREFIX ."_vattu where id = $data->idvattu";
+  $vattu = $db->fetch($sql);
+
+  $sql = "insert into pet_". PREFIX ."_taichinh_chivattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$vattu[ten]', '$vattu[donvi]', $vattu[soluong], $vattu[thoigian], $vattu[giatri], 0, '$vattu[ghichu]')";
+  $idchi = $db->insertid($sql);
+
+  $sql = "update pet_".PREFIX ."_vattu set idchi = $idchi where id = $data->idvattu";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['dulieu'] = dulieuvattu();
+  $result['tongtien'] = tongtien();
+  return $result;
+}
+
 function xoacophan() {
   global $db, $data, $result;
 
@@ -190,12 +208,21 @@ function themvattu() {
   }
   else {
     $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $dulieu->thoigian, $dulieu->giatri, '$dulieu->tile', '$dulieu->ghichu')";
-    $idvattu = $db->insertid($sql);
+    $dulieu->id = $db->insertid($sql);
     foreach ($dulieu->thuoctang as $idtang => $giatri) {
       $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($idvattu, $idtang)";
       $db->query($sql);
     }
   }
+
+  if ($dulieu->chivattu) {
+    $sql = "insert into pet_". PREFIX ."_taichinh_chivattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $dulieu->thoigian, $dulieu->giatri, '0', '$dulieu->ghichu')";
+    $idchi = $db->insertid($sql);
+
+    $sql = "update pet_".PREFIX ."_vattu set idchi = $idchi where id = $dulieu->id";
+    $db->query($sql);
+  }
+
   
   $result['status'] = 1;
   $result['dulieu'] = dulieuvattu();
@@ -307,6 +334,14 @@ function dulieuvattu() {
     $danhsachvattu[$thutu]['phantram'] = number_format($vattu['tile'] * $tongtien / 100);
     $danhsachvattu[$thutu]['tongtien'] = number_format($vattu['soluong'] * $vattu['giatri'] + $vattu['tile'] * $tongtien / 100);
     $danhsachvattu[$thutu]['thoigian'] = date('d/m/Y', $vattu['thoigian']);
+    $sql = "select * from pet_". PREFIX ."_taichinh_chivattu where id = $vattu[idchi]";
+    if (empty($db->fetch($sql))) {
+      $danhsachvattu[$thutu]['chivattu'] = false;
+      $danhsachvattu[$thutu]['idchi'] = 0;
+    }
+    else {
+      $danhsachvattu[$thutu]['chivattu'] = true;
+    }
   }
   $dulieu['danhsach'] = $danhsachvattu;
 
