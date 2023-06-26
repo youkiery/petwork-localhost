@@ -923,21 +923,29 @@ function tinhluong() {
 function tinhloinhuan() {
   global $data, $db;
 
+
   $thoigian = isodatetotime($data->thoigian);
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
   $mathoigian = date('mY', $thoigian);
 
-  $sql = "select sum(tienmat + nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
-  $tongthu = $db->fetch($sql)['tong'];
+  $sql = "select sum(tienmat) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongtienmat = $db->fetch($sql)['tong'];
+
+  $sql = "select sum(nganhang) as tong from pet_". PREFIX ."_taichinh_thu where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $tongnganhang = $db->fetch($sql)['tong'];
 
   $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
   if (empty($tongkho = $db->fetch($sql))) $tongkhachno = 0;
   else $tongkhachno = $tongkho['tong'];
 
+  $sql = "select value as tong from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongnccno$mathoigian'";
+  if (empty($tongnccno = $db->fetch($sql))) $tongnccno = 0;
+  else $tongnccno = $tongnccno['tong'];
+
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
-  $tongkho = laydulieutonkho($thoigian);
+  $tongkho = laydulieutonkho();
  
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
   $chithuongxuyen = intval($db->fetch($sql)['tong']);
@@ -959,9 +967,9 @@ function tinhloinhuan() {
 
   $tongchi = $chithuongxuyen + $chiluongthuong + $chinhacungcap + $chitaisan + $chicodinh;
   if (empty($tongkho['thangnay'])) $kho = 0;
-  else $kho = $tongkho['bandau'] - $tongkho['thangnay'];
+  else $kho = $tongkho['bandau'] - ($tongkho['thangnay'] + $tongnccno);
 
-  return $tongthu - $tongchi + $tongkhachno - $tongnonhacungcap + $kho;
+  return $tongtienmat + $tongnganhang - $tongchi + $tongkhachno - $tongnonhacungcap + $kho;
 }
 
 function laydulieutonkho($thoigian) {
