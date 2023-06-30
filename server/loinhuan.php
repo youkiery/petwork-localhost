@@ -79,12 +79,12 @@ function laydanhsachnhaplieu() {
   $sql = "select a.idnhanvien, a.tietkiem, a.cophan, b.fullname as ten from pet_". PREFIX ."_luong_dulieu a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where a.thoigian between $dauthang and $cuoithang order by b.fullname asc";
   $danhsach = $db->all($sql);
   
-  $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
+  $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where active = 1 and userid <> 1";
   $danhsachtam = $db->all($sql);
   foreach ($danhsachtam as $thongtin) {
     $kiemtra = false;
     foreach ($danhsach as $thutu => $thongtin2) {
-    if ($thongtin['idnhanvien'] == $thongtin2['idnhanvien']) $kiemtra = true;
+      if ($thongtin['idnhanvien'] == $thongtin2['idnhanvien']) $kiemtra = true;
     }
     if (!$kiemtra) $danhsach []= $thongtin;
   }
@@ -143,7 +143,7 @@ function luongthangnay($userid) {
     $dulieu['thoigian'] = date('d/m/Y H:i:s', $nhanvien['thoigianthem']);
   }
 
-  $tongluongnam = 0;
+  $tongcophannam = 0;
   $tongtietkiemnam = 0;
 
   $daunam = strtotime(date('Y/1/1', $thoigian));
@@ -152,11 +152,11 @@ function luongthangnay($userid) {
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $luong) {
-    $tongluongnam += $luong['thucnhan'];
+    $tongcophannam += ($luong['cophan'] > 0 ? $luong['cophan'] : 0);
     $tongtietkiemnam += $luong['tietkiem'];
   }
 
-  $dulieu['tongluongnam'] = number_format($tongluongnam);
+  $dulieu['tongcophannam'] = number_format($tongcophannam);
   $dulieu['tongtietkiemnam'] = number_format($tongtietkiemnam);
 
   return $dulieu;
@@ -195,7 +195,7 @@ function dulieunhanvien($userid) {
     $sql = "select * from pet_". PREFIX ."_users where userid = $userid";
   }
   else {
-    $sql = "select * from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0)";
+    $sql = "select * from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'loinhuan' and type > 0) or userid in (select idnhanvien from pet_". PREFIX ."_cophan where tile > 0 group by idnhanvien)";
   }
   $danhsachnhanvien = $db->all($sql);
 
@@ -580,6 +580,8 @@ function laycauhinhimport() {
       'thanhtoan' => 'C2',
       'noncc' => 'D2',
       'thoigian' => 'E2',
+      'dathanhtoan' => 'F2',
+      'danhaphang' => 'G2',
     ],
   ];
 
@@ -677,9 +679,9 @@ function luukhothangnay() {
   $bandau = purenumber($data->tonkho->bandau);
   $thangnay = purenumber($data->tonkho->thangnay);
   $thoigian = date('mY', isodatetotime($data->thoigian));
-  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
-  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho', $bandau, 1)";
-  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkho'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkhodau$thoigian'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkhodau$thoigian', $bandau, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkhodau$thoigian'";
   $db->query($sql);
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
@@ -943,9 +945,9 @@ function tinhloinhuan() {
   if (empty($tongnccno = $db->fetch($sql))) $tongnccno = 0;
   else $tongnccno = $tongnccno['tong'];
 
-  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where thoigianthem = $dauthang order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
-  $tongkho = laydulieutonkho();
+  $tongkho = laydulieutonkho($thoigian);
  
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
   $chithuongxuyen = intval($db->fetch($sql)['tong']);
@@ -956,7 +958,7 @@ function tinhloinhuan() {
   $sql = "select sum(cophan) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
   $cophan = intval($db->fetch($sql)['tong']);
 
-  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang";
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chincc where thoigianthem = $dauthang";
   $chinhacungcap = intval($db->fetch($sql)['tong']);
 
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chicodinh";

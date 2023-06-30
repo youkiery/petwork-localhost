@@ -36,9 +36,9 @@ function thongke() {
   if (empty($tongnccno = $db->fetch($sql))) $tongnccno = 0;
   else $tongnccno = $tongnccno['tong'];
 
-  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where (thoigian between $dauthang and $cuoithang) order by id desc";
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_noncc where thoigianthem = $dauthang order by id desc";
   $tongnonhacungcap = $db->fetch($sql)['tong'];
-  $tongkho = laydulieutonkho();
+  $tongkho = laydulieutonkho($thoigian);
  
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
   $chithuongxuyen = intval($db->fetch($sql)['tong']);
@@ -49,7 +49,7 @@ function thongke() {
   $sql = "select sum(cophan) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
   $cophan = intval($db->fetch($sql)['tong']);
 
-  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang";
+  $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chincc where thoigianthem = $dauthang";
   $chinhacungcap = intval($db->fetch($sql)['tong']);
 
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chicodinh";
@@ -62,11 +62,6 @@ function thongke() {
   if (empty($tongkho['thangnay'])) $kho = 0;
   else $kho = $tongkho['bandau'] - ($tongkho['thangnay'] + $tongnccno);
 
-  // var_dump($tongthu);
-  // var_dump($tongchi);
-  //   var_dump($tongkhachno);
-  //     var_dump($tongnonhacungcap);
-  //     var_dump($kho);
   return [
     'tienmat' => number_format($tongtienmat), 
     'nganhang' => number_format($tongnganhang), 
@@ -100,7 +95,7 @@ function danhsachnoncc() {
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_noncc where thoigian between $dauthang and $cuoithang order by id desc";
+  $sql = "select * from pet_". PREFIX ."_taichinh_noncc where thoigianthem = $dauthang order by id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $noncc) {
@@ -187,7 +182,7 @@ function danhsachchi() {
   $danhsach[1]['lanchi'] = count($vattu);
   $danhsach[1]['danhsach'] = $vattu;
 
-  $sql = "select * from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang order by thoigian desc";
+  $sql = "select * from pet_". PREFIX ."_taichinh_chincc where thoigianthem = $dauthang and $cuoithang order by thoigian desc";
   $chinhacungcap = $db->all($sql);
   
   foreach ($chinhacungcap as $thutu => $thongtin) {
@@ -315,6 +310,7 @@ function xoathu() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachthu();
+  $result['thongke'] = thongke();
   return $result;
 }
 
@@ -395,13 +391,14 @@ function themchi() {
       // chi nhà cung cấp
       $dulieu = $data->dulieu->dulieu[2];
       $giatri = purenumber($dulieu->giatri);
+      $dauthang = strtotime(date('Y/m/1', $thoigian));
 
       if ($data->dulieu->id) {
         $sql = "update pet_". PREFIX ."_taichinh_chincc set idnhacungcap = $dulieu->idnhacungcap, noidung = '$dulieu->noidung', giatri = $giatri, thoigian = $thoigian, ghichu = '$dulieu->ghichu'";
         $db->query($sql);
       }
       else {
-        $sql = "insert into pet_". PREFIX ."_taichinh_chincc (idnhacungcap, noidung, giatri, thoigian, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, '$dulieu->ghichu')";
+        $sql = "insert into pet_". PREFIX ."_taichinh_chincc (idnhacungcap, noidung, giatri, thoigian, thoigianthem, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, $dauthang, '$dulieu->ghichu')";
         $db->query($sql);
       }
     break;
@@ -470,10 +467,11 @@ function themnonhacungcap() {
 
   $dulieu = $data->dulieu;
   $thoigian = isodatetotime($dulieu->thoigian);
+  $dauthang = isodatetotime(date('Y/m/1', $thoigian));
   $giatri = purenumber($dulieu->giatri);
 
   if (empty($dulieu->id)) {
-    $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thoigian, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, '$dulieu->ghichu')";
+    $sql = "insert into pet_". PREFIX ."_taichinh_noncc (idnhacungcap, noidung, giatri, thoigian, thoigianthem, ghichu) values($dulieu->idnhacungcap, '$dulieu->noidung', $giatri, $thoigian, $dauthang, '$dulieu->ghichu')";
     $data->id = $db->insertid($sql);
   }
   else {
@@ -506,6 +504,7 @@ function xoachi() {
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachchi();
+  $result['thongke'] = thongke();
   return $result;
 }
 
@@ -517,6 +516,7 @@ function xoanoncc() {
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachnoncc();
+  $result['thongke'] = thongke();
   return $result;
 }
 
@@ -652,8 +652,11 @@ function laydulieutonkho() {
   global $data, $db;
 
   $thoigian = date('mY', isodatetotime($data->thoigian));
-  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
-  if (empty($tongkho = $db->fetch($sql))) $tongkho = ['value' => 0];
+  $thangtruoc = date('mY', strtotime('first day of last month', isodatetotime($data->thoigian)));
+  // lấy 
+  $sql2 = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thangtruoc'";
+  $sql3 = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkhodau$thoigian'";
+  if (empty($tongkho = $db->fetch($sql3)) && empty($tongkho = $db->fetch($sql2))) $tongkho = ['value' => 0];
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
   if (empty($tongkhohientai = $db->fetch($sql))) $tongkhohientai = ['value' => 0];
@@ -669,9 +672,9 @@ function luukhothangnay() {
   $bandau = purenumber($data->tonkho->bandau);
   $thangnay = purenumber($data->tonkho->thangnay);
   $thoigian = date('mY', isodatetotime($data->thoigian));
-  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho'";
-  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkho', $bandau, 1)";
-  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkho'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkhodau$thoigian'";
+  if (empty($db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'tongkhodau$thoigian', $bandau, 1)";
+  else $sql = "update pet_". PREFIX ."_config set value = $bandau where module = 'taichinh' and name = 'tongkhodau$thoigian'";
   $db->query($sql);
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'tongkho$thoigian'";
@@ -785,7 +788,7 @@ function docdulieu() {
 }
 
 function importchi() {
-  global $db, $result;
+  global $db, $data, $result;
 
   $dulieu = docdulieu();
   $error = [];
@@ -795,6 +798,13 @@ function importchi() {
   $sql = "select * from pet_". PREFIX ."_vattu_loaichi";
   $danhsachloaichi = $db->arr($sql, 'loaichi');
   // danh sách chi vật tư, nếu loạii chi trong nhóm chi vật tư thì không thêm vào chi mà chỉ thêm vào vật tư 
+  if (!isset($data->thoigian)) $thoigian = time();
+  else $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date("Y/m/1", $thoigian));
+  $cuoithang = strtotime(date("Y/m/t", $thoigian)) + 60 * 60 * 24 - 1;
+  $sql = "delete from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
+  $db->query($sql);
+
   foreach ($dulieu as $thutu => $thongtin) {
     $kiemtra = false;
     if (!empty($thongtin['loaichi'] && !empty($thongtin['tienchi']))) {
@@ -817,14 +827,11 @@ function importchi() {
         }
         else {
           $idloaichi = kiemtraloaichi($thongtin['loaichi'], 5);
-          $sql = "select * from pet_". PREFIX ."_taichinh_chi where idloaichi = $idloaichi and thoigian = $thoigian and giatri = $giatri";
-          if (empty($db->fetch($sql))) {
-            $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, ghichu, thoigian) values($idloaichi, $giatri, '', $thoigian)";
-            
-            $db->query($sql);
-            $dathem ++;
-            $kiemtra = true;
-          }
+          $sql = "insert into pet_". PREFIX ."_taichinh_chi (idloaichi, giatri, ghichu, thoigian) values($idloaichi, $giatri, '', $thoigian)";
+          $db->query($sql);
+
+          $dathem ++;
+          $kiemtra = true;
         }
       }
     }
@@ -855,11 +862,13 @@ function kiemtraloaichi($loaichi, $idnhom = 0) {
 }
 
 function importno() {
-  global $db, $result;
+  global $db, $data, $result;
 
+  if (!isset($data->thoigian)) $thoigian = time();
+  else $thoigian = isodatetotime($data->thoigian);
   $dulieu = docdulieu();
   $tongno = 0;
-  $thoigian = date('mY');
+  $mathoigian = date('mY', $thoigian);
   $error = [];
   // 'nhacungcap' nếu không có nhà cung cấp, bỏ qua
   // 'noidung' 
@@ -872,9 +881,9 @@ function importno() {
     }
   }
 
-  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$thoigian'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'taichinh' and name = 'khachno$mathoigian'";
   if (empty($cauhinh = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'khachno$thoigian', $tongno, 0)";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('taichinh', 'khachno$mathoigian', $tongno, 0)";
   }
   else $sql = "update pet_". PREFIX ."_config set value = $tongno where id = $cauhinh[id]";
   $db->query($sql);
@@ -901,9 +910,9 @@ function importncc() {
   $dauthang = strtotime(date('Y/m/1', $thoigian));
   $cuoithang = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
 
-  $sql = "delete from pet_". PREFIX ."_taichinh_chincc where thoigian between $dauthang and $cuoithang";
+  $sql = "delete from pet_". PREFIX ."_taichinh_chincc where thoigianthem between $dauthang and $cuoithang";
   $db->query($sql);
-  $sql = "delete from pet_". PREFIX ."_taichinh_noncc where thoigian between $dauthang and $cuoithang";
+  $sql = "delete from pet_". PREFIX ."_taichinh_noncc where thoigianthem between $dauthang and $cuoithang";
   $db->query($sql);
 
   // nếu các mục 
@@ -921,16 +930,10 @@ function importncc() {
         if (!empty($thongtin['thanhtoan'])) {
           $table = "chincc";
           $giatri = purenumber($thongtin['thanhtoan']);
-          $sql = "select * from pet_". PREFIX ."_taichinh_$table where idnhacungcap = $idnhacungcap and giatri = $giatri and thoigian = $ngaythang";
-          if (empty($taichinh = $db->fetch($sql))) {
-            $sql = "insert into pet_". PREFIX ."_taichinh_$table (idnhacungcap, noidung, giatri, thoigian, ghichu) values($idnhacungcap, '$thongtin[noidung]', $giatri, $ngaythang, '')";
-          }
-          else {
-            $sql = "update pet_". PREFIX ."_taichinh_$table set idnhacungcap = $idnhacungcap, giatri = $giatri, thoigian = $ngaythang, noidung = '$thongtin[noidung]' where id = $taichinh[id]";
-          }
-          $tongthanhtoan += $giatri;
+          $sql = "insert into pet_". PREFIX ."_taichinh_$table (idnhacungcap, noidung, giatri, thoigian, thoigianthem, ghichu) values($idnhacungcap, '$thongtin[noidung]', $giatri, $ngaythang, $dauthang, '')";
           $db->query($sql);
-
+          
+          $tongthanhtoan += $giatri;
           // kiểm tra đã nhập hàng chưa, nếu chưa thì + vào tồn kho
           if ($ngaythang >= $dauthang && $ngaythang <= $cuoithang && mb_strtolower($thongtin['danhaphang']) == 'chưa') {
             $tongnccno += $giatri;
@@ -940,15 +943,9 @@ function importncc() {
         if (!empty($thongtin['noncc'])) {
           $table = "noncc";
           $giatri = purenumber($thongtin['noncc']);
-          $sql = "select * from pet_". PREFIX ."_taichinh_$table where idnhacungcap = $idnhacungcap and giatri = $giatri and thoigian = $thoigian";
-          if (empty($taichinh = $db->fetch($sql))) {
-            $sql = "insert into pet_". PREFIX ."_taichinh_$table (idnhacungcap, noidung, giatri, thoigian, ghichu) values($idnhacungcap, '$thongtin[noidung]', $giatri, $thoigian, '')";
-          }
-          else {
-            $sql = "update pet_". PREFIX ."_taichinh_$table set idnhacungcap = $idnhacungcap, giatri = $giatri, thoigian = $thoigian, noidung = '$thongtin[noidung]' where id = $taichinh[id]";
-          }
-          $tongno += $giatri;
+          $sql = "insert into pet_". PREFIX ."_taichinh_$table (idnhacungcap, noidung, giatri, thoigian, thoigianthem, ghichu) values($idnhacungcap, '$thongtin[noidung]', $giatri, $thoigian, $dauthang, '')";
           $db->query($sql);
+          $tongno += $giatri;
         }
 
         $kiemtra = true;

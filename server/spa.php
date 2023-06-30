@@ -13,18 +13,14 @@ function init() {
 
   $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'spa' and type = 2 and userid = $userid";
-  if (!empty($db->fetch($sql))) {
-    $sql = "select a.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1";
-    $result['doctor'] = $db->all($sql);
-  }
-  else $result['doctor'] = array();
+  $sql = "select a.userid, a.fullname as name from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_user_per b on a.userid = b.userid where b.module = 'spa' and b.type > 0";
+  $result['nhanvien'] = $db->all($sql);
 
   $result['status'] = 1;
   $result['time'] = time();
+  $result['datlichhomnay'] = datlichhomnay();
   $result['list'] = getList();
   $result['near'] = nearlist();
-  $result['count'] = nearcount();
   return $result;
 }
 
@@ -54,36 +50,36 @@ function init() {
 //   return $result;
 // }
 
-function updatesc() {
-  global $data, $db, $result;
+// function updatesc() {
+//   global $data, $db, $result;
 
-  $customerid = checkcustomer($data->phone, $data->name);
-  $image = implode(',', $data->image);
-  $time = isodatetotime($data->time);
-  $ctime = time();
+//   $customerid = checkcustomer($data->phone, $data->name);
+//   $image = implode(',', $data->image);
+//   $time = isodatetotime($data->time);
+//   $ctime = time();
   
-  $sql = "update pet_". PREFIX ."_spa_schedule set customerid = $customerid, note = '$data->note', image = '$image', time = $time where id = $data->id";
-  $db->query($sql);
+//   $sql = "update pet_". PREFIX ."_spa_schedule set customerid = $customerid, note = '$data->note', image = '$image', time = $time where id = $data->id";
+//   $db->query($sql);
 
-  $result['list'] = nearlist();
-  $result['count'] = nearcount();
-  $result['status'] = 1;
-  return $result;
-}
+//   $result['list'] = nearlist();
+//   $result['count'] = nearcount();
+//   $result['status'] = 1;
+//   return $result;
+// }
 
-function removesc() {
-  global $data, $db, $result;
+// function removesc() {
+//   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_spa_schedule where id = $data->id";
-  $db->query($sql);
+//   $sql = "delete from pet_". PREFIX ."_spa_schedule where id = $data->id";
+//   $db->query($sql);
   
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã xóa hồ sơ';
-  $result['list'] = nearlist();
-  $result['c'] = nearcount();
+//   $result['status'] = 1;
+//   $result['messenger'] = 'Đã xóa hồ sơ';
+//   $result['list'] = nearlist();
+//   $result['c'] = nearcount();
   
-  return $result;
-}
+//   return $result;
+// }
 
 function toggle() {
   global $data, $db, $result;
@@ -406,74 +402,71 @@ function checkcustomer($phone, $name) {
   return $customer['id'];
 }
 
-function nearchange() {
-  global $data, $db, $result;
+// function nearchange() {
+//   global $data, $db, $result;
 
-  $status = intval(!$data->status);
-  $sql = "update pet_". PREFIX ."_spa_schedule set status = $status where id = $data->id";
-  $db->query($sql);
+//   $status = intval(!$data->status);
+//   $sql = "update pet_". PREFIX ."_spa_schedule set status = $status where id = $data->id";
+//   $db->query($sql);
 
-  $result['status'] = 1;
-  $result['list'] = nearlist();
-  $result['count'] = nearcount();
-  return $result;
-}
+//   $result['status'] = 1;
+//   $result['list'] = nearlist();
+//   $result['count'] = nearcount();
+//   return $result;
+// }
 
-function near() {
-  global $data, $db, $result;
+// function near() {
+//   global $data, $db, $result;
 
-  $result['status'] = 1;
-  $result['list'] = nearlist();
-  return $result;
-}
+//   $result['status'] = 1;
+//   $result['list'] = nearlist();
+//   return $result;
+// }
 
-function nearcount() {
-  global $data, $db, $result;
+// function nearcount() {
+//   global $data, $db, $result;
 
-  // Nhắc hôm nay ngày mai
-  $start = strtotime(date('Y/m/d'));
-  $end = $start + 60 * 60 * 24 * 2 - 1;
+//   // Nhắc hôm nay ngày mai
+//   $start = strtotime(date('Y/m/d'));
+//   $end = $start + 60 * 60 * 24 * 2 - 1;
 
-  $sql = "select id from pet_". PREFIX ."_spa_schedule where ((time between $start and $end) and status = 0) or status = 0";
-  return $db->count($sql);
-}
+//   $sql = "select id from pet_". PREFIX ."_spa_schedule where ((time between $start and $end) and status = 0) or status = 0";
+//   return $db->count($sql);
+// }
 
 function nearlist() {
   global $data, $db, $result;
 
   // Nhắc hôm nay ngày mai
-  $start = strtotime(date('Y/m/d'));
-  $end = $start + 60 * 60 * 24 * 2 - 1;
-
-  $sql = "select a.*, b.name, b.phone from pet_". PREFIX ."_spa_schedule a inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (time between $start and $end) or status = 0 order by time asc, ctime asc";
+  $batdau = strtotime(date('Y/m/d'));
+  $sql = "select * from pet_". PREFIX ."_spa_datlich where thoigian >= $batdau order by id asc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
-    $list[$key]['image'] = parseimage($row['image']);
-    $list[$key]['time'] = date('d/m/Y', $row['time']);
-    $list[$key]['ctime'] = date('d/m/Y', $row['ctime']);
+    $list[$key]['thoigian'] = date('d/m/Y H:i', $row['thoigian']);
+    $list[$key]['ngaydat'] = date('d/m/Y', $row['ngaydat']);
   }
 
   return $list;
 }
 
-function schedule() {
-  global $data, $db, $result;
+// function schedule() {
+//   global $data, $db, $result;
 
-  $customerid = checkcustomer($data->phone, $data->name);
-  $image = implode(',', $data->image);
-  $time = isodatetotime($data->time);
-  $ctime = time();
+//   $customerid = checkcustomer($data->phone, $data->name);
+//   $image = implode(',', $data->image);
+//   $time = isodatetotime($data->time);
+//   $ctime = time();
   
-  $sql = "insert into pet_". PREFIX ."_spa_schedule (customerid, note, image, time) values($customerid, '$data->note', '$image', $time)";
-  $db->query($sql);
+//   $sql = "insert into pet_". PREFIX ."_spa_schedule (customerid, note, image, time) values($customerid, '$data->note', '$image', $time)";
+//   $db->query($sql);
 
-  $result['list'] = nearlist();
-  $result['count'] = nearcount();
-  $result['status'] = 1;
+//   $result['list'] = nearlist();
+//   $result['count'] = nearcount();
+//   $result['status'] = 1;
   
-  return $result;
-}
+//   return $result;
+// }
 
 function insert() {
   global $data, $db, $result;
@@ -834,6 +827,37 @@ function getuserobj() {
     );
   }
   return $data;
+}
+
+function doingay() {
+  global $data, $db, $result;
+
+  $thoigian = isodatetotime($data->thoigian);
+  $sql = "update pet_". PREFIX ."_spa_datlich set thoigian = $thoigian where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['list'] = getList();
+  $result['datlichhomnay'] = datlichhomnay();
+  return $result;
+}
+
+function datlichhomnay() {
+  global $data, $db;
+
+  $filter = $data->filter;
+  $batdau = isodatetotime($filter->start);
+  $ketthuc = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
+
+  $sql = "select * from pet_". PREFIX ."_spa_datlich where (thoigian between $batdau and $ketthuc) order by id asc";
+  $danhsach = $db->all($sql);
+ 
+  foreach ($danhsach as $key => $spa) {
+    $danhsach[$key]['thoigian'] = date('d/m/Y H:i', $spa['thoigian']);
+    $danhsach[$key]['ngaydat'] = date('d/m/Y', $spa['ngaydat']);
+  }
+
+  return $danhsach;
 }
 
 function getList() {
