@@ -18,7 +18,7 @@ $objPHPExcel = $objReader->load($file);
 $danhsach = [];
 $sheet = $objPHPExcel->getSheet(0); 
 
-for ($j = 2; $j < 51; $j++) { 
+for ($j = 2; $j < 100; $j++) { 
   $danhsach[]= [
     'nguoiban' => $sheet->getCell("A$j")->getValue(),
     'mahang' => $sheet->getCell("B$j")->getValue(),

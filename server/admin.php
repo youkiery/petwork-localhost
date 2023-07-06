@@ -841,6 +841,18 @@ function diendulieu($mautin, $dulieu) {
   return $mautin;
 }
 
+function xacnhankhongnhantin() {
+  global $db, $result, $data;
+
+  // xác nhận vaccine đã tiêm, cập nhật ghi chú
+  $sql = "update pet_". PREFIX . "_vaccine set status = 3". (!empty($data->lydo) ? ", note = '$data->lydo'": "") ." where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachdaguitin();
+  return $result;
+}
+
 function danhsachdaguitin() {
   global $db, $data;
 
@@ -864,6 +876,7 @@ function danhsachdaguitin() {
     $danhsach[$thutu]['dienthoai'] = $khachhang['phone'];
     $danhsach[$thutu]['thoigiantoi'] = date('d/m/Y', $vaccine['cometime']);
     $danhsach[$thutu]['thoigiannhac'] = date('d/m/Y', $vaccine['calltime']);
+    $danhsach[$thutu]['idvaccine'] = $vaccine['id'];
     $danhsach[$thutu]['thoigiangui'] = date('d/m/Y H:i:s', $thongtin['thoigian']);
   }
 

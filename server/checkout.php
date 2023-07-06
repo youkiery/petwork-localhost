@@ -314,10 +314,28 @@ function getOld() {
 
   foreach ($list as $key => $row) {
     $list[$key]['time'] = date('d/m/Y', $row['time']);
-    $list[$key]['content'] = str_replace('\n', ' ', $row['content']);
+    $content = json_decode(str_replace('\n', ' ', $row['content']));
+        
+    foreach ($content as $k => $val) {
+    	foreach ($val->list as $k2 => $d) {
+    		if (empty($d->kiot)) $val->list[$k2]->thoigian = chuyendoithoigian(explode(' ', $d->bank)[0]);
+    		else $val->list[$k2]->thoigian = chuyendoithoigian(explode(' ', $d->kiot)[0]);
+    	}
+    	usort($val->list, 'sosanh');
+    	
+    }
+    $list[$key]['content'] = json_encode($content);
   }
 
   return $list;
+}
+
+function sosanh($a, $b) {
+	return $a->thoigian > $b->thoigian;
+}
+function chuyendoithoigian($thoigian) {
+	$t = explode('/', $thoigian);
+	return strtotime("$t[2]/$t[1]/$t[0]");
 }
 
 // function getData($file, $tar, $key) {
