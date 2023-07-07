@@ -1012,3 +1012,18 @@ function laycauhinhimport() {
   }
   return $cauhinh;
 }
+
+function luucauhinhdoanhthu() {
+  global $data, $db, $result;
+  
+  foreach ($data->cauhinh as $bien => $giatri) {
+    $sql = "select * from pet_". PREFIX ."_config where module = 'loinhuan' and name = 'doanhthu$bien'";
+    if (!empty($truongcauhinh = $db->fetch($sql))) $sql = "update pet_". PREFIX ."_config set value = '$giatri' where id = $truongcauhinh[id]";
+    else $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('loinhuan', 'doanhthu$bien', '$giatri', 0)";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = 'Đã lưu cấu hình';
+  return $result;
+}

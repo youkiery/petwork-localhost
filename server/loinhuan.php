@@ -522,6 +522,7 @@ function khoitaotinhluong() {
   $result['status'] = 1;
   $result['danhsachchotlich'] = danhsachchotlich();
   $result['cauhinh'] = laycauhinhimport();
+  $result['doanhthu'] = laycauhinhdoanhthu();
   $result['tonkho'] = laytonkho();
   return $result;
 }
@@ -591,6 +592,22 @@ function laycauhinhimport() {
       $dulieucauhinh = $db->fetch($sql);
       if (isset($dulieucauhinh['value']) && !empty($dulieucauhinh['value'])) $cauhinh[$loai][$tenbien] = $dulieucauhinh['value'];
     }
+  }
+  return $cauhinh;
+}
+
+function laycauhinhdoanhthu() {
+  global $db;
+
+  $cauhinh = [
+    'nhanvien' => 'B12',
+    'doanhthu' => 'I12',
+  ];
+
+  foreach ($cauhinh as $tenbien => $giatri) {
+    $sql = "select * from pet_". PREFIX ."_config where module = 'loinhuan' and name = 'doanhthu$tenbien'";
+    $dulieucauhinh = $db->fetch($sql);
+    if (isset($dulieucauhinh['value']) && !empty($dulieucauhinh['value'])) $cauhinh[$tenbien] = $dulieucauhinh['value'];
   }
   return $cauhinh;
 }
@@ -807,7 +824,7 @@ function docdulieu($file) {
   $highestColumn = $sheet->getHighestColumn();
 
   $doanhthunhanvien = array();
-  $excel = ['nhanvien' => 'B12', 'doanhthu' => 'I12'];
+  $excel = laycauhinhdoanhthu();
   $so = layso($excel['nhanvien']);
   $chunhanvien = laychu(strtoupper($excel['nhanvien']));
   $chudoanhthu = laychu(strtoupper($excel['doanhthu']));
@@ -845,6 +862,7 @@ function tinhluong() {
   $dulieunhanvien = $db->all($sql);
 
   $danhsach = [];
+  $chuyendoiten = [];
   foreach ($dulieunhanvien as $nhanvien) {
     $idnhanvien = $nhanvien['userid'];
     $ten = $nhanvien['fullname'];
@@ -852,6 +870,7 @@ function tinhluong() {
     $tennhanvien = $db->fetch($sql);
     if (!empty($tennhanvien) && !empty($tennhanvien['tenkiot'])) $ten = $tennhanvien['tenkiot'];
     $sql = "select * from pet_". PREFIX ."_luong_chotlich where batdau >= $dauthang and ketthuc <= $cuoithang and idnhanvien = $idnhanvien";
+    $chuyendoiten[$ten] = $idnhanvien;
 
     if (empty($tennhanvien)) $tennhanvien['tamnghi'] = 0;
 
@@ -862,24 +881,19 @@ function tinhluong() {
       $danhsach[$idnhanvien] = ['tile' => 0, 'doanhso' => 0, 'doanhsobanhang' => 0, 'doanhsospa' => 0, 'nghiphep' => $nghiphep, 'cophan' => laytilecophan($idnhanvien), 'tilespa' => laytilespa($idnhanvien), 'tilebanhang' => laytilebanhang2($idnhanvien)];
     }
   }
-
   foreach ($dulieushop as $nhanvien => $doanhthu) {
-    if (!empty($dulieunhanvien[$nhanvien])) {
-      $idnhanvien = $dulieunhanvien[$nhanvien];
-      if (!empty($danhsach[$idnhanvien])) {
-        $danhsach[$idnhanvien]['doanhsobanhang'] += intval($doanhthu);
-        $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
-      }
-    } 
+    $idnhanvien = $chuyendoiten[$nhanvien];
+    if (!empty($danhsach[$idnhanvien])) {
+      $danhsach[$idnhanvien]['doanhsobanhang'] += intval($doanhthu);
+      $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
+    }
   }
   foreach ($dulieubenhvien as $nhanvien => $doanhthu) {
-    if (!empty($dulieunhanvien[$nhanvien])) {
-      $idnhanvien = $dulieunhanvien[$nhanvien];
-      if (!empty($danhsach[$idnhanvien])) {
-        $danhsach[$idnhanvien]['doanhsospa'] += intval($doanhthu);
-        $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
-      }
-    } 
+    $idnhanvien = $chuyendoiten[$nhanvien];
+    if (!empty($danhsach[$idnhanvien])) {
+      $danhsach[$idnhanvien]['doanhsospa'] += intval($doanhthu);
+      $danhsach[$idnhanvien]['doanhso'] += intval($doanhthu);
+    }
   }
 
   // tính thưởng
@@ -994,7 +1008,7 @@ function laytilecophan($idnhanvien) {
 
   $sql = "select sum(tile) as tong from pet_". PREFIX ."_cophan where idnhanvien = $idnhanvien";
   if (empty($cophan = $db->fetch($sql))) return 0;
-  return $cophan['tong'];
+  return !empty($cophan['tong']) ? $cophan['tong'] : 0;
 }
 
 function phucap($userid) {
@@ -1053,6 +1067,5 @@ function luucauhinh() {
 
   $result['status'] = 1;
   $result['messenger'] = 'Đã lưu cấu hình';
-  $result['cauhinh'] = laytilespa($userid);
   return $result;
 }
