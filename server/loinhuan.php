@@ -480,7 +480,7 @@ function capnhatnhanvien() {
 
   if ($data->heluong) {
     // banhang
-    $sql = "delete from pet_". PREFIX ."_taichinh_tilebanhang where userid = $data->userid";
+    $sql = "delete from pet_". PREFIX ."_taichinh_tilebanhang where idnhanvien = $data->userid";
     $db->query($sql);
 
     foreach ($data->tilethuong[1] as $thutu => $tile) {

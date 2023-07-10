@@ -277,8 +277,6 @@ function xoanhanvien() {
   $db->query($sql);
   $sql = "delete from pet_". PREFIX ."_row_log where user_id = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "delete from pet_". PREFIX ."_notify where user_id = $data->nhanvienxoa";
-  $db->query($sql);
 
   // xóa lương
   $sql = "delete from pet_". PREFIX ."_luong_nhanvien where userid = $data->nhanvienxoa";
@@ -327,6 +325,7 @@ function getList() {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'thietbi' => 0,
     'taichinh' => 0,
     'work' => 0,
     'nhantin' => 0,

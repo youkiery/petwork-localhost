@@ -8,17 +8,6 @@ function check() {
   return false;
 }
 
-function notify() {
-  global $data, $db, $result;
-
-  $userid = checkuserid();
-  $sql = "update pet_". PREFIX ."_notify set status = 1 where userid = $userid and status = 0";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  return $result;
-}
-
 function session() {
   global $data, $db, $result;
 
@@ -320,6 +309,7 @@ function permission($userid) {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'thietbi' => 0,
     'taichinh' => 0,
     'work' => 0,
     'nhantin' => 0,
