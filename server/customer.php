@@ -3,7 +3,7 @@ function search() {
   global $data, $db, $result;
 
   $data->key = trim($data->key);
-  $sql = "select * from pet_". PREFIX ."_customer where phone like '%$data->key%' limit 20";
+  $sql = "select * from pet_". PREFIX ."_customer where phone like '%$data->key%' or name like '%$data->key%' limit 20";
   $result['status'] = 1;
   $result['list'] = $db->all($sql);
   return $result;

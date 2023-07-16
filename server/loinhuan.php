@@ -12,6 +12,7 @@ function khoitao() {
   $result['luongcoban'] = luongcoban($userid);
   $result['phucap'] = phucap($userid);
   $result['luong'] = luongthangnay($userid);
+  $result['anbangluong'] = layanbangluong();
   return $result;
 }
 
@@ -21,6 +22,31 @@ function khoitaonhaplieu() {
   $result['status'] = 1;
   $result['danhsach'] = laydanhsachnhaplieu();
   return $result;
+}
+
+function anbangluong() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'anbangluong'";
+  if (empty($cauhinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('hethong', 'anbangluong', 1, 0)";
+  }
+  else {
+    $value = intval(!$cauhinh['value']);
+    $sql = "update pet_". PREFIX ."_config set value = $value where id = $cauhinh[id]";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['anbangluong'] = layanbangluong();
+  return $result;
+}
+
+function layanbangluong() {
+  global $data, $db, $result;
+  $sql = "select * from pet_". PREFIX ."_config where name = 'anbangluong'";
+  if (empty($cauhinh = $db->fetch($sql))) return 0;
+  return intval($cauhinh['value']);
 }
 
 function laythongtincophan() {

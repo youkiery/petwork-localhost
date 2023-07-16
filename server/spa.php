@@ -467,6 +467,9 @@ function nearlist() {
   
 //   return $result;
 // }
+function sapxepsoca($a, $b) {
+  return strcmp($a, $b);
+}
 
 function insert() {
   global $data, $db, $result;
@@ -476,7 +479,47 @@ function insert() {
   
   $userid = checkuserid();
   $data->treat = intval($data->treat);
-  if ($data->did) $duser = $userid;
+  if ($data->khonglam) {
+    $daungay = strtotime(date('Y/m/d'));
+    $cuoingay = $daungay + 60 * 60 * 24 - 1;
+
+    // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
+    $sql = "select userid, username, fullname from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+    $danhsachnhanvien = $db->all($sql, 'userid');
+
+    $danhsachnhanspa = [];
+    foreach ($danhsachnhanvien as $thongtinnhanvien) {
+      $danhsachnhanspa[$thongtinnhanvien['userid']] = 0;
+    }
+
+    $sql = "select * from pet_". PREFIX ."_spa where (time between $daungay and $cuoingay) and duser > 0";
+    $danhsachspa = $db->all($sql);
+    foreach ($danhsachspa as $thongtinspa) {
+      if (empty($danhsachnhanspa[$thongtinspa['duser']])) $danhsachnhanspa[$thongtinspa['duser']] = 0;
+      $danhsachnhanspa[$thongtinspa['duser']] += 1;
+    }
+  
+    asort($danhsachnhanspa, SORT_NUMERIC);
+    
+    $danhsachngaunhien = [];
+    $nhonhat = 0;
+    $khoitao = 0;
+    foreach ($danhsachnhanspa as $idnhanvien => $socanhan) {
+      if ($idnhanvien == $userid) continue;
+      if (empty($khoitao)) {
+        $nhonhat = $socanhan;
+        $danhsachngaunhien []= $idnhanvien;
+        $khoitao = 1;
+      }
+      else if ($nhonhat == $socanhan) {
+        $danhsachngaunhien []= $idnhanvien;
+      }
+    }
+
+    
+    $duser = $danhsachngaunhien[rand(0, count($danhsachngaunhien) - 1)];
+  }
+  else if ($data->did) $duser = $userid;
   else $duser = 0;
   
   $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number)";
@@ -933,6 +976,7 @@ function getList() {
       'ftime' => date('d/m/Y', $row['time']),
       'time' => date('H:i', $row['time']),
       'option' => $option,
+      'dtime' => intval($row['time']) * 1000,
       'service' => (count($service) ? implode(',', $service) : '-')
     );
   }
