@@ -131,12 +131,30 @@ function getinitdata($userid) {
   if (empty($chotlich)) $chotlich = "0";
   else $chotlich = $chotlich['value'];
 
+  $config = [
+    "servername" => "localhost",
+    "username" => "root",
+    "password" => "",
+    "database" => "thanhxuanpet",
+  ];
+  $db2 = new database($config['servername'], $config['username'], $config['password'], $config['database']);
+
+  $daungay = strtotime(date("Y/m/d"));
+  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $datlich = 0;
+  $sql = "select id from pet_phc_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $datlich += $db2->count($sql);
+
+  $sql = "select id from pet_phc_dieutri_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $datlich += $db2->count($sql);
+
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
     'prefix' => PREFIX,
     'branch' => BRANCH,
     'userid' => $userid,
     'chotlich' => $chotlich,
+    'datlich' => $datlich,
     'username' => $userinfo['username'],
     'name' => $userinfo['name'],
     'fullname' => $userinfo['fullname'],
