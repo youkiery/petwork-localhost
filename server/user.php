@@ -314,6 +314,7 @@ function permission($userid) {
     'work' => 0,
     'nhantin' => 0,
     'loinhuan' => 0,
+    'datlich' => 0,
   ];
 
   if ($userid == 1) {
