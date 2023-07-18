@@ -137,16 +137,15 @@ function getinitdata($userid) {
     "password" => "",
     "database" => "thanhxuanpet",
   ];
-  $db2 = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
   $datlich = 0;
-  $sql = "select id from pet_phc_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
-  $datlich += $db2->count($sql);
+  $sql = "select id from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $datlich += $db->count($sql);
 
-  $sql = "select id from pet_phc_dieutri_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
-  $datlich += $db2->count($sql);
+  $sql = "select id from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $datlich += $db->count($sql);
 
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),

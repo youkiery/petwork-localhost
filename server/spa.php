@@ -535,16 +535,8 @@ function insert() {
   $sql = "update pet_". PREFIX ."_customer set tinhcach = '$data->tinhcach' where id = $customerid";
   $db->query($sql);
   if (isset($data->datlich) && $data->datlich > 0) {
-    $config = [
-      "servername" => "localhost",
-      "username" => "root",
-      "password" => "",
-      "database" => "thanhxuanpet",
-    ];
-
-    $db2 = new database($config['servername'], $config['username'], $config['password'], $config['database']);
-    $sql = "update pet_phc_spa_datlich set trangthai = 1 where id = $data->datlich";
-    $db2->query($sql);
+    $sql = "update pet_". PREFIX ."_spa_datlich set trangthai = 1 where id = $data->datlich";
+    $db->query($sql);
   }
 
   $result['time'] = time();

@@ -1,14 +1,6 @@
 <?php
-$config = [
-  "servername" => "localhost",
-  "username" => "root",
-  "password" => "",
-  "database" => "thanhxuanpet",
-];
-$db2 = new database($config['servername'], $config['username'], $config['password'], $config['database']);
-
 function khoitao() {
-  global $data, $db2, $result;
+  global $data, $db, $result;
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
@@ -16,13 +8,13 @@ function khoitao() {
 }
 
 function henngay() {
-  global $data, $db2, $result;
+  global $data, $db, $result;
   
   $ngayhen = isodatetotime($data->ngayhen);
   if (empty($data->loai)) $loai = "spa";
   else $loai = "dieutri";
-  $sql = "update pet_phc_". $loai ."_datlich set thoigian = $ngayhen where id = $data->id";
-  $db2->query($sql);
+  $sql = "update pet_". PREFIX ."_". $loai ."_datlich set thoigian = $ngayhen where id = $data->id";
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
@@ -30,12 +22,12 @@ function henngay() {
 }
 
 function khongden() {
-  global $data, $db2, $result;
+  global $data, $db, $result;
   
   if (empty($data->loai)) $loai = "spa";
   else $loai = "dieutri";
-  $sql = "update pet_phc_". $loai ."_datlich set trangthai = 2 where id = $data->id";
-  $db2->query($sql);
+  $sql = "update pet_". PREFIX ."_". $loai ."_datlich set trangthai = 2 where id = $data->id";
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
@@ -47,21 +39,21 @@ function sosanhthoigian($a, $b) {
 }
 
 function danhsachdatlich() {
-  global $data, $db2, $result;
+  global $data, $db, $result;
 
   if (!empty($data->tukhoa)) {
-    $sql = "select *, 0 as loai from pet_phc_spa_datlich where chinhanh = 0 and (tenkhach like '%$data->tukhoa%' or dienthoai like '%$data->tukhoa%')";
-    $danhsach = $db2->all($sql);
-    $sql = "select *, 1 as loai from pet_phc_dieutri_datlich where chinhanh = 0 and (tenkhach like '%$data->tukhoa%' or dienthoai like '%$data->tukhoa%')";
-    array_merge($danhsach, $db2->all($sql));
+    $sql = "select *, 0 as loai from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and (tenkhach like '%$data->tukhoa%' or dienthoai like '%$data->tukhoa%')";
+    $danhsach = $db->all($sql);
+    $sql = "select *, 1 as loai from pet_". PREFIX ."_dieutri_datlich where chinhanh = 0 and (tenkhach like '%$data->tukhoa%' or dienthoai like '%$data->tukhoa%')";
+    array_merge($danhsach, $db->all($sql));
   }
   else {
     $daungay = strtotime(date("Y/m/d"));
     $cuoingay = $daungay + 60 * 60 * 24 - 1;
-    $sql = "select *, 0 as loai from pet_phc_spa_datlich where chinhanh = 0 and ((thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay))";
-    $danhsach = $db2->all($sql);
-    $sql = "select *, 0 as loai from pet_phc_dieutri_datlich where chinhanh = 0 and ((thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay))";
-    array_merge($danhsach, $db2->all($sql));
+    $sql = "select *, 0 as loai from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and ((thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay))";
+    $danhsach = $db->all($sql);
+    $sql = "select *, 1 as loai from pet_". PREFIX ."_dieutri_datlich where chinhanh = 0 and ((thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay))";
+    $danhsach = array_merge($danhsach, $db->all($sql));
   }
 
   usort($danhsach, "sosanhthoigian");
