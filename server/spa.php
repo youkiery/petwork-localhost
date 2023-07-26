@@ -18,9 +18,7 @@ function init() {
 
   $result['status'] = 1;
   $result['time'] = time();
-  $result['datlichhomnay'] = datlichhomnay();
   $result['list'] = getList();
-  $result['near'] = nearlist();
   return $result;
 }
 
@@ -471,6 +469,62 @@ function sapxepsoca($a, $b) {
   return strcmp($a, $b);
 }
 
+function chuyenngaunhienspa() {
+  global $data, $db, $result;
+
+  $duser = chuyenngaunhien($data->duserid);
+  $sql = "update pet_". PREFIX ."_spa set duser = $duser where id = $data->id";
+  $db->query($sql);
+
+  $result['time'] = time();
+  $result['list'] = getList();
+  $result['status'] = 1;
+  return $result;
+}
+
+function chuyenngaunhien($duser = 0) {
+  global $db;
+  $daungay = strtotime(date('Y/m/d'));
+  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $userid = checkuserid();
+
+  // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
+  $sql = "select userid, username, fullname from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+  $danhsachnhanvien = $db->all($sql, 'userid');
+
+  $danhsachnhanspa = [];
+  foreach ($danhsachnhanvien as $thongtinnhanvien) {
+    $danhsachnhanspa[$thongtinnhanvien['userid']] = 0;
+  }
+
+  $sql = "select * from pet_". PREFIX ."_spa where (time between $daungay and $cuoingay) and duser > 0";
+  $danhsachspa = $db->all($sql);
+  foreach ($danhsachspa as $thongtinspa) {
+    if (empty($danhsachnhanspa[$thongtinspa['duser']])) $danhsachnhanspa[$thongtinspa['duser']] = 0;
+    $danhsachnhanspa[$thongtinspa['duser']] += 1;
+  }
+
+  asort($danhsachnhanspa, SORT_NUMERIC);
+  
+  $danhsachngaunhien = [];
+  $nhonhat = 0;
+  $khoitao = 0;
+  foreach ($danhsachnhanspa as $idnhanvien => $socanhan) {
+    if ($idnhanvien == $userid) continue; // bỏ qua người nhấn chuyển
+    if ($duser > 0 && $duser == $idnhanvien) continue; // bỏ qua người đang làm hiện tại
+    if (empty($khoitao)) {
+      $nhonhat = $socanhan;
+      $danhsachngaunhien []= $idnhanvien;
+      $khoitao = 1;
+    }
+    else if ($nhonhat == $socanhan) {
+      $danhsachngaunhien []= $idnhanvien;
+    }
+  }
+
+  return $danhsachngaunhien[rand(0, count($danhsachngaunhien) - 1)];
+}
+
 function insert() {
   global $data, $db, $result;
 
@@ -480,44 +534,7 @@ function insert() {
   $userid = checkuserid();
   $data->treat = intval($data->treat);
   if ($data->khonglam) {
-    $daungay = strtotime(date('Y/m/d'));
-    $cuoingay = $daungay + 60 * 60 * 24 - 1;
-
-    // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
-    $sql = "select userid, username, fullname from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
-    $danhsachnhanvien = $db->all($sql, 'userid');
-
-    $danhsachnhanspa = [];
-    foreach ($danhsachnhanvien as $thongtinnhanvien) {
-      $danhsachnhanspa[$thongtinnhanvien['userid']] = 0;
-    }
-
-    $sql = "select * from pet_". PREFIX ."_spa where (time between $daungay and $cuoingay) and duser > 0";
-    $danhsachspa = $db->all($sql);
-    foreach ($danhsachspa as $thongtinspa) {
-      if (empty($danhsachnhanspa[$thongtinspa['duser']])) $danhsachnhanspa[$thongtinspa['duser']] = 0;
-      $danhsachnhanspa[$thongtinspa['duser']] += 1;
-    }
-  
-    asort($danhsachnhanspa, SORT_NUMERIC);
-    
-    $danhsachngaunhien = [];
-    $nhonhat = 0;
-    $khoitao = 0;
-    foreach ($danhsachnhanspa as $idnhanvien => $socanhan) {
-      if ($idnhanvien == $userid) continue;
-      if (empty($khoitao)) {
-        $nhonhat = $socanhan;
-        $danhsachngaunhien []= $idnhanvien;
-        $khoitao = 1;
-      }
-      else if ($nhonhat == $socanhan) {
-        $danhsachngaunhien []= $idnhanvien;
-      }
-    }
-
-    
-    $duser = $danhsachngaunhien[rand(0, count($danhsachngaunhien) - 1)];
+    $duser = chuyenngaunhien();
   }
   else if ($data->did) $duser = $userid;
   else $duser = 0;
@@ -528,7 +545,7 @@ function insert() {
   if (!$data->treat) {
     foreach ($data->option as $value) {
       $sql = "insert into pet_". PREFIX ."_spa_row (spaid, typeid) values($id, $value)";
-      $db->query($sql);
+      $db->query($sql); 
     }
   }
 
@@ -887,37 +904,6 @@ function getuserobj() {
   return $data;
 }
 
-function doingay() {
-  global $data, $db, $result;
-
-  $thoigian = isodatetotime($data->thoigian);
-  $sql = "update pet_". PREFIX ."_spa_datlich set thoigian = $thoigian where id = $data->id";
-  $db->query($sql);
-  
-  $result['status'] = 1;
-  $result['list'] = getList();
-  $result['datlichhomnay'] = datlichhomnay();
-  return $result;
-}
-
-function datlichhomnay() {
-  global $data, $db;
-
-  $filter = $data->filter;
-  $batdau = isodatetotime($filter->start);
-  $ketthuc = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
-
-  $sql = "select * from pet_". PREFIX ."_spa_datlich where (thoigian between $batdau and $ketthuc) order by id asc";
-  $danhsach = $db->all($sql);
- 
-  foreach ($danhsach as $key => $spa) {
-    $danhsach[$key]['thoigian'] = date('d/m/Y H:i', $spa['thoigian']);
-    $danhsach[$key]['ngaydat'] = date('d/m/Y', $spa['ngaydat']);
-  }
-
-  return $danhsach;
-}
-
 function getList() {
   global $data, $db;
 
@@ -952,14 +938,10 @@ function getList() {
     $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
 
-    $sql = "select * from pet_". PREFIX ."_spa_schedule where customerid = $row[customerid] and time > $time";
-    $near = $db->count($sql);
-
     $image = parseimage($row['image']);
     $dimage = parseimage($row['dimage']);
     $list []= array(
       'id' => $row['id'],
-      'near' => $near,
       'number' => $row['number'],
       'name' => $row['name'],
       'phone' => $row['phone'],

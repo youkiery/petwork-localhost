@@ -141,10 +141,10 @@ function getinitdata($userid) {
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
   $datlich = 0;
-  $sql = "select id from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $sql = "select id from pet_". PREFIX ."_spa_datlich where trangthai = 0 and thoigian < $cuoingay";
   $datlich += $db->count($sql);
 
-  $sql = "select id from pet_". PREFIX ."_spa_datlich where chinhanh = 0 and trangthai = 0 and thoigian < $cuoingay";
+  $sql = "select id from pet_". PREFIX ."_dieutri_datlich where and trangthai = 0 and thoigian < $cuoingay";
   $datlich += $db->count($sql);
 
   return array(
