@@ -144,7 +144,7 @@ function getinitdata($userid) {
   $sql = "select id from pet_". PREFIX ."_spa_datlich where trangthai = 0 and thoigian < $cuoingay";
   $datlich += $db->count($sql);
 
-  $sql = "select id from pet_". PREFIX ."_dieutri_datlich where and trangthai = 0 and thoigian < $cuoingay";
+  $sql = "select id from pet_". PREFIX ."_dieutri_datlich where trangthai = 0 and thoigian < $cuoingay";
   $datlich += $db->count($sql);
 
   return array(

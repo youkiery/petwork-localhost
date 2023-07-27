@@ -81,7 +81,7 @@ function savevaccine() {
 
 function spa() {
   global $db, $data, $result;
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 order by vitri asc";
   $danhsach = $db->all($sql);
 
   $result['status'] = 1;

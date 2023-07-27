@@ -43,8 +43,8 @@ else {
   $allow = array('session', 'login', 'signip');
 
   include_once(ROOTDIR. "/$data->type.php");
-
-  if (in_array($data->action, $allow) == false) {
+  
+    if (in_array($data->action, $allow) == false) {
     if ($data->type !== 'user') include_once(ROOTDIR. "/user.php");
     // if (check()) {
     //   $result['nogin'] = true;
