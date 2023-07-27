@@ -81,7 +81,7 @@ function savevaccine() {
 
 function spa() {
   global $db, $data, $result;
-  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 order by vitri asc";
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
   $danhsach = $db->all($sql);
 
   $result['status'] = 1;

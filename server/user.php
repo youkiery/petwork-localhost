@@ -88,13 +88,12 @@ function getinitdata($userid) {
   $sql = "select * from pet_". PREFIX ."_vaccine where status = 5 and userid = $userid";
   $vt = $db->count($sql);
 
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
-  $spa = $db->all($sql);
-  $ds = array();
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  $danhsachspa = $db->all($sql);
+  $ds = [];
 
-  foreach ($spa as $key => $s) {
-    if ($s['alt']) $ds []= $s['id'];
-    $spa[$key]['check'] = 0;
+  foreach ($danhsachspa as $key => $spa) {
+    if ($spa['macdinh']) $ds []= $spa['id'];
   }
 
   $sql = "select * from pet_". PREFIX ."_config where module = 'docs' and name = '$userid'";
@@ -160,7 +159,7 @@ function getinitdata($userid) {
     'admin' => $admin,
     'doctor' => $doctor,
     'type' => $type,
-    'spa' => $spa,
+    'spa' => $danhsachspa,
     'birthday' => $sinhnhat,
     'usgcode' => $usgcode,
     'today' => date('d/m/Y'),

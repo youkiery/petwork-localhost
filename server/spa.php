@@ -79,21 +79,10 @@ function init() {
 //   return $result;
 // }
 
-function toggle() {
-  global $data, $db, $result;
-
-  $sql = "update pet_". PREFIX ."_config set module = 'spa-deleted' where id = $data->id";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['list'] = gettypelist();
-  return $result;
-}
-
 function removetype() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_config set module = 'spa-deleted' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_danhmuc set kichhoat = 0 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -104,7 +93,9 @@ function removetype() {
 function updatetype() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_config set name = '$data->name' where id = $data->id";
+  if (!$time = intval($data->time)) $time = 0;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set tendanhmuc = '$data->name', thoigian = $time where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -115,10 +106,10 @@ function updatetype() {
 function inserttype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_config order by value desc limit 1";
-  $c = $db->fetch($sql);
-
-  $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('spa', '$data->name', ". (intval($c['value'] + 1)) .")";
+  if (!$time = intval($data->time)) $time = 0;
+  $sql = "insert into pet_". PREFIX ."_danhmuc (tendanhmuc, loaidanhmuc, vitri, macdinh, thoigian) values('$data->name', 0, 0, 0, $time)";
+  $id = $db->insertid($sql);
+  $sql = "update set pet_". PREFIX ."_danhmuc set vitri = $id where id = $id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -129,78 +120,52 @@ function inserttype() {
 function uptype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_config where id = $data->id";
-  $c = $db->fetch($sql);
-  $sql = "select * from pet_". PREFIX ."_config where id = $data->id2";
-  $c2 = $db->fetch($sql);
-
-  $sql = "update pet_". PREFIX ."_config set value = $c[value] where id = $data->id2";
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri2 where id = $data->id1";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_config set value = $c2[value] where id = $data->id";
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri1 where id = $data->id2";
   $db->query($sql);
-
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
-  $spa = $db->all($sql);
-  $ds = array();
-
-  foreach ($spa as $key => $s) {
-    if ($s['alt']) $ds []= $s['id'];
-    $spa[$key]['check'] = 0;
-  }
 
   $result['status'] = 1;
-  $result['list'] = $spa;
-  $result['default'] = $ds;
+  $result['list'] = gettypelist();
   return $result;
 }
 
 function downtype() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_config where id = $data->id";
-  $c = $db->fetch($sql);
-  $sql = "select * from pet_". PREFIX ."_config where id = $data->id2";
-  $c2 = $db->fetch($sql);
-
-  $sql = "update pet_". PREFIX ."_config set value = $c[value] where id = $data->id2";
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri2 where id = $data->id1";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_config set value = $c2[value] where id = $data->id";
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri1 where id = $data->id2";
   $db->query($sql);
-
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
-  $spa = $db->all($sql);
-  $ds = array();
-
-  foreach ($spa as $key => $s) {
-    if ($s['alt']) $ds []= $s['id'];
-    $spa[$key]['check'] = 0;
-  }
 
   $result['status'] = 1;
-  $result['list'] = $spa;
-  $result['default'] = $ds;
+  $result['list'] = gettypelist();
   return $result;
 }
 
 function toggletype() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_config set alt = '". (intval(!$data->alt) ? 1 : '') ."' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_danhmuc set macdinh = '". (intval(!$data->alt) ? 1 : '') ."' where id = $data->id";
   $db->query($sql);
 
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
-  $spa = $db->all($sql);
-  $ds = array();
-
-  foreach ($spa as $key => $s) {
-    if ($s['alt']) $ds []= $s['id'];
-    $spa[$key]['check'] = 0;
-  }
-
   $result['status'] = 1;
-  $result['list'] = $spa;
-  $result['default'] = $ds;
+  $result['list'] = gettypelist();
+  $result['default'] = danhsachmacdinh();
   return $result;
+}
+
+function danhsachmacdinh() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  $danhsachspa = $db->all($sql);
+  $danhsach = array();
+
+  foreach ($danhsachspa as $key => $spa) {
+    if ($spa['macdinh']) $danhsach []= $spa['id'];
+  }
+  return $danhsach;
 }
 
 function remove() {
@@ -304,7 +269,7 @@ function coverData($data) {
 
   $list = array();
   foreach ($data as $key => $row) {
-    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
     $service = $db->arr($sql, 'name');
   
     $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
@@ -856,7 +821,7 @@ function work() {
     // kiêm tra xong chưa, nếu rồi đẩy vào data
     // nễu chưa đẩy vào 0
     $row['customer'] = getcustomer($row['customerid']);
-    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
     $row['option'] = implode(',', $db->arr($sql, 'name'));
     $row['image'] = parseimage($row['image']);
 
@@ -916,17 +881,17 @@ function getList() {
   $sql = "select a.*, b.name, b.phone, c.fullname as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
   $spa = array_merge($spa, $db->all($sql));
 
-  $sql = "select * from pet_". PREFIX ."_config where module = 'spa'";
-  $option_list = $db->obj($sql, 'name');
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0";
+  $option_list = $db->obj($sql, 'tendanhmuc');
 
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
   $list = array();
   foreach ($spa as $row) {
-    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
-    $service = $db->arr($sql, 'name');
+    $sql = "select b.tendanhmuc from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
+    $service = $db->arr($sql, 'tendanhmuc');
 
-    $sql = "select b.id from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_config b on a.spaid = $row[id] and a.typeid = b.id";
+    $sql = "select b.id from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
     $option = $db->arr($sql, 'id');
 
     $sql = "select name, phone from pet_". PREFIX ."_customer where id = $row[customerid2]";
@@ -973,12 +938,8 @@ function getList() {
 function gettypelist() {
   global $db;
 
-  $sql = "select id, name, value, alt from pet_". PREFIX ."_config where module = 'spa' order by value asc";
-  $spa = $db->all($sql);
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  $danhsach = $db->all($sql);
 
-  foreach ($spa as $key => $s) {
-    $spa[$key]['check'] = 0;
-  }
-
-  return $spa;
+  return $danhsach;
 }
