@@ -109,7 +109,7 @@ function inserttype() {
   if (!$time = intval($data->time)) $time = 0;
   $sql = "insert into pet_". PREFIX ."_danhmuc (tendanhmuc, loaidanhmuc, vitri, macdinh, thoigian) values('$data->name', 0, 0, 0, $time)";
   $id = $db->insertid($sql);
-  $sql = "update set pet_". PREFIX ."_danhmuc set vitri = $id where id = $id";
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $id where id = $id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -517,7 +517,7 @@ function insert() {
   $sql = "update pet_". PREFIX ."_customer set tinhcach = '$data->tinhcach' where id = $customerid";
   $db->query($sql);
   if (isset($data->datlich) && $data->datlich > 0) {
-    $sql = "update pet_". PREFIX ."_spa_datlich set trangthai = 1 where id = $data->datlich";
+    $sql = "update pet_". PREFIX ."_datlich set trangthai = 1 where id = $data->datlich";
     $db->query($sql);
   }
 

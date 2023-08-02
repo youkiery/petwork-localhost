@@ -841,9 +841,17 @@ function khoitaoloai() {
   global $data, $db, $result;
 
   $result['status'] = 1;
+  $result['loaidichvu'] = danhsachdichvu();
   $result['loainhac'] = dulieuloai();
   $result['loaicong'] = dulieucong();
   return $result;
+}
+
+function danhsachdichvu() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 1 and kichhoat = 1 order by vitri asc";
+  return $db->all($sql);
 }
 
 function dulieuloai() {
@@ -967,5 +975,81 @@ function xemdieutri() {
   }
   $result['status'] = 1;
   $result['danhsach'] = $list;
+  return $result;
+}
+
+
+function updatetype() {
+  global $data, $db, $result;
+
+  if (!$time = intval($data->time)) $time = 0;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set tendanhmuc = '$data->name', thoigian = $time where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
+  return $result;
+}
+
+function inserttype() {
+  global $data, $db, $result;
+
+  if (!$time = intval($data->time)) $time = 0;
+  $sql = "insert into pet_". PREFIX ."_danhmuc (tendanhmuc, loaidanhmuc, vitri, macdinh, thoigian) values('$data->name', 1, 0, 0, $time)";
+  $id = $db->insertid($sql);
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $id where id = $id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
+  return $result;
+}
+
+function uptype() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri2 where id = $data->id1";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri1 where id = $data->id2";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
+  return $result;
+}
+
+function downtype() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri2 where id = $data->id1";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->vitri1 where id = $data->id2";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
+  return $result;
+}
+
+function toggletype() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set macdinh = '". (intval(!$data->alt) ? 1 : '') ."' where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
+  return $result;
+}
+
+function removetype() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_danhmuc set kichhoat = 0 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdichvu();
   return $result;
 }

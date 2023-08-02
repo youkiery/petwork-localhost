@@ -331,9 +331,10 @@ function getList() {
     'nhantin' => 0,
     'loinhuan' => 0,
     'datlich' => 0,
+    'danhgia' => 0,
   ];
 
-  $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1 and userid <> 1";
+  $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {

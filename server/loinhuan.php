@@ -105,7 +105,7 @@ function laydanhsachnhaplieu() {
   $sql = "select a.idnhanvien, a.tietkiem, a.cophan, b.fullname as ten from pet_". PREFIX ."_luong_dulieu a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where a.thoigian between $dauthang and $cuoithang order by b.fullname asc";
   $danhsach = $db->all($sql);
   
-  $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where active = 1 and userid <> 1";
+  $sql = "select userid as idnhanvien, fullname as ten, 0 as tietkiem, 0 as cophan from pet_". PREFIX ."_users where active = 1";
   $danhsachtam = $db->all($sql);
   foreach ($danhsachtam as $thongtin) {
     $kiemtra = false;
@@ -641,7 +641,7 @@ function laycauhinhdoanhthu() {
 function danhsachchotlich() {
   global $data, $db;
 
-  $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
+  $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
   $danhsachnhanvien = $db->all($sql);
   $danhsach = array();
   $dulieu = array();

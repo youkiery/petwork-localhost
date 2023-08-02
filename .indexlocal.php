@@ -169,11 +169,13 @@ $list = $db->all($sql);
 $data = array();
 foreach ($list as $row) {
   $tablename = $row['table_name'];
-  $data[$tablename] = array();
-  $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$config[database]' AND TABLE_NAME = '$tablename'";
-  $l = $db->all($sql);
-  foreach ($l as $r) {
-    $data[$tablename] []= $r['COLUMN_NAME'];
+  if (strpos($tablename, "test") !== false) {
+    $data[$tablename] = array();
+    $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '$config[database]' AND TABLE_NAME = '$tablename'";
+    $l = $db->all($sql);
+    foreach ($l as $r) {
+      $data[$tablename] []= $r['COLUMN_NAME'];
+    }
   }
 }
 

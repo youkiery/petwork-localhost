@@ -139,12 +139,8 @@ function getinitdata($userid) {
 
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $datlich = 0;
-  $sql = "select id from pet_". PREFIX ."_spa_datlich where trangthai = 0 and thoigian < $cuoingay";
-  $datlich += $db->count($sql);
-
-  $sql = "select id from pet_". PREFIX ."_dieutri_datlich where trangthai = 0 and thoigian < $cuoingay";
-  $datlich += $db->count($sql);
+  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and thoigian < $cuoingay";
+  $datlich = $db->count($sql);
 
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
@@ -331,6 +327,7 @@ function permission($userid) {
     'nhantin' => 0,
     'loinhuan' => 0,
     'datlich' => 0,
+    'danhgia' => 0,
   ];
 
   if ($userid == 1) {

@@ -11,9 +11,7 @@ function henngay() {
   global $data, $db, $result;
   
   $ngayhen = isodatetotime($data->ngayhen);
-  if (empty($data->loai)) $loai = "spa";
-  else $loai = "dieutri";
-  $sql = "update pet_". PREFIX ."_". $loai ."_datlich set thoigian = $ngayhen where id = $data->id";
+  $sql = "update pet_". PREFIX ."_datlich set thoigian = $ngayhen where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -24,9 +22,18 @@ function henngay() {
 function khongden() {
   global $data, $db, $result;
   
-  if (empty($data->loai)) $loai = "spa";
-  else $loai = "dieutri";
-  $sql = "update pet_". PREFIX ."_". $loai ."_datlich set trangthai = 2 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_datlich set trangthai = 2 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachdatlich();
+  return $result;
+}
+
+function dadendieutri() {
+  global $data, $db, $result;
+  
+  $sql = "update pet_". PREFIX ."_datlich set trangthai = 1 where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -42,24 +49,23 @@ function danhsachdatlich() {
   global $data, $db, $result;
 
   if (!empty($data->tukhoa)) {
-    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach, 0 as loai from pet_". PREFIX ."_spa_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where b.name like '%$data->tukhoa%' or b.phone like '%$data->tukhoa%'";
+    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where b.name like '%$data->tukhoa%' or b.phone like '%$data->tukhoa%'";
     $danhsach = $db->all($sql);
-    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach, 1 as loai from pet_". PREFIX ."_dieutri_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where b.name like '%$data->tukhoa%' or b.phone like '%$data->tukhoa%'";
-    array_merge($danhsach, $db->all($sql));
   }
   else {
     $daungay = strtotime(date("Y/m/d"));
     $cuoingay = $daungay + 60 * 60 * 24 - 1;
-    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach, 0 as loai from pet_". PREFIX ."_spa_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where (thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay)";
+    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach, 0 as loai from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where (thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay)";
     $danhsach = $db->all($sql);
-    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach, 1 as loai from pet_". PREFIX ."_dieutri_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where (thoigian between $daungay and $cuoingay) or (trangthai = 0 and thoigian < $daungay)";
-    $danhsach = array_merge($danhsach, $db->all($sql));
   }
 
   usort($danhsach, "sosanhthoigian");
 
   foreach ($danhsach as $key => $value) {
     $danhsach[$key]['thoigian'] = date("d/m/Y H:i", $value["ngaydat"]);
+    $sql = "select a.id, a.tendanhmuc from pet_". PREFIX ."_danhmuc a inner join pet_". PREFIX ."_datlichchitiet b on a.id = b.iddanhmuc where b.iddatlich = $value[id]";
+    $danhsach[$key]["dichvu"] = implode(", ", $db->arr($sql, "tendanhmuc"));
+    $danhsach[$key]["iddichvu"] = $db->arr($sql, "id");
   }
 
   return $danhsach;
