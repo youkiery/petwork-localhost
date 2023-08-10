@@ -332,9 +332,10 @@ function getList() {
     'loinhuan' => 0,
     'datlich' => 0,
     'danhgia' => 0,
+    'chuyenmon' => 0,
   ];
 
-  $sql = "select name, username, fullname, userid, placeid, birthday from pet_". PREFIX ."_users where active = 1";
+  $sql = "select name, username, fullname, userid, placeid, birthday, photo from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
@@ -396,7 +397,7 @@ function signup() {
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, $birthday, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -415,7 +416,7 @@ function updateuser() {
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $birthday = isodatetotime($data->birthday);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
@@ -1263,3 +1264,82 @@ function xoaloai() {
   $result['loainhac'] = dulieuloai();
   return $result;
 }
+
+function khoitaothongkespa() {
+  global $data, $db, $result;
+
+  $dulieu = [
+    "ngay" => [
+      "labels" => [],
+      "datasets" => [[
+        "label" => "Ngày",
+        "data" => [],
+        "backgroundColor" => 'pink',
+      ]],
+    ],
+    "thu" => [
+      "labels" => ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+      "datasets" => [[
+        "label" => "Thứ",
+        "data" => [0, 0, 0, 0, 0, 0, 0],
+        "backgroundColor" => 'lightgreen',
+      ]],
+    ],
+    "gio" => [
+      "labels" => [],
+      "datasets" => [[
+        "label" => "Giờ",
+        "data" => [],
+        "backgroundColor" => 'lightblue',
+      ]],
+    ],
+  ];
+  $thoigian = isodatetotime($data->thoigian);
+  $dauthang = strtotime(date("Y/m/1", $thoigian));
+  $cuoithang = strtotime(date("Y/m/t", $thoigian)) + 60 * 60 * 24 - 1;
+  $tongngay = date("t", $thoigian);
+  $thang = date("m", $thoigian);
+  $doithu = [0 => 6, 0, 1, 2, 3, 4, 5];
+
+  for ($i = 1; $i <= $tongngay; $i++) { 
+    $dulieu["ngay"]["labels"] []= ($i < 10 ? "0$i" : $i) ."/$thang";
+    $dulieu["ngay"]["datasets"][0]["data"] []= 0;
+  }
+
+  for ($i = 0; $i < 24; $i++) { 
+    $dulieu["gio"]["labels"] []= ($i < 10 ? "0$i" : $i) . "h";
+    $dulieu["gio"]["datasets"][0]["data"] []= 0;
+  }
+
+  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthang and $cuoithang) group by thoigian";
+  $danhsach = $db->all($sql);
+  $danhsachtonghop = [];
+
+  // tổng hợp dữ liệu, gộp các khách hàng làm nhiều dịch vụ từ các nhân viên khác nhau
+  foreach ($danhsach as $spa) {
+    $ngay = date('d', $spa["thoigian"]);
+    $gio = date('H', $spa["thoigian"]);
+    if (empty($danhsachtonghop[$spa['idkhach']])) $danhsachtonghop[$spa['idkhach']] = [];
+    if (empty($danhsachtonghop[$spa['idkhach']][$ngay])) $danhsachtonghop[$spa['idkhach']][$ngay] = [];
+    if (empty($danhsachtonghop[$spa['idkhach']][$ngay][$gio])) $danhsachtonghop[$spa['idkhach']][$ngay][$gio] = 1;
+  }
+
+  // echo json_encode($dulieu); die();
+  // echo json_encode($danhsachtonghop); die();
+
+  foreach ($danhsachtonghop as $idkhach => $dulieukhach) {
+    foreach ($dulieukhach as $ngay => $dulieungay) {
+      $thu = date("w", strtotime(date("Y/$thang/$ngay")));
+      $dulieu["ngay"]["datasets"][0]["data"][intval($ngay) - 1] ++;
+      $dulieu["thu"]["datasets"][0]["data"][$doithu[$thu]] ++;
+      foreach ($dulieungay as $gio => $giatri) {
+        $dulieu["gio"]["datasets"][0]["data"][intval($gio)] ++;
+      }
+    }
+  }
+
+  $result['status'] = 1;
+  $result['data'] = $dulieu;
+  return $result;
+}
+

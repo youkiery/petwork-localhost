@@ -501,6 +501,7 @@ function insert() {
   if ($data->khonglam) {
     $duser = chuyenngaunhien();
   }
+  else if (isset($data->duser) && $data->duser > 0) $duser = $data->duser;
   else if ($data->did) $duser = $userid;
   else $duser = 0;
   

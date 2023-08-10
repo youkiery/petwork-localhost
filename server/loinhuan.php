@@ -992,7 +992,7 @@ function tinhloinhuan() {
   $sql = "select sum(giatri) as tong from pet_". PREFIX ."_taichinh_chi where thoigian between $dauthang and $cuoithang";
   $chithuongxuyen = intval($db->fetch($sql)['tong']);
 
-  $sql = "select sum(tongluong) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
+  $sql = "select sum(tongluong - nghiphep) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
   $chiluongthuong = intval($db->fetch($sql)['tong']);
 
   $sql = "select sum(cophan) as tong from pet_". PREFIX ."_luong_dulieu where thoigian between $dauthang and $cuoithang";
