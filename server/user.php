@@ -139,7 +139,7 @@ function getinitdata($userid) {
 
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and thoigian < $cuoingay";
+  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and ngaydat < $cuoingay";
   $datlich = $db->count($sql);
 
   return array(
@@ -321,6 +321,7 @@ function permission($userid) {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'thongkenghi' => 0,
     'thietbi' => 0,
     'taichinh' => 0,
     'work' => 0,

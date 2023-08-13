@@ -9,14 +9,14 @@ $objReader = PHPExcel_IOFactory::createReader($inputFileType);
 $objReader->setReadDataOnly(true);
 $objPHPExcel = $objReader->load($file);
 
-$homnay = time();
-for ($i = 0; $i < 7; $i++) { 
-  $ngay = $homnay + $i * 60 * 60 * 24;
-  $thu = date("w", $ngay);
-  $ngaythang = date("d/m", $ngay);
-  echo  "$thu: $ngaythang <br>"; 
-}
-die();
+// $homnay = time();
+// for ($i = 0; $i < 7; $i++) { 
+//   $ngay = $homnay + $i * 60 * 60 * 24;
+//   $thu = date("w", $ngay);
+//   $ngaythang = date("d/m", $ngay);
+//   echo  "$thu: $ngaythang <br>"; 
+// }
+// die();
 
 // $x = array();
 // $xr = array(0 => 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AM', 'AN', 'AO', 'AP', 'AQ', 'AR', 'AS', 'AT', 'AU', 'AV', 'AW', 'AX', 'AY', 'AZ', 'BA', 'BB', 'BC', 'BD', 'BE', 'BF', 'BG', 'BH', 'HI', 'BJ', 'BK', 'BL', 'BM', 'BN', 'BO');

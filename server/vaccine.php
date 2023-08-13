@@ -515,12 +515,12 @@ function excel() {
 
   foreach ($exdata as $row) {
     $res['total'] ++;
+    kiemtraspa($row, $danhsachspa);
     if (empty($row[2])) { }
     else {
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
-      kiemtraspa($row, $danhsachspa);
       kiemtranhantin($row);
     }
   }
@@ -635,7 +635,7 @@ function kiemtranhanvien($tennhanvien) {
 function chuyendoithoigian($dulieu) {
   $thoigian = explode(' ', $dulieu);
   $ngay = explode('/', $thoigian[0]);
-  return strtotime("$ngay[2]/$ngay[1]/$ngay[0]");
+  return strtotime("$ngay[2]/$ngay[1]/$ngay[0] $thoigian[1]");
 }
 
 function kiemtranhantin($dulieu) {

@@ -84,6 +84,11 @@ function spa() {
   $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
   $danhsach = $db->all($sql);
 
+  foreach ($danhsach as $key => $spa) {
+    $sql = "select khoangcan, sotien from pet_". PREFIX ."_danhmucgia where iddanhmuc = $spa[id] order by id asc";
+    $danhsach[$key]["khoangcan"] = $db->all($sql);
+  }
+
   $result['status'] = 1;
   $result['list'] = $danhsach;
   $result['loainhac'] = dulieuloai();
@@ -120,6 +125,47 @@ function filter() {
   $result['status'] = 1;
   $result['list'] = filterUser();
   return $result;
+}
+
+function themspa() {
+  global $data, $db, $result;
+
+  if (!$thoigian = intval($data->thoigian)) $thoigian = 0;
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_danhmuc set tendanhmuc = '$data->ten', thoigian = $thoigian where id = $data->id";
+    $db->query($sql);
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_danhmuc (tendanhmuc, loaidanhmuc, vitri, macdinh, thoigian) values('$data->ten', 0, 0, 0, $thoigian)";
+    $data->id = $db->insertid($sql);
+    $sql = "update pet_". PREFIX ."_danhmuc set vitri = $data->id where id = $data->id";
+    $db->query($sql);
+  }
+
+  $sql = "delete from pet_". PREFIX ."_danhmucgia where iddanhmuc = $data->id";
+  $db->query($sql);
+
+  foreach ($data->khoangcan as $dulieu) {
+    $sql = "insert into pet_". PREFIX ."_danhmucgia (iddanhmuc, khoangcan, sotien) values($data->id, '$dulieu->khoangcan', $dulieu->sotien)";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['list'] = danhsachdanhmucspa();
+  return $result;
+}
+
+function danhsachdanhmucspa() {
+  global $data, $db, $result;
+  
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $key => $spa) {
+    $sql = "select khoangcan, sotien from pet_". PREFIX ."_danhmucgia where iddanhmuc = $spa[id] order by id asc";
+    $danhsach[$key]["khoangcan"] = $db->all($sql);
+  }
+  return $danhsach;
 }
 
 function toggle() {
@@ -325,6 +371,7 @@ function getList() {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'thongkenghi' => 0,
     'thietbi' => 0,
     'taichinh' => 0,
     'work' => 0,
@@ -335,7 +382,7 @@ function getList() {
     'chuyenmon' => 0,
   ];
 
-  $sql = "select name, username, fullname, userid, placeid, birthday, photo from pet_". PREFIX ."_users where active = 1";
+  $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
@@ -397,7 +444,7 @@ function signup() {
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -416,7 +463,7 @@ function updateuser() {
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $birthday = isodatetotime($data->birthday);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
@@ -1311,7 +1358,7 @@ function khoitaothongkespa() {
     $dulieu["gio"]["datasets"][0]["data"] []= 0;
   }
 
-  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthang and $cuoithang) group by thoigian";
+  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthang and $cuoithang)";
   $danhsach = $db->all($sql);
   $danhsachtonghop = [];
 

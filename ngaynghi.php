@@ -22,9 +22,9 @@ $nhanvien = [
   "22" => "85", // minh
   "23" => "91", // nho huong
   "24" => "90", // chanh
-  "0" => "71", // nhung
-  "0" => "20", // huong lon
-  "0" => "18", // nana
+  "14" => "71", // nhung
+  "21" => "20", // huong lon
+  "3" => "18", // nana
 ];
 
 $thoigiandulieu = "2023/07/01";
