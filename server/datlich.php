@@ -7,6 +7,50 @@ function khoitao() {
   return $result;
 }
 
+function tonghop() {
+  global $data, $db, $result;
+  
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachtonghop();
+  return $result;
+}
+
+function danhsachtonghop() {
+  global $data, $db, $result;
+
+  $batdau = strtotime(date("Y/m/d"));
+  $ketthuc = strtotime("last day of +1 month") + 60 * 60 * 24 - 1;
+  $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachdat = b.id where (ngaydat between $batdau and $ketthuc) or (ngaydat < $batdau and trangthai = 0) order by ngaydat";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $key => $value) {
+    $danhsach[$key]['thoigian'] = date("d/m/Y H:i", $value["ngaydat"]);
+    $sql = "select a.id, a.tendanhmuc from pet_". PREFIX ."_danhmuc a inner join pet_". PREFIX ."_datlichchitiet b on a.id = b.iddanhmuc where b.iddatlich = $value[id]";
+    $danhsach[$key]["dichvu"] = implode(", ", $db->arr($sql, "tendanhmuc"));
+    $danhsach[$key]["iddichvu"] = $db->arr($sql, "id");
+
+    $danhsach[$key]["lientiep"] = "";
+    $homnay = strtotime(date("Y/m/d", $value["ngaydat"]));
+    $homsau = $homnay + 2 * 24 * 24 * 60 - 1;
+    $sql = "select * from pet_". PREFIX ."_datlich where ((idkhachhang > 0 and idkhachhang = $value[idkhachhang]) or (ip = $value[ip])) and (ngaydat between $homnay and $homsau) and trangthai = 0 and id <> $value[id] order by ngaydat desc";
+    if ($datsau = $db->fetch($sql)) {
+      $danhsach[$key]["lientiep"] = date("d/m/Y H:i", $datsau["ngaydat"]);
+    }
+
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $value[idnhanvien]";
+
+    if (empty($nhanvien = $db->fetch($sql))) {
+        $danhsach[$key]["nhanvien"] = "";
+        $danhsach[$key]["idnhanvien"] = 0;
+    }
+    else {
+        $danhsach[$key]["nhanvien"] = $nhanvien["fullname"];
+    }
+  }
+
+  return $danhsach;
+}
+
 function henngay() {
   global $data, $db, $result;
   
@@ -27,6 +71,17 @@ function khongden() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
+  return $result;
+}
+
+function khongdentonghop() {
+  global $data, $db, $result;
+  
+  $sql = "update pet_". PREFIX ."_datlich set trangthai = 2 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachtonghop();
   return $result;
 }
 
