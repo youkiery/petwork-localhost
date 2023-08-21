@@ -108,9 +108,9 @@ function danhsachdatlich() {
     $danhsach = $db->all($sql);
   }
   else {
-    $daungay = strtotime(date("Y/m/d"));
-    $cuoingay = $daungay + 60 * 60 * 24 - 1;
-    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachdat = b.id where (ngaydat between $daungay and $cuoingay) or (trangthai = 0 and ngaydat < $daungay)";
+    $tungay = strtotime(date("Y/m/d", isodatetotime($data->tungay)));
+    $denngay = strtotime(date("Y/m/d", isodatetotime($data->denngay))) + 60 * 60 * 24 - 1;
+    $sql = "select a.*, b.phone as dienthoai, b.name as tenkhach from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_customer b on a.idkhachdat = b.id where (ngaydat between $tungay and $denngay) or (trangthai = 0 and ngaydat < $tungay)";
     $danhsach = $db->all($sql);
   }
 
