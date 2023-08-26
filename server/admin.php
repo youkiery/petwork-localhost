@@ -372,6 +372,7 @@ function getList() {
     'accounting' => 0,
     'vattu' => 0,
     'lichban' => 0,
+    'tintuc' => 0,
     'thongkenghi' => 0,
     'thietbi' => 0,
     'taichinh' => 0,

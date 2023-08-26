@@ -142,6 +142,9 @@ function getinitdata($userid) {
   $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and ngaydat < $cuoingay";
   $datlich = $db->count($sql);
 
+  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and (thoigian between $daungay and $cuoingay)";
+  $datlich2 = $db->count($sql);
+
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
     'prefix' => PREFIX,
@@ -149,6 +152,7 @@ function getinitdata($userid) {
     'userid' => $userid,
     'chotlich' => $chotlich,
     'datlich' => $datlich,
+    'datlich2' => $datlich2,
     'username' => $userinfo['username'],
     'name' => $userinfo['name'],
     'fullname' => $userinfo['fullname'],
@@ -322,6 +326,7 @@ function permission($userid) {
     'accounting' => 0,
     'vattu' => 0,
     'lichban' => 0,
+    'tintuc' => 0,
     'thongkenghi' => 0,
     'thietbi' => 0,
     'taichinh' => 0,
