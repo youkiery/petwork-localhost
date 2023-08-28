@@ -216,7 +216,11 @@ function danhsachnhantin() {
   $sql = "select a.id, b.id as idkhachhang, b.name as khachhang, b.phone as dienthoai from pet_". PREFIX ."_nhomtinlienket a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id where a.idnhomtin = $data->id";
   $danhsach = $db->all($sql);
   $danhsachbien = ['[idkhachhang]' => 'idkhachhang', '[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai'];
-  $mautin = str_replace('<br>', PHP_EOL, $data->mautin);
+
+  $sql = "select * from pet_". PREFIX ."_nhomtin where id = $data->id";
+  $nhomtin = $db->fetch($sql);
+  
+  $mautin = str_replace('<br>', PHP_EOL, $nhomtin['mautin']);
 
   foreach ($danhsach as $thutu => $khachhang) {
     $sql = "select * from pet_". PREFIX ."_nhomtinchitiet where idlienket = $khachhang[id]";

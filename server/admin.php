@@ -1376,15 +1376,33 @@ function khoitaothongkespa() {
   // echo json_encode($dulieu); die();
   // echo json_encode($danhsachtonghop); die();
 
+  $dulieuthu = [0 => [], [], [], [], [], [], []];
   foreach ($danhsachtonghop as $idkhach => $dulieukhach) {
     foreach ($dulieukhach as $ngay => $dulieungay) {
-      $thu = date("w", strtotime(date("Y/$thang/$ngay")));
+      $thoigian = strtotime(date("Y/$thang/$ngay"));
+      $ngaythang = date("d/m", $thoigian);
+      $thu = date("w", $thoigian);
+      if (empty($dulieuthu[$thu][$ngaythang])) $dulieuthu[$thu][$ngaythang] = 0;
+      $dulieuthu[$thu][$ngaythang] ++;
       $dulieu["ngay"]["datasets"][0]["data"][intval($ngay) - 1] ++;
-      $dulieu["thu"]["datasets"][0]["data"][$doithu[$thu]] ++;
-      foreach ($dulieungay as $gio => $giatri) {
-        $dulieu["gio"]["datasets"][0]["data"][intval($gio)] ++;
-      }
     }
+  }
+
+  $sql = "select * from pet_". PREFIX ."_spa where time between $dauthang and $cuoithang";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $spa) {
+    $gio = date("H", $spa["time"]);
+    $dulieu["gio"]["datasets"][0]["data"][intval($gio)] ++;
+  }
+
+  foreach ($dulieuthu as $thu => $danhsachdulieu) {
+    $tongluot = 0;
+    foreach ($danhsachdulieu as $luotkhach) {
+      $tongluot += $luotkhach;
+    }
+    if (!count($danhsachdulieu)) $dulieu["thu"]["datasets"][0]["data"][$doithu[$thu]] = 0;
+    else $dulieu["thu"]["datasets"][0]["data"][$doithu[$thu]] = round($tongluot / count($danhsachdulieu));
   }
 
   $result['status'] = 1;
