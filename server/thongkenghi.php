@@ -282,6 +282,7 @@ function dulieuthongke() {
   // kiểm tra ngày đó có bao 
   $danhsach = [];
   foreach ($ketquachamcong as $idnhanvien => $dulieu) {
+    if (!isset($danhsachnhanvien[$idnhanvien])) continue;
     $hoten = explode(" ", $danhsachnhanvien[$idnhanvien]);
     // 0: xanh: chấm công đầy đủ
     // 1: xám: nhân viên nghỉ ngày đó
