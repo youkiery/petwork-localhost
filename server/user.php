@@ -325,6 +325,7 @@ function permission($userid) {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'tailieu' => 0,
     'lichban' => 0,
     'tintuc' => 0,
     'thongkenghi' => 0,
