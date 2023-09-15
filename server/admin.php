@@ -373,15 +373,13 @@ function getList() {
     'vattu' => 0,
     'tailieu' => 0,
     'lichban' => 0,
-    'tintuc' => 0,
     'thongkenghi' => 0,
     'thietbi' => 0,
     'taichinh' => 0,
     'work' => 0,
     'nhantin' => 0,
     'loinhuan' => 0,
-    'datlich' => 0,
-    'danhgia' => 0,
+    'khachhang' => 0,
     'chuyenmon' => 0,
   ];
 
