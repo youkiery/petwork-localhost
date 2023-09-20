@@ -315,3 +315,34 @@ function danhsachdanhgia() {
 
   return $danhsach;
 }
+
+function khoitaochinhanh() {
+  global $data, $db, $result;
+  
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachchinhanh();
+  return $result;
+}
+
+function danhsachchinhanh() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_chinhanh order by id";
+  return $db->all($sql);
+}
+
+function themchinhanh() {
+  global $data, $db, $result;
+  
+  if (!empty($data->id)) {
+    $sql = "update pet_chinhanh set tenchinhanh = '$data->tenchinhanh', diachi = '$data->diachi', dienthoai = '$data->dienthoai', hinhanh = '$data->image' where id = $data->id";
+  }
+  else {
+    $sql = "insert into pet_chinhanh (tenchinhanh, diachi, dienthoai, hinhanh) values('$data->tenchinhanh', '$data->diachi', '$data->dienthoai', '$data->image')";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachchinhanh();
+  return $result;
+}
