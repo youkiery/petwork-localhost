@@ -1317,6 +1317,10 @@ function khoitaothongkespa() {
   global $data, $db, $result;
 
   $dulieu = [
+    "tong" => 0,
+    "thangtruoc" => 0,
+    "chenhlech" => 0,
+    "tanggiam" => 0,
     "ngay" => [
       "labels" => [],
       "datasets" => [[
@@ -1342,6 +1346,9 @@ function khoitaothongkespa() {
       ]],
     ],
   ];
+  $thoigian = time();
+  $dauthangnay = strtotime(date("Y/m/1", $thoigian));
+
   $thoigian = isodatetotime($data->thoigian);
   $dauthang = strtotime(date("Y/m/1", $thoigian));
   $cuoithang = strtotime(date("Y/m/t", $thoigian)) + 60 * 60 * 24 - 1;
@@ -1359,6 +1366,26 @@ function khoitaothongkespa() {
     $dulieu["gio"]["datasets"][0]["data"] []= 0;
   }
 
+  if ($dauthangnay == $dauthang) $cuoithangtruoc = strtotime(date("Y/m/d")) - 1;
+  else $cuoithangtruoc = $dauthang - 1;
+  $dauthangtruoc = strtotime(date("Y/m/1", $cuoithangtruoc));
+
+  $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthangtruoc and $cuoithangtruoc)";
+  $danhsach = $db->all($sql);
+  $danhsachthangtruoc = [];
+
+  foreach ($danhsach as $spa) {
+    $ngay = date('d', $spa["thoigian"]);
+    if (empty($danhsachthangtruoc[$spa['idkhach']])) $danhsachthangtruoc[$spa['idkhach']] = [];
+    if (empty($danhsachthangtruoc[$spa['idkhach']][$ngay])) $danhsachthangtruoc[$spa['idkhach']][$ngay] = [];
+  }
+  
+  foreach ($danhsachthangtruoc as $idkhach => $dulieukhach) {
+    foreach ($dulieukhach as $ngay => $dulieungay) {
+      $dulieu["thangtruoc"] ++;
+    }
+  }
+
   $sql = "select * from pet_". PREFIX ."_spadichvu where (thoigian between $dauthang and $cuoithang)";
   $danhsach = $db->all($sql);
   $danhsachtonghop = [];
@@ -1373,11 +1400,11 @@ function khoitaothongkespa() {
   }
 
   // echo json_encode($dulieu); die();
-  // echo json_encode($danhsachtonghop); die();
 
   $dulieuthu = [0 => [], [], [], [], [], [], []];
   foreach ($danhsachtonghop as $idkhach => $dulieukhach) {
     foreach ($dulieukhach as $ngay => $dulieungay) {
+      $dulieu["tong"] ++;
       $thoigian = strtotime(date("Y/$thang/$ngay"));
       $ngaythang = date("d/m", $thoigian);
       $thu = date("w", $thoigian);
@@ -1385,6 +1412,13 @@ function khoitaothongkespa() {
       $dulieuthu[$thu][$ngaythang] ++;
       $dulieu["ngay"]["datasets"][0]["data"][intval($ngay) - 1] ++;
     }
+  }
+
+  if ($dulieu["tong"] > 0 && $dulieu["thangtruoc"]) {
+    $chenhlech = $dulieu["tong"] - $dulieu["thangtruoc"];
+    if ($chenhlech > 0) $dulieu["tanggiam"] = 1;
+    else $dulieu["tanggiam"] = 0;
+    $dulieu["chenhlech"] = round($chenhlech * 100 / $dulieu["thangtruoc"], 1);
   }
 
   $sql = "select * from pet_". PREFIX ."_spa where time between $dauthang and $cuoithang";

@@ -15,7 +15,7 @@ function download() {
     $query = $db->query($sql);
     $prof = $query->fetch_assoc();
     
-    $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile'";
+    $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile' order by pos";
     $query = $db->query($sql);
     $prof['target'] = array();
     while ($row = $query->fetch_assoc()) {
@@ -136,7 +136,7 @@ function get() {
   $sql = "select * from pet_". PREFIX ."_profile where id = $id";
   $query = $db->query($sql);
   $data = $query->fetch_assoc();
-  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $id and a.tid = b.id and b.module = 'profile'";
+  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $id and a.tid = b.id and b.module = 'profile' order by pos asc";
   $query = $db->query($sql);
   $data['target'] = array();
   $i = 1;
@@ -287,7 +287,7 @@ function updateprofile() {
 function insert() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by id asc";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos";
   $query = $db->query($sql);
   $list = $db->all($sql);
   $userid = checkuserid();
@@ -332,7 +332,7 @@ function printword() {
   $sql = "select * from pet_". PREFIX ."_profile where id = $data->id";
   $prof = $db->fetch($sql);
 
-  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile'";
+  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile' order by pos";
   $l = $db->all($sql);
   $prof['target'] = array();
   $i = 1;
@@ -554,7 +554,7 @@ function specieslist() {
 function initsample() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by id asc";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos asc";
   $sql2 = "select id, value as name from pet_". PREFIX ."_config where module = 'profile' and name = 'sampletype' order by value asc";
 
   $result['status'] = 1;
@@ -566,7 +566,7 @@ function initsample() {
 function targetlist() {
   global $db;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by id asc";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos asc";
 
   return $db->all($sql);
 }
