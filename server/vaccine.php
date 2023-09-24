@@ -658,7 +658,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
       $sql = "select * from pet_". PREFIX ."_vaccine where petid = $idthucung and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
 
       if (empty($db->fetch($sql))) {
-        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$thongtin[ghichu]', 5, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
+        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$thongtin[ghichu]', 0, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
           $res['vaccine'] ++;
           $homnay = strtotime(date('Y/m/d')) + 8 * 60 * 60 * 24 - 1;
@@ -695,7 +695,7 @@ function kiemtrasieuam($dulieu, $dulieusieuam, $danhsachbacsi, $ngatdong) {
       $db->query($sql);
       $sql = "select * from pet_". PREFIX ."_usg where customerid = $idkhach and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
       if (empty($r = $db->fetch($sql))) {
-        $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($idkhach, $idnhanvien, $ngayden, $thongtin[ngaynhac], $thongtin[ngaynhac], '$thongtin[thucung]', 9, '$thongtin[ghichu]', ". time() .", 0)";
+        $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values($idkhach, $idnhanvien, $ngayden, $thongtin[ngaynhac], $thongtin[ngaynhac], '$thongtin[thucung]', 3, '$thongtin[ghichu]', ". time() .", 0)";
         $db->query($sql);
       }
     } 
