@@ -13,8 +13,11 @@ function insert() {
 
   $sql = "select * from pet_". PREFIX ."_target where name = '$data->name' and module = '$data->module'";
   if (empty($row = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_target (name, number, active, unit, intro, flag, up, down, disease, aim, module) values('$data->name', 0, 1, '$data->unit', '$data->intro', '$data->flag', '$data->up', '$data->down', '$data->disease', '$data->aim', '$data->module')";
-    $query = $db->query($sql);
+    $sql = "insert into pet_". PREFIX ."_target (name, number, active, unit, intro, flag, up, down, disease, aim, module, pos) values('$data->name', 0, 1, '$data->unit', '$data->intro', '$data->flag', '$data->up', '$data->down', '$data->disease', '$data->aim', '$data->module', 0)";
+    $id = $db->insertid($sql);
+
+    $sql = "update pet_". PREFIX ."_target set pos = $id where id = $id";
+    $db->query($sql);
   }
   else {
     // $sql = "update pet_". PREFIX ."_target set name = '$data->name', active = 1, unit = '$data->unit', intro = '$data->intro', flag = '$data->flag', up = '$data->up', down = '$data->down', disease = '$data->disease', aim = '$data->aim' where id = $row->id";
@@ -81,6 +84,6 @@ function update() {
 
 function getlist() {
   global $db, $data;
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = '$data->module' and name like '%$data->key%' order by id asc ";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = '$data->module' and name like '%$data->key%' order by pos asc ";
   return $db->all($sql);
 }
