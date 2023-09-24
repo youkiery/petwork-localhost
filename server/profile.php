@@ -567,6 +567,5 @@ function targetlist() {
   global $db;
 
   $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos asc";
-
   return $db->all($sql);
 }

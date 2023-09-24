@@ -4,7 +4,6 @@
 
   function init() {
     global $data, $db, $result, $chotlich;
-    $data->time /= 1000;
 
     $result['status'] = 1;
     $result['chedochotlich'] = $chotlich;
@@ -24,7 +23,7 @@
   function thangnay() {
     global $db, $data;
 
-    $thoigian = $data->time;
+    $thoigian = isodatetotime($data->time);
     $homnay = time();
     $dauthang = strtotime(date('Y/m/1', $thoigian));
     $cuoithang = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
@@ -50,7 +49,7 @@
   function dangkylich() {
     global $db, $data;
 
-    $thoigian = $data->time;
+    $thoigian = isodatetotime($data->time);
     $dangky = ['dangkythem' => '0', 'huydangky' => 0];
 
     $userid = checkuserid();
@@ -69,7 +68,7 @@
     global $db, $data;
 
     $userid = checkuserid();
-    $thoigian = $data->time;
+    $thoigian = isodatetotime($data->time);;
     $motngay = 60 * 60 * 24;
     $mottuan = 7 * $motngay;
     $dauthangnay = strtotime(date('Y/m/1', $thoigian));
@@ -109,8 +108,9 @@
     global $data, $db, $result, $chotlich;
 
     if ($chotlich == 1) {
-      $batdau = strtotime(date('Y/m/1', $data->time));
-      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $thoigian = isodatetotime($data->time);
+      $batdau = strtotime(date('Y/m/1', $thoigian));
+      $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
       $userid = checkuserid();
       // từ $time lấy dữ liệu tháng này
       $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
@@ -154,8 +154,9 @@
     global $data, $db;
 
     if (!isset($data->batdau)) {
-      $batdau = strtotime(date('Y/m/1', $data->time));
-      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+      $thoigian = isodatetotime($data->time);
+      $batdau = strtotime(date('Y/m/1', $thoigian));
+      $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
     }
     else {
       $batdau = isodatetotime($data->batdau);
@@ -210,8 +211,7 @@
   function userreg() {
     global $data, $db, $result, $chotlich;
 
-    $data->time /= 1000;
-    $starttime = strtotime(date('Y/m/1', $data->time));
+    $starttime = strtotime(date('Y/m/1', isodatetotime($data->time)));
     $aday = 60 * 60 * 24;
 
     if (!kiemtrakhoalich()) {
@@ -243,9 +243,7 @@
   function managerreg() {
     global $data, $db, $result, $chotlich;
     
-    $data->time /= 1000;
-    
-    $starttime = strtotime(date('Y/m/1', $data->time));
+    $starttime = strtotime(date('Y/m/1', isodatetotime($data->time)));
     $aday = 60 * 60 * 24;
     
     if (!kiemtrakhoalich()) {
@@ -290,16 +288,17 @@
     global $db, $data, $chotlich;
     $ngaymai = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
+    $thoigian = isodatetotime($data->time);
     if ($chotlich == '1') {
-      $starttime = strtotime(date('Y/m/1', $data->time));
-      $endtime = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-      $daysofmonth = date('t', $data->time);
+      $starttime = strtotime(date('Y/m/1', $thoigian));
+      $endtime = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+      $daysofmonth = date('t', $thoigian);
       $time = strtotime(date('Y/m/t'));
     }
     else {
       // xem 
-      $date = date('N', $data->time) - 1;
-      $starttime = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $date = date('N', $thoigian) - 1;
+      $starttime = strtotime(date('Y/m/d', $thoigian - $date * 60 * 60 * 24));
       $endtime = $starttime + 60 * 60 * 24 - 1;
       $daysofmonth = 7;
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
@@ -378,16 +377,17 @@
   function managerData() {
     global $db, $data, $chotlich;
     
+    $thoigian = isodatetotime($data->time);
     if ($chotlich == '1') {
-      $batdau = strtotime(date('Y/m/1', $data->time));
-      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-      $ngaytrongthang = date('t', $data->time);
+      $batdau = strtotime(date('Y/m/1', $thoigian));
+      $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+      $ngaytrongthang = date('t', $thoigian);
       $time = strtotime(date('Y/m/t'));
     }
     else {
       // xem 
-      $date = date('N', $data->time) - 1;
-      $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $date = date('N', $thoigian) - 1;
+      $batdau = strtotime(date('Y/m/d', $thoigian - $date * 60 * 60 * 24));
       $ketthuc = $batdau + 60 * 60 * 24 - 1;
       $ngaytrongthang = 7;
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
@@ -593,16 +593,17 @@
   function getoverload() {
     global $data, $db, $chotlich;
 
+    $thoigian = isodatetotime($data->time);
     if ($chotlich == '1') {
-      $batdau = strtotime(date('Y/m/1', $data->time));
-      $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
-      $ngaytrongthang = date('t', $data->time);
+      $batdau = strtotime(date('Y/m/1', $thoigian));
+      $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+      $ngaytrongthang = date('t', $thoigian);
       $time = strtotime(date('Y/m/t'));
     }
     else {
       // xem 
-      $date = date('N', $data->time) - 1;
-      $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
+      $date = date('N', $thoigian) - 1;
+      $batdau = strtotime(date('Y/m/d', $thoigian - $date * 60 * 60 * 24));
       $ketthuc = $batdau + 60 * 60 * 24 - 1;
       $ngaytrongthang = 7;
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
@@ -668,8 +669,10 @@
 
     // tính tổng đăng ký tháng này
     // từ $time lấy dữ liệu tháng này
-    $batdau = strtotime(date('Y/m/1', $data->time));
-    $ketthuc = strtotime(date('Y/m/t', $data->time)) + 60 * 60 * 24 - 1;
+
+    $thoigian = isodatetotime($data->time);
+    $batdau = strtotime(date('Y/m/1', $thoigian));
+    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
     $sql = "select * from pet_". PREFIX ."_row where (time between $batdau and $ketthuc) and type > 1";
     $danhsachdangky = $db->all($sql);
     $dulieu = [];

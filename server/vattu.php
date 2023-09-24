@@ -170,7 +170,8 @@ function themcophan() {
   $db->query($sql);
   foreach ($dulieu->giaodich as $giaodich) {
     $giaodich->giatri = purenumber($giaodich->giatri);
-    $sql = "insert into pet_". PREFIX ."_cophan (idnhanvien, tile, giatri, ghichu) values('$dulieu->idnhanvien', $giaodich->tile, $giaodich->giatri, '$giaodich->ghichu')";
+    $giaodich->thanhtoan = intval($giaodich->thanhtoan);
+    $sql = "insert into pet_". PREFIX ."_cophan (idnhanvien, tile, giatri, ghichu, thanhtoan) values('$dulieu->idnhanvien', $giaodich->tile, $giaodich->giatri, '$giaodich->ghichu', $giaodich->thanhtoan)";
     $db->query($sql);
   }
 
@@ -271,11 +272,12 @@ function dulieucophan() {
         ];
       }
       $danhsach[$giaodich['idnhanvien']]['tile'] += $giaodich['tile'];
-      $danhsach[$giaodich['idnhanvien']]['giatri'] += $giaodich['giatri'];
+      $danhsach[$giaodich['idnhanvien']]['giatri'] += ($giaodich["thanhtoan"] ? $giaodich['giatri'] : 0);
       $danhsach[$giaodich['idnhanvien']]['giaodich'] []= [
         'id' => $giaodich['id'],
         'giatri' => number_format($giaodich['giatri']),
         'tile' => $giaodich['tile'],
+        'thanhtoan' => intval($giaodich['thanhtoan']),
         'ghichu' => $giaodich['ghichu'],
       ];
     }
