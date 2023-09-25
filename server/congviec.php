@@ -38,6 +38,17 @@ function danhsachcongviec() {
       break;
   }
   $hoanthanh = array(0 => 'status = 0', 'status > 0', "1");
+  if ($timkiem->hoanthanh > 0) {
+    $timkiem->batdau = isodatetotime($timkiem->batdau);
+    $timkiem->ketthuc = isodatetotime($timkiem->ketthuc);
+    if ($timkiem->batdau > $timkiem->ketthuc) {
+      $tam = $timkiem->batdau;
+      $timkiem->batdau = $timkiem->ketthuc;
+      $timkiem->ketthuc = $tam;
+    }
+    $timkiem->ketthuc = $timkiem->ketthuc + 60 * 60 * 24 - 1;
+    $xtra []= " (updatetime between $timkiem->batdau and $timkiem->ketthuc) ";
+  }
   $xtra [] = $hoanthanh[$timkiem->hoanthanh];
 
   if (!empty($xtra)) $xtra = 'and '. implode(' and ', $xtra);
