@@ -4,6 +4,50 @@ function khoitao() {
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachhanghoa();
+  $result['canhbao'] = demcanhbao();
+  return $result;
+}
+
+function demcanhbao() {
+  global $data, $db, $result;
+
+  $canhbao = 0;
+
+  $sql = "select * from pet_". PREFIX ."_hanghoa where soluong < gioihan";
+  $canhbao += $db->count($sql);
+
+  $gioihan = time() - 60 * 60 * 24 * 3;
+  $sql = "select * from pet_". PREFIX ."_hanghoathaydoi where thoigian > $gioihan";
+  $canhbao += $db->count($sql);
+
+  return $canhbao;
+}
+
+function khoitaocanhbao() {
+  global $data, $db, $result;
+
+  $danhsach = [];
+  $sql = "select * from pet_". PREFIX ."_hanghoa where soluong < gioihan";
+  $canhbao = $db->all($sql);
+
+  foreach ($canhbao as $key => $hanghoa) {
+    $canhbao[$key]["giaban"] = number_format($hanghoa["giaban"]);
+    $canhbao[$key]["thongtin"] = "Hàng sắp hết";
+    $danhsach []= $canhbao[$key];
+  }
+
+  $gioihan = time() - 60 * 60 * 24 * 3;
+  $sql = "select b.tenhang, b.soluong, a.giadau, a.giacuoi from pet_". PREFIX ."_hanghoathaydoi a inner join pet_". PREFIX ."_hanghoa b on a.idhang = b.id where thoigian > $gioihan";
+  $canhbao = $db->all($sql);
+
+  foreach ($canhbao as $key => $hanghoa) {
+    $canhbao[$key]["giaban"] = number_format($hanghoa["giadau"]) . " => ". number_format($hanghoa["giacuoi"]);
+    $canhbao[$key]["thongtin"] = "Thay đổi giá";
+    $danhsach []= $canhbao[$key];
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = $danhsach;
   return $result;
 }
 
@@ -11,7 +55,7 @@ function danhsachhanghoa() {
   global $data, $db, $result;
 
   $tukhoa = $data->tukhoa;
-  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$tukhoa%' order by id desc limit 20";
+  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$tukhoa%' order by id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $hanghoa) {
@@ -19,6 +63,9 @@ function danhsachhanghoa() {
     else $hinhanh = explode(",", $hanghoa["hinhanh"]);
     $danhsach[$thutu]["image"] = $hinhanh;
     $danhsach[$thutu]["giaban"] = number_format($hanghoa["giaban"]);
+
+    $sql = "select mahang, chuyendoi from pet_". PREFIX ."_hanghoathanhphan where idhang = $hanghoa[id]";
+    $danhsach[$thutu]["chuyendoi"] = $db->all($sql);
   }
 
   return $danhsach;
@@ -29,12 +76,22 @@ function capnhat() {
  
   $data->image = implode(",", $data->image);
   if (empty($data->id)) {
-    $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, soluong, hinhanh, gioithieu, donvi) values('', '$data->tenhang', 0, '$data->giaban', 0, 0, '$data->image', '$data->gioithieu', '$data->donvi')";
+    $sql = "insert into pet_". PREFIX ."_hanghoa (tenhang, loaihang, giaban, gianhap, gioihan soluong, hinhanh, gioithieu, donvi) values('', '$data->tenhang', 0, '$data->giaban', 0, $data->gioihan, 0, '$data->image', '$data->gioithieu', '$data->donvi')";
+    $data->id = $data->insertid($sql);
   }
   else {
     $sql = "update pet_". PREFIX ."_hanghoa set tenhang = '$data->tenhang', giaban = '$data->giaban', hinhanh = '$data->image', gioithieu = '$data->gioithieu', donvi = '$data->donvi' where id = $data->id";
+    $db->query($sql);
   }
+
+  $sql = "delete from pet_". PREFIX ."_hanghoathanhphan where idhang = $data->id";
   $db->query($sql);
+
+  foreach ($data->chuyendoi as $chuyendoi) {
+    if (empty($chuyendoi->mahang)) continue;
+    $sql = "insert into pet_". PREFIX ."_hanghoathanhphan (idhang, mahang, chuyendoi) values($data->id, '$chuyendoi->mahang', $chuyendoi->chuyendoi)";
+    $db->query($sql);
+  }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachhanghoa();
@@ -139,32 +196,39 @@ function excel() {
     // 1 => 'Tên hàng'
     // 2 => 'Giá bán'
     // 3 => 'Tồn kho'
-    $sql = "select mahang, 1 as kiemtra from pet_". PREFIX ."_hanghoa where kichhoat = 1";
-    $danhsachhang = $db->obj($sql, "mahang", "kiemtra");
-    $danhsachimport = [];
+    $sql = "select * from pet_". PREFIX ."_hanghoathanhphan";
+    $danhsachchuyendoi = $db->all($sql);
+    $danhsachmahang = [];
+    $danhsachhanghoa = [];
 
-    foreach ($dulieubenhvien as $hanghoa) {
-      if (!empty($danhsachhang[$hanghoa[0]])) $danhsachimport[$hanghoa[0]] = $hanghoa;
+    foreach ($danhsachchuyendoi as $chuyendoi) {
+      if (empty($danhsachmahang[$chuyendoi["mahang"]])) $danhsachmahang[$chuyendoi["mahang"]] = [];
+      $danhsachmahang[$chuyendoi["mahang"]] []= ["idhang" => $chuyendoi["idhang"], "chuyendoi" => $chuyendoi["chuyendoi"]];
     }
 
-    foreach ($dulieukho as $hanghoa) {
-      if (!empty($danhsachhang[$hanghoa[0]])) {
-        if (empty($danhsachimport[$hanghoa[0]])) $danhsachimport[$hanghoa[0]] = $hanghoa;
-        else $danhsachimport[$hanghoa[0]][3] += $hanghoa[3];
+    $danhsachdulieu = array_merge($dulieubenhvien, $dulieukho);
+
+    foreach ($danhsachdulieu as $hanghoa) {
+      if (!empty($danhsachmahang[$hanghoa[0]])) {
+        foreach ($danhsachmahang[$hanghoa[0]] as $chuyendoi) {
+          if (empty($danhsachhanghoa[$chuyendoi["idhang"]])) $danhsachhanghoa[$chuyendoi["idhang"]] = ["soluong" => 0, "giaban" => 0];
+          if ($danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] < $hanghoa[2]) $danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] = $hanghoa[2];
+          $danhsachhanghoa[$chuyendoi["idhang"]]["soluong"] += $hanghoa[3] * $chuyendoi["chuyendoi"];
+        }
       }
     }
     
     $thoigian = time();
-    foreach ($danhsachimport as $hanghoa) {
+    foreach ($danhsachhanghoa as $idhang => $thongtin) {
       // lấy dữ liệu hàng hoá, kiểm tra nếu thay đổi giá bán thì thêm vào bản
       // cập nhật giá bán, số lượng
-      $sql = "select * from pet_". PREFIX ."_hanghoa where mahang = '$hanghoa[0]'";
+      $sql = "select * from pet_". PREFIX ."_hanghoa where id = $idhang";
       $dulieuhanghoa = $db->fetch($sql);
-      if ($dulieuhanghoa['giaban'] != $hanghoa[2]) {
-        $sql = "insert into pet_". PREFIX ."_hanghoathaydoi (idhang, giadau, giacuoi, thoigian) values($dulieuhanghoa[id], $dulieuhanghoa[giaban], $hanghoa[2], $thoigian)";
+      if ($dulieuhanghoa['giaban'] != $thongtin["giaban"]) {
+        $sql = "insert into pet_". PREFIX ."_hanghoathaydoi (idhang, giadau, giacuoi, thoigian) values($idhang, $dulieuhanghoa[giaban], $thongtin[giaban], $thoigian)";
         $db->query($sql);
       }
-      $sql = "update pet_". PREFIX ."_hanghoa set soluong = $hanghoa[3], giaban = $hanghoa[2] where mahang = '$hanghoa[0]'";
+      $sql = "update pet_". PREFIX ."_hanghoa set soluong = $thongtin[soluong], giaban = $thongtin[giaban] where id = $idhang";
       $db->query($sql);
     }
   
@@ -191,9 +255,12 @@ function filer() {
     foreach ($dulieufile as $hanghoa) {
       $sql = "select * from pet_". PREFIX ."_hanghoa where mahang = '$hanghoa[0]'";
       if (empty($db->fetch($sql))) {
-        $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, soluong, hinhanh, gioithieu, donvi) values('$hanghoa[0]', '$hanghoa[1]', 0, '$hanghoa[2]', 0, $hanghoa[3], '', '', '')";
-        $db->query($sql);
+        $sql = "insert into pet_". PREFIX ."_hanghoa (gioihan, tenhang, loaihang, giaban, gianhap, soluong, hinhanh, gioithieu, donvi) values('0', '$hanghoa[1]', 0, '$hanghoa[2]', 0, $hanghoa[3], '', '', '')";
+        $id = $db->insertid($sql);
         $them ++;
+
+        $sql = "insert into pet_". PREFIX ."_hanghoathanhphan (idhang, mahang, chuyendoi) values($id, '$hanghoa[0]', 1)";
+        $db->query($sql);
       }
     }
   
