@@ -290,14 +290,8 @@ function badge() {
   $result['data']['his'] = $db->count($sql);
   $sql = "select * from pet_". PREFIX ."_kaizen where active = 1 and done = 0";
   $result['data']['kaizen'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_xray_row where sinhhoa < 0";
-  $result['data']['profile'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_xray_row where sinhly < 0";
-  $result['data']['physical'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_xray_row where xquang < 0";
-  $result['data']['xquang'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_xray_row where sieuam < 0";
-  $result['data']['sieuam'] = $db->count($sql);
+  $sql = "select * from pet_". PREFIX ."_xray_row where sinhhoa < 0 or sinhly < 0";
+  $result['data']['xetnghiem'] = $db->count($sql);
   $sql = "select * from pet_". PREFIX ."_exam where status = 0";
   $result['data']['other'] = $db->count($sql);
   $result['status'] = 1;

@@ -34,7 +34,7 @@ function download() {
     $query = $db->query($sql);
     $prof = $query->fetch_assoc();
     
-    $sql = "select a.giatri, b.ten, b.donvi, c.flag, b.len, b.xuong from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_chitieu b on a.idxetnghiem = $data->id and a.idchitieu = b.id order by vitri";
+    $sql = "select a.giatri, c.ten, c.donvi, b.flag, c.len, c.xuong from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_lienket b on a.idlienket = b.id inner join pet_". PREFIX ."_xetnghiem_chitieu c on b.idchitieu = c.id where a.idxetnghiem = $data->id order by b.id";
     $query = $db->query($sql);
     $prof['target'] = array();
     while ($row = $query->fetch_assoc()) {
@@ -89,16 +89,16 @@ function download() {
     $newContents = str_replace('{gender}', $sex[$prof['gioitinh']], $newContents);
     $newContents = str_replace('{type}', $giong, $newContents);
     $newContents = str_replace('{sampleid}', $prof['id'], $newContents);
-    $newContents = str_replace('{serial}', $prof['serial'], $newContents);
+    $newContents = str_replace('{serial}', $prof['id'], $newContents);
     $newContents = str_replace('{sampletype}', 'Máu', $newContents);
     $newContents = str_replace('{samplenumber}', 1, $newContents);
-    $newContents = str_replace('{samplesymbol}', $prof['kyhieumau'], $newContents);
+    $newContents = str_replace('{samplesymbol}', $prof['id'], $newContents);
     $newContents = str_replace('{samplestatus}', "Đạt yêu cầu", $newContents);
     $newContents = str_replace('{doctor}', $prof['doctor'], $newContents);
-    $newContents = str_replace('{time}', date('d/m/Y', $prof['time']), $newContents);
-    $newContents = str_replace('{DD}', date('d', $prof['time']), $newContents);
-    $newContents = str_replace('{MM}', date('m', $prof['time']), $newContents);
-    $newContents = str_replace('{YYYY}', date('Y', $prof['time']), $newContents);
+    $newContents = str_replace('{time}', date('d/m/Y', $prof['thoigian']), $newContents);
+    $newContents = str_replace('{DD}', date('d', $prof['thoigian']), $newContents);
+    $newContents = str_replace('{MM}', date('m', $prof['thoigian']), $newContents);
+    $newContents = str_replace('{YYYY}', date('Y', $prof['thoigian']), $newContents);
   
     for ($i = 1; $i <= 18; $i++) { 
       if (!empty($prof['target'][$i - 1])) {
@@ -157,7 +157,7 @@ function printword() {
   $query = $db->query($sql);
   $prof = $query->fetch_assoc();
   
-  $sql = "select a.giatri, b.ten, b.donvi, c.flag, b.len, b.xuong from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_chitieu b on a.idchitieu = b.id where a.idxetnghiem = $data->id order by id";
+  $sql = "select a.giatri, c.ten, c.donvi, b.flag, c.len, c.xuong from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_lienket b on a.idlienket = b.id inner join pet_". PREFIX ."_xetnghiem_chitieu c on b.idchitieu = c.id where a.idxetnghiem = $data->id order by b.id";
   $query = $db->query($sql);
   $prof['target'] = array();
   while ($row = $query->fetch_assoc()) {
@@ -202,6 +202,10 @@ function printword() {
   $giong = $db->fetch($sql)["value"];
 
   $sex = array(0 => '', 'Đực', 'Cái');
+  
+  $sql = "select * from pet_". PREFIX ."_form where name = 'prof'";
+  $html = $db->fetch($sql)['value'];
+
   $html = str_replace('{customer}', $khachhang['name'], $html);
   $html = str_replace('{address}', $khachhang['address'], $html);
   $html = str_replace('{name}', $prof['tenthucung'], $html);
@@ -210,16 +214,16 @@ function printword() {
   $html = str_replace('{gender}', $sex[$prof['gioitinh']], $html);
   $html = str_replace('{type}', $giong, $html);
   $html = str_replace('{sampleid}', $prof['id'], $html);
-  $html = str_replace('{serial}', $prof['serial'], $html);
+  $html = str_replace('{serial}', $prof['id'], $html);
   $html = str_replace('{sampletype}', "Máu", $html);
   $html = str_replace('{samplenumber}', 1, $html);
-  $html = str_replace('{samplesymbol}', $prof['kyhieumau'], $html);
+  $html = str_replace('{samplesymbol}', $prof['id'], $html);
   $html = str_replace('{samplestatus}', 'Đạt yêu cầu', $html);
   $html = str_replace('{doctor}', $prof['doctor'], $html);
-  $html = str_replace('{time}', date('d/m/Y', $prof['time']), $html);
-  $html = str_replace('{DD}', date('d', $prof['time']), $html);
-  $html = str_replace('{MM}', date('m', $prof['time']), $html);
-  $html = str_replace('{YYYY}', date('Y', $prof['time']), $html);
+  $html = str_replace('{time}', date('d/m/Y', $prof['thoigian']), $html);
+  $html = str_replace('{DD}', date('d', $prof['thoigian']), $html);
+  $html = str_replace('{MM}', date('m', $prof['thoigian']), $html);
+  $html = str_replace('{YYYY}', date('Y', $prof['thoigian']), $html);
 
   $h1 = '';
   $h2 = '';
@@ -236,7 +240,7 @@ function printword() {
 
       // tính giá trị thấp, cao, bình thường
       // chia ra 3 khoảng 0-thấp nhất, thấp nhất đến cao nhất, cao nhất đến 2 x cao nhất
-      if (strvitri($range, '-') !== false) {
+      if (strpos($range, '-') !== false) {
         $cumgiatri = explode('-', $range);
         $thapnhat =  floatval(trim($cumgiatri[0]));
         $caonhat =  floatval(trim($cumgiatri[1]));
@@ -257,8 +261,8 @@ function printword() {
 
         // tính tỉ lệ, nếu 
         $htmlgiatri = '
-          <td style="vitriition: relative;">
-            <div style="vitriition: absolute;width: 10px;height: 23px;background: '.$mau.';left: '.$tile.'%;"></div>
+          <td style="position: relative;">
+            <div style="position: absolute;width: 10px;height: 23px;background: '.$mau.';left: '.$tile.'%;"></div>
             <table style="border: 1px solid black;width: 100%; height: 23px;border-collapse: collapse;">
               <tr>
                 <td style="width: 33%;border-right: 1px solid black;"></td>
@@ -394,46 +398,28 @@ function capnhatxetnghiem() {
 
   $idkhach = kiemtrakhachhang();
   $idnhanvien = checkuserid();
-  $hinhanh = implode(',', $data->image);
+  $hinhanh = implode(',', $data->hinhanh);
   $thoigian = time();
-  if ($data->id) {
-    $sql = "update pet_". PREFIX ."_xetnghiem set idkhach = $idkhach, tenthucung = '$data->tenthucung', cannang = '$data->cannang', tuoi = '$data->tuoi', gioitinh = $data->gioitinh, giong = '$data->giong', serial = '$data->serial', kyhieumau = '$data->kyhieumau', trieuchung = '$data->trieuchung', hinhanh = '$hinhanh' where id = $data->id";
+  if (isset($data->id) && !empty($data->id)) {
+    $sql = "update pet_". PREFIX ."_xetnghiem set idkhach = $idkhach, tenthucung = '$data->tenthucung', cannang = '$data->cannang', tuoi = '$data->tuoi', gioitinh = $data->gioitinh, idgiong = '$data->idgiong', trieuchung = '$data->trieuchung', hinhanh = '$hinhanh' where id = $data->id";
     $db->query($sql);
-
-    $serial = floatval($data->serial);
   }
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, giong, serial, kyhieumau, trieuchung, idnhanvien, thoigian, hinhanh) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->giong', '$data->serial', '$data->kyhieumau', '$data->trieuchung', $idnhanvien, $thoigian, '$hinhanh')";
-    $id = $db->insertid($sql);
-    // $id = 18;
-    if (isset($data->xrayid)) {
-      $sql = "update pet_". PREFIX ."_xray_row set sinhhoa = $id where id = $data->xrayid";
-      $db->query($sql);
-    }
-
-    $serial = floatval($data->serial) + 1;
-    $sql = "select * from pet_". PREFIX ."_config where name = 'serial'";
-    $query = $db->query($sql);
-    $config = $query->fetch_assoc();
-    if (empty($config)) $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('profile', 'serial', '$serial')";
-    else $sql = "update pet_". PREFIX ."_config set value = '$serial' where module = 'profile' and name = 'serial'";
-    $db->query($sql);
+    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, idgiong, trieuchung, idnhanvien, thoigian, hinhanh) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->idgiong', '$data->trieuchung', $idnhanvien, $thoigian, '$hinhanh')";
+    $data->id = $db->insertid($sql);
   }
 
-  foreach ($data->target as $tid => $target) {
-    if (strlen($target) == 0) $target = 0;
-    $sql = "select * from pet_". PREFIX ."_xetnghiem_dulieu where idxetnghiem = $data->id and idchitieu = $tid";
-    if (empty($d = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_xetnghiem_dulieu (idxetnghiem, idchitieu, giatri) values ($data->id, $tid, '$target')";
-    else $sql = "update pet_". PREFIX ."_xetnghiem_dulieu set giatri = $target where id = $d[id]";
+  $sql = "delete from pet_". PREFIX ."_xetnghiem_dulieu where idxetnghiem = $data->id";
+  $db->query($sql);
+
+  foreach ($data->chitieu as $chitieu) {
+    $sql = "insert into pet_". PREFIX ."_xetnghiem_dulieu (idxetnghiem, idlienket, giatri) values ($data->id, $chitieu->id, '$chitieu->giatri')";
     $db->query($sql);
   }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachxetnghiem();
-  $result['danhsachcan'] = danhsachcan();
-  $result['serial'] = $serial;
-
   return $result;
 }
 
@@ -474,12 +460,19 @@ function danhsachxetnghiem() {
   $timkiem = $data->timkiem;
   $batdau = isodatetotime($timkiem->batdau);
   $ketthuc = isodatetotime($timkiem->ketthuc) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name as khachhang, b.phone as dienthoai, c.fullname as nhanvien from pet_". PREFIX ."_xetnghiem a inner join pet_". PREFIX ."_customer b on a.idkhach = b.id inner join pet_". PREFIX ."_users c on a.idnhanvien = c.userid where (b.phone like '%$timkiem->tukhoa%' or b.name like '%$timkiem->tukhoa%') and (a.thoigian between $batdau and $ketthuc) order by a.id desc";
+
+  $xtra = "";
+  if ($timkiem->loai > 0) {
+    $timkiem->loai --;
+    $xtra = " and a.xetnghiem = $timkiem->loai ";
+  }
+
+  $sql = "select a.*, b.name as khachhang, b.phone as dienthoai, b.address as diachi, c.fullname as nhanvien from pet_". PREFIX ."_xetnghiem a inner join pet_". PREFIX ."_customer b on a.idkhach = b.id inner join pet_". PREFIX ."_users c on a.idnhanvien = c.userid where (b.phone like '%$timkiem->tukhoa%' or b.name like '%$timkiem->tukhoa%') and (a.thoigian between $batdau and $ketthuc) $xtra order by a.id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $xetnghiem) {
-    $sql = "select idchitieu, giatri from pet_". PREFIX ."_xetnghiem_dulieu where idxetnghiem = $xetnghiem[id]";
-    $danhsach[$thutu]['chitieu'] = $db->obj($sql, 'idchitieu', 'giatri');
+    $sql = "select a.giatri, b.id from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_lienket b on a.idlienket = b.id inner join pet_". PREFIX ."_xetnghiem_chitieu c on b.idchitieu = c.id where a.idxetnghiem = $xetnghiem[id] order by b.id";
+    $danhsach[$thutu]['chitieu'] = $db->obj($sql, "id", "giatri");
     $danhsach[$thutu]['hinhanh'] = parseimage($xetnghiem['hinhanh']);
     $danhsach[$thutu]['thoigian'] = date('d/m/Y', $xetnghiem['thoigian']);
   }
@@ -522,14 +515,28 @@ function capnhatchitieu() {
 
     $danhsachgiong = danhsachgiong();
     foreach ($danhsachgiong as $thongtingiong) {
-      $sql = "insert into pet_". PREFIX ."_xetnghiem_lienket (idchitieu, idgiong, flag) values ($id, $thongtingiong[id], $data->flag)";
+      $sql = "insert into pet_". PREFIX ."_xetnghiem_lienket (idchitieu, idgiong, flag) values ($id, $thongtingiong[id], '$data->flag')";
       $db->query($sql);
     }
   }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachchitieu();
+  $result['chitieugiong'] = chitieugiong();
 
+  return $result;
+}
+
+function dichuyenchitieu() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_xetnghiem_chitieu set vitri = $data->vitria where id = $data->idb";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_xetnghiem_chitieu set vitri = $data->vitrib where id = $data->ida";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachchitieu();
   return $result;
 }
 
@@ -555,9 +562,9 @@ function capnhatgiong() {
     }
   }
 
-
   $result['status'] = 1;
-  $result['danhsach'] = chitieugiong();
+  $result['chitieugiong'] = chitieugiong();
+  $result['danhsach'] = danhsachchitieu();
   return $result;
 }
 

@@ -28,7 +28,6 @@ for ($j = 2; $j < 100; $j++) {
 }
 
 $dulieu = [];
-
 foreach ($danhsach as $row) {
   if (empty($dulieu[$row['nguoiban']])) $dulieu[$row['nguoiban']] = [
     'X Xịt khử mùi Epetcare 50ml' => ['tenhang' => 'SP4197087', 'soluong' => 0],
