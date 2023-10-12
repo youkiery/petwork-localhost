@@ -211,7 +211,7 @@ function themvattu() {
     $sql = "insert into pet_". PREFIX ."_vattu (ten, donvi, soluong, thoigian, giatri, tile, ghichu) values('$dulieu->ten', '$dulieu->donvi', $dulieu->soluong, $dulieu->thoigian, $dulieu->giatri, '$dulieu->tile', '$dulieu->ghichu')";
     $dulieu->id = $db->insertid($sql);
     foreach ($dulieu->thuoctang as $idtang => $giatri) {
-      $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($idvattu, $idtang)";
+      $sql = "insert into pet_". PREFIX ."_vattunoitang (idvattu, idtang) values($dulieu->id, $idtang)";
       $db->query($sql);
     }
   }

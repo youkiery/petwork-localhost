@@ -886,8 +886,10 @@ function xacnhanthucong() {
 
 function diendulieu($mautin, $dulieu) {
   $danhsachtruong = ['[loainhac]' => 'loainhac', '[ngayden]' => 'thoigiantoi', '[ngaynhac]' => 'thoigiannhac', '[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai', '[thucung]' => 'thucung'];
+  if (isset($dulieu["khachhang"])) $dulieu["khachhang"] = mb_strtoupper($dulieu["khachhang"]);
+  if (isset($dulieu["loainhac"])) $dulieu["loainhac"] = mb_strtoupper($dulieu["loainhac"]);
   foreach ($danhsachtruong as $tentruong => $tenbien) {
-    $mautin = str_replace($tentruong, alias($dulieu[$tenbien]), $mautin);
+    $mautin = str_replace($tentruong, fullalias($dulieu[$tenbien]), $mautin);
   }
   return $mautin;
 }
@@ -1081,7 +1083,7 @@ function xacnhandanhsachloi() {
 
   $thoigian = time();
   foreach ($data->danhsach as $dulieu) {
-    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine = $dulieu->id and idmautin = $dulieu->idmautin";
+    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine in ($dulieu->id) and idmautin in ($dulieu->idmautin)";
     if (empty($db->fetch($sql))) {
       $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($dulieu->id, $dulieu->idmautin, $thoigian)";
       $db->query($sql);

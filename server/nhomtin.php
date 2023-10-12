@@ -203,11 +203,8 @@ function kiemtrakhachhang($ten, $dienthoai) {
   return $c['id'];
 }
 
-
 function chuanhoatenkhach($tenkhach) {
-  $tenkhach = mb_strtoupper($tenkhach);
-
-  return $tenkhach;
+  return mb_strtoupper($tenkhach);
 }
 
 function danhsachnhantin() {
@@ -226,13 +223,13 @@ function danhsachnhantin() {
     $sql = "select * from pet_". PREFIX ."_nhomtinchitiet where idlienket = $khachhang[id]";
     if (empty($db->fetch($sql))) $danhsach[$thutu]['dagui'] = 0;
     else $danhsach[$thutu]['dagui'] = 1;
-    $danhsach[$thutu]['mautin'] = $data->mautin;
-    $danhsach[$thutu]['khachhang'] = chuanhoatenkhach($khachhang['khachhang']);
+    
+    $danhsach[$thutu]['khachhang'] = mb_strtoupper($khachhang['khachhang']);
     $danhsach[$thutu]['mautin'] = $mautin;
 
     foreach ($danhsachbien as $mau => $tenbien) {
       // $mautin = str_replace($tentruong, alias($dulieu[$tenbien]), $mautin);
-      $danhsach[$thutu]['mautin'] = str_replace($mau, alias($danhsach[$thutu][$tenbien]), $danhsach[$thutu]['mautin']);
+      $danhsach[$thutu]['mautin'] = str_replace($mau, fullalias($danhsach[$thutu][$tenbien]), $danhsach[$thutu]['mautin']);
     }
   }
 
