@@ -284,7 +284,7 @@ function badge() {
   global $data, $db, $result;
 
   $result['data'] = array(
-    'his' => 0, 'kaizen' => 0, 'profile' => 0, 'physical' => 0, 'xquang' => 0, 'sieuam' => 0, 'other' => 0, 'init' => true
+    'his' => 0, 'kaizen' => 0, 'profile' => 0, 'physical' => 0, 'xquang' => 0, 'sieuam' => 0, 'other' => 0, 'hsd' => 0, 'init' => true
   );
   $sql = "select * from pet_". PREFIX ."_xray where insult = 0";
   $result['data']['his'] = $db->count($sql);
@@ -295,6 +295,10 @@ function badge() {
   $sql = "select * from pet_". PREFIX ."_exam where status = 0";
   $result['data']['other'] = $db->count($sql);
   $result['status'] = 1;
+
+  $hansudung = time() + 60 * 60 * 24 * 90;
+  $sql = "select * from pet_". PREFIX ."_hansudung where trangthai = 0 and hansudung <= $hansudung";
+  $result['data']['hsd'] = $db->count($sql);
 
   return $result;
 }

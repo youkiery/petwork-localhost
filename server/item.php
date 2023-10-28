@@ -280,3 +280,49 @@ function timhangthanhphan() {
   $result["danhsach"] = $db->all($sql);
   return $result;
 }
+
+function khoitaohansudung() {
+  global $data, $db, $result, $res;
+
+  $result["status"] = 1;
+  $result["danhsach"] = danhsachhansudung();
+  return $result;
+}
+
+function danhsachhansudung() {
+  global $data, $db, $result, $res;
+
+  $hansudung = time() + 60 * 60 * 24 * 90;
+  $sql = "select * from pet_". PREFIX ."_hansudung where trangthai = 0 order by hansudung asc";
+  $danhsach = $db->all($sql);
+  
+  foreach ($danhsach as $thutu => $handung) {
+    if ($handung["hansudung"] <= $hansudung) $danhsach[$thutu]["quahan"] = 1;
+    else $danhsach[$thutu]["quahan"] = 0;
+    $danhsach[$thutu]["hansudung"] = date("d/m/Y", $handung["hansudung"]);
+  }
+  return $danhsach;
+}
+
+function themhansudung() {
+  global $data, $db, $result, $res;
+
+  $hansudung = isodatetotime($data->hansudung);
+  $sql = "insert into pet_". PREFIX ."_hansudung (tenhang, soluong, hansudung) values('$data->tenhang', $data->soluong, $hansudung)";
+  $db->query($sql);
+  
+  $result["status"] = 1;
+  $result["danhsach"] = danhsachhansudung();
+  return $result;
+}
+
+function xoahansudung() {
+  global $data, $db, $result, $res;
+
+  $sql = "update pet_". PREFIX ."_hansudung set trangthai = 1 where id = $data->id";
+  $db->query($sql);
+  
+  $result["status"] = 1;
+  $result["danhsach"] = danhsachhansudung();
+  return $result;
+}

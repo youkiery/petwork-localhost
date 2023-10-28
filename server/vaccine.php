@@ -644,7 +644,7 @@ function kiemtranhantin($dulieu) {
 
 function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong) {
   global $db, $res;
-  if (isset($dulieuvaccine[$dulieu[0]]) && strlen($dulieu[2])) { // thuộc danh sách vaccine và có ghi chú
+  if (isset($dulieuvaccine[$dulieu[0]])) { // thuộc danh sách vaccine và có ghi chú
     $thongtin = tachthongtin($dulieu[5], $ngatdong);
     $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
 
@@ -653,12 +653,20 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
       // thay đổi trạng thái siêu âm
   
       $ngayden = chuyendoithoigian($dulieu[4]);
+      if ($ngayden) {
+        $trangthai = 0;
+        $ghichu = $thongtin["ghichu"];
+      }
+      else {
+        $trangthai = 5;
+        $ghichu = $dulieu[5];
+      }
       $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
 
       $sql = "select * from pet_". PREFIX ."_vaccine where petid = $idthucung and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
 
       if (empty($db->fetch($sql))) {
-        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$thongtin[ghichu]', 0, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
+        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
           $res['vaccine'] ++;
           $homnay = strtotime(date('Y/m/d')) + 8 * 60 * 60 * 24 - 1;
