@@ -2,12 +2,32 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
-// define('DIR', str_replace('/server', '/', ROOTDIR));
-// include_once(ROOTDIR . '/include/config.php');
-// include_once(ROOTDIR . '/include/db.php');
-// include_once(ROOTDIR . '/include/global.php');
-// $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
+header('Access-Control-Allow-Origin: *');
+header("Access-Control-Allow-Credentials: true");
+
+define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
+define('DIR', str_replace('/server', '/', ROOTDIR));
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+include_once(ROOTDIR . '/include/config.php');
+include_once(ROOTDIR . '/include/db.php');
+include_once(ROOTDIR . '/include/global.php');
+$db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
+
+// $sql = "select * from pet_tracnghiem_cauhoi where idchuyenmuc = 1 order by rand() limit 10";
+// $danhsachcauhoi = $db->all($sql);
+
+// $chuyendoitraloi = [0 => "A", "B", "C", "D"];
+
+// foreach ($danhsachcauhoi as $thutucauhoi => $cauhoi) {
+//   $sql = "select * from pet_tracnghiem_cautraloi order by rand() limit 4";
+//   $danhsachcautraloi = $db->all($sql);
+//   echo "<div><b> $cauhoi[noidung] </b> </div>";
+//   foreach ($danhsachcautraloi as $thutucautraloi => $cautraloi) {
+//     echo "<div style='display: inline-block;width:25%;'> <label> <input type='radio' name='$thutucauhoi' cauhoi='$thutucauhoi' cautraloi=$thutucautraloi /> $chuyendoitraloi[$thutucautraloi]. $cautraloi[noidung]   </label> </div>";
+//   }
+// }
+
+// die();
 
 // $sql = "select * from pet_phc_spadichvu order by thoigian";
 // $danhsach = $db->all($sql);
@@ -110,21 +130,11 @@ ini_set('display_errors', 1);
 
 // die();
 
-header('Access-Control-Allow-Origin: *');
-header("Access-Control-Allow-Credentials: true");
-
 // for ($i = 0; $i < 7; $i++) { 
 //   $date = time() + $i * 60 * 60 * 24;
 //   echo date('N', $date) . ': '. date('d/m/Y', $date) . '<br>';
 // }
 // die();
-
-define('ROOTDIR', pathinfo(str_replace(DIRECTORY_SEPARATOR, '/', __file__), PATHINFO_DIRNAME));
-define('DIR', str_replace('/server', '/', ROOTDIR));
-include_once(ROOTDIR . '/include/config.php');
-include_once(ROOTDIR . '/include/db.php');
-include_once(ROOTDIR . '/include/global.php');
-$db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
 
 // $sql = "select * from pet_". PREFIX ."_xray";
 // $danhsach = $db->all($sql);
