@@ -518,6 +518,7 @@ function excel() {
     kiemtraspa($row, $danhsachspa);
     if (empty($row[2])) { }
     else {
+      kiemtrakhachvip($row, $danhsachspa);
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
@@ -718,13 +719,27 @@ function kiemtraspa($dulieu, $danhsachspa) {
     $idnhanvien = kiemtranhanvien($dulieu[1]);
     $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
     $idloai = $danhsachspa[$dulieu[0]];
+    $thanhtien = str_replace(",", "", $dulieu[8]);
 
     $sql = "select * from pet_". PREFIX ."_spadichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $ngayden";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $dulieu[8], $ngayden)";
+      $sql = "insert into pet_". PREFIX ."_spadichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $thanhtien, $ngayden)";
       $db->query($sql);
     }
   }
+}
+
+function kiemtrakhachvip($dulieu, $danhsachspa) {
+  global $db;
+    
+  $ngayden = chuyendoithoigian($dulieu[4]);
+  $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
+  $thanhtien = str_replace(",", "", $dulieu[8]);
+
+  if (isset($danhsachspa[$dulieu[0]])) $phanloai = 1;
+  else $phanloai = 0;
+  $sql = "insert into pet_". PREFIX ."_khachvip_doanhso (idkhachhang, phanloai, doanhso, thoigian) values($idkhach, $phanloai, $thanhtien, $ngayden)";
+  $db->query($sql);
 }
 
 function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong) {
@@ -736,10 +751,11 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
     $idnhanvien = kiemtranhanvien($dulieu[1]);
     $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
     $idloai = $danhsachcong[$dulieu[0]];
+    $thanhtien = str_replace(",", "", $dulieu[8]);
 
     $sql = "select * from pet_". PREFIX ."_dieutridichvu where idkhach = $idkhach and idloai = $idloai and thoigian = $ngayden";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_dieutridichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $dulieu[8], $ngayden)";          
+      $sql = "insert into pet_". PREFIX ."_dieutridichvu (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $thanhtien, $ngayden)";          
       $db->query($sql);
     }
 
@@ -759,10 +775,11 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
     $idnhanvien = kiemtranhanvien($dulieu[1]);
     $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
     $idloai = $danhsachthuoc[$dulieu[0]];
+    $thanhtien = str_replace(",", "", $dulieu[8]);
 
     $sql = "select * from pet_". PREFIX ."_dieutrithuoc where idkhach = $idkhach and idloai = $idloai and thoigian = $ngayden";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_dieutrithuoc (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $dulieu[8], $ngayden)";
+      $sql = "insert into pet_". PREFIX ."_dieutrithuoc (idkhach, idloai, idnhanvien, soluong, tongtien, thoigian) values($idkhach, $idloai, $idnhanvien, $dulieu[7], $thanhtien, $ngayden)";
       $db->query($sql);
     }
 

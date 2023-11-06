@@ -331,6 +331,101 @@ function danhsachchinhanh() {
   return $db->all($sql);
 }
 
+function khoitaokhachvip() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['thongke'] = danhsachkhachvip();
+  return $result;
+}
+
+function xoakhachvip() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_khachvip where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['thongke'] = danhsachkhachvip();
+  return $result;
+}
+
+function themkhachvip() {
+  global $data, $db, $result;
+  
+  $dulieu = $data->dulieu;
+  $hanghoa = intval($dulieu->hanghoa);
+  $spa = intval($dulieu->spa);
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$dulieu->dienthoai'";
+  if (empty($khachhang = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values('$dulieu->khachhang', '$dulieu->dienthoai', '')";
+    $idkhachhang = $db->insertid($sql);
+    $sql = "insert into pet_". PREFIX ."_khachvip (idkhachhang, spa, hanghoa) values('$idkhachhang', '$spa', '$hanghoa')";
+    $db->query($sql);
+  }
+  else {
+    $sql = "select * from pet_". PREFIX ."_khachvip where idkhachhang = $khachhang[id]";
+    if (empty($khachvip = $db->fetch($sql))) {
+      $sql = "insert into pet_". PREFIX ."_khachvip (idkhachhang, spa, hanghoa) values('$khachhang[id]', '$spa', '$hanghoa')";
+      $db->query($sql);
+    }
+    else {
+      $sql = "update pet_". PREFIX ."_khachvip set spa = $spa, hanghoa = $hanghoa where idkhachhang = $khachhang[id]";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  $result['thongke'] = danhsachkhachvip();
+  return $result;
+}
+
+function danhsachkhachvip() {
+  global $data, $db, $result;
+
+  $sql = "select b.id, b.name as khachhang, b.phone as dienthoai, 0 as doanhso, 0 as thangtruoc, 0 as tile from pet_". PREFIX ."_khachvip a inner join pet_". PREFIX ."_customer b on a.idkhachhang = b.id order by b.name asc";
+  $danhsach = $db->all($sql);
+  $batdauthangnay = strtotime(date("Y/m/1", isodatetotime($data->thoigian)));
+  $ketthucthangnay = strtotime(date("Y/m/t", isodatetotime($data->thoigian))) + 60 * 60 * 24 - 1;
+  $ketthucthangtruoc = $batdauthangnay - 1;
+  $batdauthangtruoc = strtotime(date("Y/m/1", isodatetotime($ketthucthangtruoc)));
+  // $phanloai = [0 => "hanghoa", "spa"];
+
+  foreach ($danhsach as $thutu => $khachhang) {
+    $sql = "select * from pet_". PREFIX ."_khachvip_doanhso where (thoigian between $batdauthangnay and $ketthucthangnay) and idkhachhang = $khachhang[id]";
+    $danhsokhachhang = $db->all($sql);
+    foreach ($danhsokhachhang as $doanhso) {
+      $danhsach[$thutu]["doanhso"] += $doanhso["doanhso"];
+    }
+
+    $sql = "select * from pet_". PREFIX ."_khachvip_doanhso where (thoigian between $batdauthangtruoc and $ketthucthangtruoc) and idkhachhang = $khachhang[id]";
+    $danhsokhachhang = $db->all($sql);
+    foreach ($danhsokhachhang as $doanhso) {
+      $danhsach[$thutu]["thangtruoc"] += $doanhso["doanhso"];
+    }
+
+    // nếu tháng này = 0
+    // nếu tháng trước = 0
+    // nếu 2 tháng đều có doanh số
+    if ($danhsach[$thutu]["doanhso"] == 0) $danhsach[$thutu]["tile"] = -100;
+    else if ($danhsach[$thutu]["thangtruoc"] == 0) $danhsach[$thutu]["tile"] = 1000;
+    else {
+      $chenhlech = $danhsach[$thutu]["doanhso"] - $danhsach[$thutu]["thangtruoc"];
+      $danhsach[$thutu]["tile"] = round($chenhlech * 100 / $danhsach[$thutu]["thangtruoc"], 2);
+    }
+    $danhsach[$thutu]["doanhso"] = number_format($danhsach[$thutu]["doanhso"]);
+    $danhsach[$thutu]["thangtruoc"] = number_format($danhsach[$thutu]["thangtruoc"]);
+  }
+
+  usort($danhsach, "sosanh");
+
+  return $danhsach;
+}
+
+function sosanh($a, $b) {
+  return $a["tile"] > $b["tile"];
+}
+
 function themchinhanh() {
   global $data, $db, $result;
   
