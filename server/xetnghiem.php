@@ -21,18 +21,20 @@ function khoitaoxetnghiem() {
 function download() {
   global $data, $db, $result;
     
-  $zip = new ZipArchive;
-  
+  $sql = "select * from pet_". PREFIX ."_xetnghiem where id = $data->id";
+  $query = $db->query($sql);
+  $prof = $query->fetch_assoc();
+
+  $zip = new ZipArchive;  
   $fileToModify = 'word/document.xml';
-  $wordDoc = DIR. "/include/template.docx";
+
+  if ($prof["xetnghiem"]) $wordDoc = DIR. "/include/template.docx";
+  else $wordDoc = DIR. "/include/template2.docx";
   $name = "analysis-". time() .".docx";
   $exportDoc = DIR. "/include/export/". $name;
   
   copy($wordDoc, $exportDoc);
   if ($zip->open($exportDoc) === TRUE) {
-    $sql = "select * from pet_". PREFIX ."_xetnghiem where id = $data->id";
-    $query = $db->query($sql);
-    $prof = $query->fetch_assoc();
     
     $sql = "select a.giatri, c.ten, c.donvi, b.flag, c.len, c.xuong from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_lienket b on a.idlienket = b.id inner join pet_". PREFIX ."_xetnghiem_chitieu c on b.idchitieu = c.id where a.idxetnghiem = $data->id order by b.id";
     $query = $db->query($sql);
@@ -203,7 +205,9 @@ function printword() {
 
   $sex = array(0 => '', 'Đực', 'Cái');
   
-  $sql = "select * from pet_". PREFIX ."_form where name = 'prof'";
+  if ($prof["xetnghiem"]) $x = 'prof';
+  else $x = 'phys';
+  $sql = "select * from pet_". PREFIX ."_form where name = '$x'";
   $html = $db->fetch($sql)['value'];
 
   $html = str_replace('{customer}', $khachhang['name'], $html);
@@ -406,7 +410,7 @@ function capnhatxetnghiem() {
   }
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, idgiong, trieuchung, idnhanvien, thoigian, hinhanh) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->idgiong', '$data->trieuchung', $idnhanvien, $thoigian, '$hinhanh')";
+    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, idgiong, trieuchung, idnhanvien, thoigian, hinhanh, xetnghiem) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->idgiong', '$data->trieuchung', $idnhanvien, $thoigian, '$hinhanh', $data->xetnghiem)";
     $data->id = $db->insertid($sql);
   }
 

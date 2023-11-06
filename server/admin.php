@@ -382,6 +382,7 @@ function getList() {
     'loinhuan' => 0,
     'khachhang' => 0,
     'chuyenmon' => 0,
+    'tracnghiem' => 0,
   ];
 
   $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo from pet_". PREFIX ."_users where active = 1";

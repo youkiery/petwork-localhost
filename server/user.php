@@ -338,6 +338,7 @@ function permission($userid) {
     'loinhuan' => 0,
     'khachhang' => 0,
     'chuyenmon' => 0,
+    'tracnghiem' => 0,
   ];
 
   if ($userid == 1) {
