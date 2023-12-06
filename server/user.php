@@ -339,6 +339,7 @@ function permission($userid) {
     'khachhang' => 0,
     'chuyenmon' => 0,
     'tracnghiem' => 0,
+    'voucher' => 0,
   ];
 
   if ($userid == 1) {

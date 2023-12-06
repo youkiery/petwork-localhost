@@ -383,9 +383,10 @@ function getList() {
     'khachhang' => 0,
     'chuyenmon' => 0,
     'tracnghiem' => 0,
+    'voucher' => 0,
   ];
 
-  $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo from pet_". PREFIX ."_users where active = 1";
+  $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo, zalouid from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
@@ -1447,3 +1448,26 @@ function khoitaothongkespa() {
   return $result;
 }
 
+function khoitaozalo() {
+  global $db, $data, $result;
+
+  $x = strripos(DIR, "/");
+  $y = strripos(substr(DIR, 0, $x), "/");
+  $z = substr(DIR, 0, $y);
+
+  $file = file_get_contents($z . "/api/assets/chitietkhachhang.txt");  
+  $result['status'] = 1;
+  $result['danhsach'] = json_decode($file);
+  return $result;
+}
+
+function chonzalo() {
+  global $db, $data, $result;
+
+  $sql = "update pet_". PREFIX ."_users set zalouid = '$data->zalouid' where userid = $data->userid";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = "Đã lưu thông tin";
+  return $result;
+}

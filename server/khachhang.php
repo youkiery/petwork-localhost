@@ -441,3 +441,23 @@ function themchinhanh() {
   $result['danhsach'] = danhsachchinhanh();
   return $result;
 }
+
+function khoitaogopy() {
+  global $data, $db, $result;
+  
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachgopy();
+  return $result;
+}
+
+function danhsachgopy() {
+  global $data, $db, $result;
+  
+  $sql = "select * from pet_gopy order by thoigian desc limit 10 offset ". ($data->trang - 1) * 10;
+  $danhsachgopy = $db->all($sql);
+
+  foreach ($danhsachgopy as $thutu => $gopy) {
+    $danhsachgopy[$thutu]["thoigian"] = date("d/m/Y", $gopy["thoigian"]);
+  }
+  return $danhsachgopy;
+}
