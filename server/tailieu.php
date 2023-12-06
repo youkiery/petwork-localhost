@@ -12,16 +12,16 @@ function danhsachtailieu() {
   global $db, $data, $result;
 
   $timkiem = $data->timkiem;
-  $sql = "select * from pet_tailieu where tentailieu like '%$timkiem->tukhoa%' ". ($timkiem->iddanhmuc > 0 ? " and iddanhmuc = $timkiem->iddanhmuc" : "") ." order by id desc";
-  $danhsach = $db->all($sql);
+  $sql = "select * from pet_danhmuc order by tendanhmuc";
+  $danhsachdanhmuc = $db->all($sql);
 
-  foreach ($danhsach as $thutu => $tailieu) {
-    $sql = "select * from pet_danhmuc where id = $tailieu[iddanhmuc]";
-    if (empty($danhmuc = $db->fetch($sql))) $danhsach[$thutu]["danhmuc"] = "Chưa phân loại";
-    else $danhsach[$thutu]["danhmuc"] = $danhmuc["tendanhmuc"];
+  $danhsachdanhmuc[]= ["id" => 0, "tendanhmuc" => "Chưa phân loại"];
+
+  foreach ($danhsachdanhmuc as $thutu => $danhmuc) {
+    $sql = "select * from pet_tailieu where tentailieu like '%$timkiem->tukhoa%' and iddanhmuc = $danhmuc[id] order by id desc";
+    $danhsachdanhmuc[$thutu]["danhsach"] = $db->all($sql);
   }
-
-  return $danhsach;
+  return $danhsachdanhmuc;
 }
 
 function danhsachdanhmuc() {
