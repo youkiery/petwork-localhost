@@ -53,11 +53,11 @@ function download() {
       $tar = '';
       if ($value < $s) {
         $tick = '<';
-        $tar = $row['ten'] .' giảm: '. $row['len'];
+        $tar = $row['ten'] .' giảm: '. $row['xuong'];
       }
       else if ($value > $e) {
         $tick = '>'; 
-        $tar = $row['ten'] .' tăng: '. $row['xuong'];
+        $tar = $row['ten'] .' tăng: '. $row['len'];
       }
       
       $prof['target'] []= array(
@@ -176,11 +176,11 @@ function printword() {
     $tar = '';
     if ($value < $s) {
       $tick = '<';
-      $tar = $row['ten'] .' giảm: '. $row['len'];
+      $tar = $row['ten'] .' giảm: '. $row['xuong'];
     }
     else if ($value > $e) {
       $tick = '>'; 
-      $tar = $row['ten'] .' tăng: '. $row['xuong'];
+      $tar = $row['ten'] .' tăng: '. $row['len'];
     }
     
     $prof['target'] []= array(
