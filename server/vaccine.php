@@ -438,7 +438,7 @@ function excel() {
   }
 
   $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
-  $dulieuvaccine = $db->obj($sql, 'code', 'id');
+  $dulieuvaccine = $db->obj($sql, 'code');
 
   $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
   $dulieusieuam = $db->obj($sql, 'name', 'id');
@@ -558,9 +558,9 @@ function xacnhanvoucher($ghichu) {
   global $db;
 
   if (!empty($ghichu)) {
-    $sql = "select * from pet_voucher_danhsach where mavoucher = '$ghichu'";
+    $sql = "select * from pet_test_voucher_danhsach where mavoucher = '$ghichu'";
     if (!empty($db->fetch($sql))) {
-      $sql = "update pet_voucher_danhsach set trangthai = 1 where mavoucher = '$ghichu'";
+      $sql = "update pet_test_voucher_danhsach set trangthai = 1 where mavoucher = '$ghichu'";
       $db->query($sql);
     }
   }
@@ -636,12 +636,12 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
         $sql = "insert into pet_vaccinemoi (dienthoai, ngaymua, ngaynhac, sanpham) values('$dulieu[2]', $ngayden, $thongtin[ngaynhac], ". $dulieuvaccine[$dulieu[0]]["name"] .")";
         $db->query($sql);
 
-        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
+        $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]]["id"] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
           $res['vaccine'] ++;
           $homnay = strtotime(date('Y/m/d')) + 8 * 60 * 60 * 24 - 1;
           // cập nhật nhắc vaccine có ngày nhắc trước 7 ngày
-          $xtra = $danhsachloai[$dulieuvaccine[$dulieu[0]]]['nhom'];
+          $xtra = $danhsachloai[$dulieuvaccine[$dulieu[0]]["id"]]['nhom'];
           $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$dulieu[2]' and a.calltime < $homnay $xtra order by a.id asc";
           $danhsachid = $db->arr($sql, 'id');
 
