@@ -68,12 +68,52 @@ function capnhatvoucher() {
   global $data, $db, $result;
 
   if ($data->id) {
-    $sql = "update pet_". PREFIX ."_voucher set ten = '$data->ten', hansudung = $data->hansudung where id = $data->id";
+    $sql = "update pet_". PREFIX ."_voucher set ten = '$data->ten', hansudung = $data->hansudung, hinhanh = '$data->image' where id = $data->id";
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_voucher (ten, hansudung) values('$data->ten', $data->hansudung)";
+    $sql = "insert into pet_". PREFIX ."_voucher (ten, hansudung, hinhanh) values('$data->ten', $data->hansudung, '$data->image')";
   }
   $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachvoucher();
+  return $result;  
+}
+
+function khoitaocauhinh() {
+  global $data, $db, $result;
+
+  $cauhinh = [
+    "voucher" => false,
+    "admin" => false,
+    "quanly" => false,
+    "nhanvien" => false,
+  ];
+
+  foreach ($cauhinh as $key => $value) {
+    $sql = "select * from pet_". PREFIX ."_config where name = 'voucher-$key'";
+    if (!empty($config = $db->fetch($sql))) $cauhinh[$key] = boolval($config["value"]);
+  }
+
+  $result['status'] = 1;
+  $result['cauhinh'] = $cauhinh;
+  return $result;  
+}
+
+function capnhatcauhinh() {
+  global $data, $db, $result;
+
+  foreach ($data as $key => $value) {
+    $sql = "select * from pet_". PREFIX ."_config where name = 'voucher-$key'";
+    $val = intval($value);
+    if (!empty($config = $db->fetch($sql))) {
+      $sql = "update pet_". PREFIX ."_config set value = '$val' where id = $config[id]";
+    }
+    else {
+      $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('voucher', 'voucher-$key', $val, 0)";
+    }
+    $db->query($sql);
+  }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachvoucher();
@@ -83,7 +123,7 @@ function capnhatvoucher() {
 function xoavoucher() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_voucher set kichhoat = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_voucher set kichhoat = 0 where id = $data->idvoucher";
   $db->query($sql);
 
   $result['status'] = 1;

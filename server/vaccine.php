@@ -524,12 +524,26 @@ function excel() {
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
       kiemtranhantin($row);
       xacnhanvoucher($row[5]);
+      kiemtradatlich($row[2]);
     }
   }
 
   $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";
   $result['data'] = $res;
   return $result;
+}
+
+function kiemtradatlich($dienthoai) {
+  $daungay = strtotime(date("Y/m/d"));
+  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_". PREFIX ."_customer where phone = '$dienthoai'";
+  $khachhang = $db->fetch($sql);
+
+  $sql = "select * from pet_". PREFIX ."_datlich where idkhachhang = $khachhang[id] and trangthai = 0 and (thoigian between $daungay and $cuoingay)";
+  if (!empty($db->fetch)) {
+    $sql = "update pet_". PREFIX ."_datlich set trangthai = 1 where idkhachhang = $khachhang[id] and trangthai = 0 and (thoigian between $daungay and $cuoingay)";
+    $db->query($sql);
+  }
 }
 
 function tachthongtin($cumthongtin, $ngatdong) {
