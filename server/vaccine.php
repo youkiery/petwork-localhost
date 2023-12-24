@@ -14,6 +14,7 @@ function auto() {
   global $data, $db, $result;
 
   $result['status'] = 1;
+  $result['dathem'] = danhsachdathem();
   $result['vaccine'] = array(
     'list' => getlist(),
     'new' => getlist(true),
@@ -26,6 +27,75 @@ function auto() {
     'temp' => getusgtemplist(),
   );
   
+  return $result;
+}
+
+function danhsachdathem() {
+  global $data, $db, $result;
+
+  $daungay = strtotime(date("Y/m/d"));
+  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address, 0 as number from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where time between $daungay and $cuoingay";
+  $vaccine = $db->all($sql);
+  $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where time between $daungay and $cuoingay";
+  $sieuam = $db->all($sql);
+  return [
+    "vaccine" => diendulieu($vaccine),
+    "sieuam" => diendulieu($sieuam),
+  ];
+}
+
+function diendulieu($danhsachdulieu) {
+  $danhsach = [];
+  foreach ($danhsachdulieu as $thutu => $dulieu) {
+    $danhsach []= array(
+      'id' => $dulieu['id'],
+      'note' => $dulieu['note'],
+      'doctor' => $dulieu['doctor'],
+      'customerid' => $dulieu['customerid'],
+      'name' => $dulieu['name'],
+      'petname' => $dulieu['petname'],
+      'phone' => $dulieu['phone'],
+      'address' => $dulieu['address'],
+      'number' => $dulieu['number'],
+      'called' => ($dulieu['called'] ? date('d/m/Y', $dulieu['called']) : ''),
+      'cometime' => date('d/m/Y', $dulieu['cometime']),
+      'calltime' => ($dulieu['calltime'] ? date('d/m/Y', $dulieu['calltime']) : ''),
+      'time' => date('d/m/Y', $dulieu['time']),
+    );
+  }
+  return $danhsach;
+}
+
+function xuatfile() {
+  global $data, $db, $result;
+
+  include DIR .'include/PHPExcel/IOFactory.php';
+  $filemau = DIR . '/include/danhsachvaccine.xlsx';
+  $filetype = PHPExcel_IOFactory::identify($filemau);
+  $objPHPExcel = PHPExcel_IOFactory::load($filemau);
+  $sheet = $objPHPExcel->getSheet(0); 
+
+  $danhsachvaccine = getlist();
+  $thutu = 2;
+  foreach ($danhsachvaccine[0] as $vaccine) {
+    $objPHPExcel->setActiveSheetIndex(0)
+      ->setCellValue("A$thutu", $thutu - 1)
+      ->setCellValue("B$thutu", $vaccine["name"])
+      ->setCellValue("C$thutu", $vaccine["phone"])
+      ->setCellValue("D$thutu", $vaccine["petname"])
+      ->setCellValue("E$thutu", $vaccine["vaccine"])
+      ->setCellValue("F$thutu", $vaccine["calltime"])
+      ->setCellValue("G$thutu", $vaccine["doctor"]);
+    $thutu ++;
+  }
+
+  $outFile = '/include/export/danhsachvaccine-'. time() .'.xlsx';
+  $objWriter = PHPExcel_IOFactory::createWriter($objPHPExcel, $filetype);
+  $objWriter->save(DIR . $outFile);
+  $result['status'] = 1;
+  $result['link'] = $outFile;
   return $result;
 }
 
