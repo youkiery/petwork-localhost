@@ -461,3 +461,56 @@ function danhsachgopy() {
   }
   return $danhsachgopy;
 }
+
+function khoitaothongke() {
+  global $data, $db, $result;
+
+  $batdau = isodatetotime($data->batdau);
+  $ketthuc = isodatetotime($data->ketthuc);
+
+  $dulieu = [
+    "danhgia" => [
+      "labels" => ["1*", "2*", "3*", "4*", "5*"],
+      "datasets" => [[
+        "label" => "Tông đánh giá",
+        "data" => [0, 0, 0, 0, 0],
+        "backgroundColor" => 'pink',
+      ]],
+    ],
+    "nhanvien" => [
+      "labels" => [],
+      "datasets" => [[
+        "label" => "Đánh giá nhân viên",
+        "data" => [],
+        "backgroundColor" => 'pink',
+      ]],
+    ],
+  ];
+
+  $sql = "select * from pet_". PREFIX ."_danhgia a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid and (a.thoigian between $batdau and $ketthuc)";
+  $danhsach = $db->all($sql);
+
+  $chuyendoi = [];
+  $bodem = [];
+  foreach ($danhsach as $danhgia) {
+    if ($danhgia["muchailong"] <= 0) $danhgia["muchailong"] = 1;
+    $dulieu["danhgia"]["datasets"][0]["data"][$danhgia["muchailong"] - 1] ++;
+    if (!isset($chuyendoi[$danhgia["idnhanvien"]])) {
+      $chuyendoi[$danhgia["idnhanvien"]] = count($dulieu["nhanvien"]["datasets"][0]["data"]);
+      $dulieu["nhanvien"]["labels"][]= $danhgia["fullname"];
+      $dulieu["nhanvien"]["datasets"][0]["data"][]= 0;
+      $bodem[] = 0;
+    }
+    $dulieu["nhanvien"]["datasets"][0]["data"][$chuyendoi[$danhgia["idnhanvien"]]] += $danhgia["muchailong"];
+    $bodem[$chuyendoi[$danhgia["idnhanvien"]]] ++;
+  }
+
+
+  foreach ($dulieu["nhanvien"]["datasets"][0]["data"] as $thutu => $muchailong) {
+    $dulieu["nhanvien"]["datasets"][0]["data"][$thutu] = round($muchailong / $bodem[$thutu], 1);
+  }
+  
+  $result['status'] = 1;
+  $result['dulieu'] = $dulieu;
+  return $result;
+}

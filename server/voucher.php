@@ -130,3 +130,41 @@ function xoavoucher() {
   $result['danhsach'] = danhsachvoucher();
   return $result;  
 }
+
+function khoitaothongke() {
+  global $data, $db, $result;
+
+  $dulieu = [
+    "danhan" => ["danhsach" => [], "soluong" => 0, "morong" => 0],
+    "dasudung" => ["danhsach" => [], "soluong" => 0, "morong" => 0],
+  ];
+
+  $batdau = isodatetotime($data->batdau);
+  $ketthuc = isodatetotime($data->ketthuc);
+
+  $sql = "select * from pet_". PREFIX ."_voucher_danhsach a inner join pet_". PREFIX ."_voucher b on a.idvoucher = b.id and (a.thoigian between $batdau and $ketthuc)";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $voucher) {
+    $dulieu["danhan"]["soluong"] ++;
+    if (empty($dulieu["danhan"]["danhsach"][$voucher["idvoucher"]])) $dulieu["danhan"]["danhsach"][$voucher["idvoucher"]] = ["ten" => $voucher["ten"], "soluong" => 0];
+    $dulieu["danhan"]["danhsach"][$voucher["idvoucher"]]["soluong"] ++;
+    if ($voucher["trangthai"] == 1) {
+      $dulieu["dasudung"]["soluong"] ++;
+      if (empty($dulieu["dasudung"]["danhsach"][$voucher["idvoucher"]])) $dulieu["dasudung"]["danhsach"][$voucher["idvoucher"]] = ["ten" => $voucher["ten"], "soluong" => 0];
+      $dulieu["dasudung"]["danhsach"][$voucher["idvoucher"]]["soluong"] ++;
+    }
+  }
+
+  foreach ($dulieu as $songan => $thongtindulieu) {
+    $danhsach = [];
+    foreach ($thongtindulieu["danhsach"] as $thutu => $thongtin) {
+      $danhsach []= $thongtin;
+    }
+    $dulieu[$songan]["danhsach"] = $danhsach;
+  }
+
+  $result['status'] = 1;
+  $result['dulieu'] = $dulieu;
+  return $result; 
+}
