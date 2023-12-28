@@ -451,15 +451,20 @@ function chuyenngaunhien($duser = 0) {
   global $db;
   $daungay = strtotime(date('Y/m/d'));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $hientai = time();
   $userid = checkuserid();
 
   // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
-  $sql = "select userid, username, fullname from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
-  $danhsachnhanvien = $db->all($sql, 'userid');
+  $sql = "select userid from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+  $danhsachnhanvien = $db->arr($sql, 'userid');
+
+  // lấy danh sách nhân viên bận loại trừ khỏi danh sách
+  $sql = "select idnhanvien from pet_". PREFIX ."_lichban where batdau <= $hientai and ketthuc >= $hientai";
+  $danhsachloaitru = $db->obj($sql, "idnhanvien");
 
   $danhsachnhanspa = [];
-  foreach ($danhsachnhanvien as $thongtinnhanvien) {
-    $danhsachnhanspa[$thongtinnhanvien['userid']] = 0;
+  foreach ($danhsachnhanvien as $userid) {
+    if (!isset($danhsachloaitru[$userid])) $danhsachnhanspa[$userid] = 0;
   }
 
   $sql = "select * from pet_". PREFIX ."_spa where (time between $daungay and $cuoingay) and duser > 0";
