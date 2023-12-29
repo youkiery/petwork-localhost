@@ -460,7 +460,6 @@ function chuyenngaunhien($duser = 0) {
 
   // lấy danh sách nhân viên bận loại trừ khỏi danh sách
   $sql = "select idnhanvien from pet_". PREFIX ."_lichban where batdau <= $hientai and ketthuc >= $hientai";
-  $danhsachloaitru = $db->obj($sql, "idnhanvien");
 
   $danhsachnhanspa = [];
   foreach ($danhsachnhanvien as $userid) {

@@ -604,6 +604,7 @@ function excel() {
 }
 
 function kiemtradatlich($dienthoai) {
+  global $db;
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
   $sql = "select * from pet_". PREFIX ."_customer where phone = '$dienthoai'";
