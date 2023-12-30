@@ -876,7 +876,7 @@ function xacnhanthucong() {
   foreach ($danhsachmautin as $thutu => $idmautin) {
     if (empty($danhsachdaxacnhan[$idmautin . $danhsachvaccine[$thutu]])) {
       $danhsachdaxacnhan[$idmautin] = $idmautin . $danhsachvaccine[$thutu];
-      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($danhsachvaccine[$thutu], $idmautin, $thoigian)";
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, loainhan, thoigian) values($danhsachvaccine[$thutu], $idmautin, 0, $thoigian)";
       $db->query($sql);
     }
   }
@@ -1071,7 +1071,7 @@ function xacnhandagui() {
   foreach ($danhsachmautin as $thutu => $idmautin) {
     if (empty($danhsachdaxacnhan[$idmautin . $danhsachvaccine[$thutu]])) {
       $danhsachdaxacnhan[$idmautin] = $idmautin . $danhsachvaccine[$thutu];
-      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($danhsachvaccine[$thutu], $idmautin, $thoigian)";
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, loainhan, thoigian) values($danhsachvaccine[$thutu], $idmautin, 0, $thoigian)";
       $db->query($sql);
     }
   }
@@ -1087,7 +1087,7 @@ function xacnhandanhsachloi() {
   foreach ($data->danhsach as $dulieu) {
     $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine in ($dulieu->id) and idmautin in ($dulieu->idmautin)";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, thoigian) values($dulieu->id, $dulieu->idmautin, $thoigian)";
+      $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, loainhan, thoigian) values($dulieu->id, $dulieu->idmautin, 0, $thoigian)";
       $db->query($sql);
     }
   }
@@ -1165,12 +1165,14 @@ function khoitaothongke() {
 
   $batdau = isodatetotime($data->batdau);
   $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
-  $gioihanbatdau = $batdau - 60 * 60 * 24 * 10;
-  $gioihanketthuc = $ketthuc + 60 * 60 * 24 * 10;
+  $gioihanbatdau = $batdau - 60 * 60 * 24 * 10; // tiêm trước 10 ngày
+  $gioihanketthuc = $ketthuc + 60 * 60 * 24 * 90; // tiêm sau 3 tháng
 
   $dulieu = [
     'tongnhan' => 0,
     'tongkhach' => 0,
+    'loainhan' => [0 => 0, 0, 0, 0], // 0 sms, 1 giao dich, 2 zns
+    'quaylai' => [0 => 0, 0, 0, 0], // 0 sms, 1 giao dich, 2 zns
     'danhsachden' => [], 
     'danhsachkhongden' => [],
     'nhomnhantin' => []
@@ -1182,6 +1184,20 @@ function khoitaothongke() {
   $sql = "select *, 0 as tick from pet_". PREFIX ."_vaccineloainhom where active = 1 order by name asc";
   $dulieu['nhomnhantin'] = $db->all($sql);
   $danhsachkhach = [];
+
+  if ($data->khoitao) {
+    $loctheonhom = explode(',', $data->loctheonhom);
+    foreach ($loctheonhom as $idnhom) {
+      foreach ($dulieu['nhomnhantin'] as $thutu => $nhom) {
+        if ($idnhom == $nhom['id']) $dulieu['nhomnhantin'][$thutu]['tick'] = 1;
+      }
+    }
+  }
+  else {
+    foreach ($dulieu['nhomnhantin'] as $thutu => $nhom) {
+      $dulieu['nhomnhantin'][$thutu]['tick'] = 1;
+    }
+  }
 
   if ($data->sieuam) {
     $sql = "select * from pet_". PREFIX ."_vaccinemautin where loainhac = 1 and kichhoat = 1";
@@ -1199,6 +1215,7 @@ function khoitaothongke() {
         $khachhang['nhanvien'] = $dulieunhanvien[$khachhang['userid']];
         $khachhang['xogiun'] = '';
         $khachhang['vaccinetime'] = '';
+        $dulieu["loainhan"][$nhantin["loainhan"]] ++;
         if ($khachhang['status'] == 4) {
           $khachhang['dade'] = date('d/m/Y', $khachhang['calltime']);
           $khachhang['xogiun'] = date('d/m/Y', $khachhang['recall']);
@@ -1214,46 +1231,89 @@ function khoitaothongke() {
     }
   }
   else {
-    $loctheonhom = explode(',', $data->loctheonhom);
-    foreach ($loctheonhom as $idnhom) {
-      foreach ($dulieu['nhomnhantin'] as $thutu => $nhom) {
-        if ($idnhom == $nhom['id']) $dulieu['nhomnhantin'][$thutu]['tick'] = 1;
-      }
-    }
-  
-    $sql = "select * from pet_". PREFIX ."_vaccinenhantin where thoigian between $batdau and $ketthuc";
-    $danhsach = $db->all($sql);
-  
     if (!empty($data->loctheonhom)) {
       $sql = "select * from pet_". PREFIX ."_vaccineloai where idnhom in (". $data->loctheonhom .")";
       if (count($danhsachloai = $db->arr($sql, 'id'))) $xtra = " and a.typeid in (". implode(', ', $danhsachloai) .")";
       else $xtra = " and 0 ";
     }
     else $xtra = "";
-  
-    $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
-    $dulieuloai = $db->obj($sql, 'id', 'name');
-    
-    foreach ($danhsach as $nhantin) {
-      $dulieu['tongnhan'] ++;
-  
-      $sql = "select b.customerid, c.name as khachhang, c.phone as dienthoai, a.typeid, a.userid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid  = c.id where a.id = $nhantin[idvaccine] $xtra";
+
+    $sql = "select a.*, b.fullname as nhanvien from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.calltime between $batdau and $ketthuc) $xtra";
+    $danhsachvaccine = $db->all($sql);
+
+    foreach ($danhsachvaccine as $thutu => $vaccine) {
+      // lấy loại nhắc cùng nhóm với loại nhắc hiện tại
+      $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $vaccine[typeid]";
+      $loainhac = $db->fetch($sql);
+
+      $sql = "select * from pet_". PREFIX ."_vaccineloai where idnhom = $loainhac[idnhom]";
+      $nhom = $db->arr($sql, "id");
+
+      $sql = "select a.* from pet_". PREFIX ."_customer a inner join pet_". PREFIX ."_pet b on a.id = b.customerid where b.id = $vaccine[petid]";
       $khachhang = $db->fetch($sql);
-      if (!empty($khachhang) && empty($danhsachkhach[$khachhang['customerid']])) {
-        $danhsachkhach[$khachhang['customerid']] = 1;
-        $khachhang['loai'] = $dulieuloai[$khachhang['typeid']];
-        $khachhang['nhanvien'] = $dulieunhanvien[$khachhang['userid']];
-  
-        $sql = "select a.id, a.typeid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where b.customerid = $khachhang[customerid] and (a.time between $gioihanbatdau and $gioihanketthuc) $xtra";
-        $khach = $db->fetch($sql);
-        if (empty($khach)) $dulieu['danhsachkhongden'] []= $khachhang;
-        else {
-          $dulieu['danhsachden'] []= $khachhang;
-        }
+
+      // kiểm tra khách đã tiêm vaccine chưa
+      // khách tiêm vaccine cùng loại trong 
+      $sql = "select a.id, a.typeid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where b.customerid = $khachhang[id] and (a.cometime between $gioihanbatdau and $gioihanketthuc) and typeid in (". implode(", ", $nhom) .")";
+
+      $khach = [
+        "khachhang" => $khachhang["name"],
+        "dienthoai" => $khachhang["phone"],
+        "loai" => $loainhac["name"],
+        "nhanvien" => $vaccine["nhanvien"]
+      ];
+
+      if (!empty($quaylai = $db->fetch($sql))) $dulieu["danhsachden"] []= $khach;
+      else $dulieu["danhsachkhongden"] []= $khach;
+
+      // kiểm tra đã nhắn tin chưa
+      $sql = "select * from pet_". PREFIX ."_vaccinenhantin where idvaccine = $vaccine[id]";
+      if (empty($nhantin = $db->fetch($sql))) {
+        $dulieu["loainhan"][3] ++;
       }
+      else {
+        $dulieu["loainhan"][$nhantin["loainhan"]] ++;
+        if (!empty($quaylai)) $dulieu["quaylai"][$nhantin["loainhan"]] ++;
+      }
+      $dulieu["tongkhach"] ++;
     }
+
+    // $sql = "select * from pet_". PREFIX ."_vaccinenhantin where thoigian between $batdau and $ketthuc";
+    // $danhsach = $db->all($sql);
   
-    $dulieu['tongkhach'] = count($danhsachkhach);
+    // if (!empty($data->loctheonhom)) {
+    //   $sql = "select * from pet_". PREFIX ."_vaccineloai where idnhom in (". $data->loctheonhom .")";
+    //   if (count($danhsachloai = $db->arr($sql, 'id'))) $xtra = " and a.typeid in (". implode(', ', $danhsachloai) .")";
+    //   else $xtra = " and 0 ";
+    // }
+    // else $xtra = "";
+  
+    // $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
+    // $dulieuloai = $db->obj($sql, 'id', 'name');
+    
+    // foreach ($danhsach as $nhantin) {
+    //   $dulieu['tongnhan'] ++;
+    //   $dulieu["loainhan"][$nhantin["loainhan"]] ++;
+  
+    //   $sql = "select a.id, b.customerid, c.name as khachhang, c.phone as dienthoai, a.typeid, a.userid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid  = c.id where a.id = $nhantin[idvaccine] $xtra";
+    //   $khachhang = $db->fetch($sql);
+    //   if (!empty($khachhang) && empty($danhsachkhach[$khachhang['id']])) {
+    //     $danhsachkhach[$khachhang['id']] = 1;
+    //     $khachhang['loai'] = $dulieuloai[$khachhang['typeid']];
+    //     $khachhang['nhanvien'] = $dulieunhanvien[$khachhang['userid']];
+  
+    //     $sql = "select a.id, a.typeid from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where b.customerid = $khachhang[customerid] and (a.time between $gioihanbatdau and $gioihanketthuc) $xtra";
+    //     $khach = $db->fetch($sql);
+    //     if (empty($khach)) $dulieu['danhsachkhongden'] []= $khachhang;
+    //     else {
+    //       $dulieu['danhsachden'] []= $khachhang;
+    //     }
+    //   }
+    //   else {
+    //     echo "$sql <br>";
+    //   }
+    // }
+    // $dulieu['tongkhach'] = count($danhsachkhach);
   }
 
   $homnay = strtotime(date('Y/m/d'));
