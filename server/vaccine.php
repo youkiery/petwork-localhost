@@ -63,6 +63,7 @@ function diendulieu($danhsachdulieu) {
       'cometime' => date('d/m/Y', $dulieu['cometime']),
       'calltime' => ($dulieu['calltime'] ? date('d/m/Y', $dulieu['calltime']) : ''),
       'time' => date('d/m/Y', $dulieu['time']),
+      'vaccine' => $dulieu['type'],
     );
   }
   return $danhsach;
@@ -585,6 +586,7 @@ function excel() {
 
   foreach ($exdata as $row) {
     $res['total'] ++;
+    $row[4] = chuyenthoigian($row[4]);
     kiemtraspa($row, $danhsachspa);
     if (empty($row[2])) { }
     else {
@@ -1092,6 +1094,24 @@ function xoadulieuvaccine() {
 
   $result['status'] = 1;
   return $result;
+}
+
+function chuyenthoigian($serial) {
+  $utc_days  = floor($serial - 25569);
+  $utc_value = $utc_days * 86400;
+  $date = date("d/m/Y", $utc_value);
+
+  $fractional_day = $serial - floor($serial) + 0.0000001;
+
+  $total_seconds = floor(86400 * $fractional_day);
+
+  $seconds = $total_seconds % 60;
+  $total_seconds -= $seconds;
+
+  $hours = floor($total_seconds / (60 * 60));
+  $minutes = floor($total_seconds / 60) % 60;
+
+  return "$date $hours:$minutes:$seconds";
 }
 
 function chuyendulieuvaccine() {
