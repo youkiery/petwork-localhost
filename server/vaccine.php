@@ -553,6 +553,9 @@ function excel() {
     else $danhsachloai[$idloai]['nhom'] = $dulieunhom[$loai['idnhom']];
   }
 
+  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
+  $dulieuloaidieutri = $db->obj($sql, "code", "id");
+
   $cuoingay = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
   $col = array(
@@ -594,6 +597,7 @@ function excel() {
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
+      kiemtrataikham($row, $dulieuloaidieutri, $ngatdong);
       kiemtranhantin($row);
       xacnhanvoucher($row[5]);
       kiemtradatlich($row[2]);
@@ -616,6 +620,23 @@ function kiemtradatlich($dienthoai) {
   if (!empty($db->fetch)) {
     $sql = "update pet_". PREFIX ."_datlich set trangthai = 1 where idkhachhang = $khachhang[id] and trangthai = 0 and (thoigian between $daungay and $cuoingay)";
     $db->query($sql);
+  }
+}
+
+function kiemtrataikham($dulieu, $loaidieutri, $ngatdong) {
+  global $db;
+
+  if (isset($loaidieutri[$dulieu[0]])) {
+    // thêm tái khám vào bảng tái khám
+    $thongtin = tachthongtin($dulieu[5], $ngatdong);
+    $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
+    $ngayden = chuyendoithoigian($dulieu[4]);
+
+    $sql = "select * from pet_". PREFIX ."_dieutritaikham where thoigianden = $ngayden and thoigian = $thongtin[ngaynhac]";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigianden, thoigian, trangthai) values($idkhach, $ngayden, $thongtin[ngaynhac], 0)";
+      $db->query($sql);
+    }
   }
 }
 
@@ -847,22 +868,6 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
       $res['taikhamden']++;
       $sql = "update pet_". PREFIX ."_dieutritaikham set trangthai = 1 where id in (". implode(',', $danhsachtaikham) .")";
       $db->query($sql);
-    }
-  }
-
-  if (isset($danhsachdieutri[$dulieu[0]])) {
-    $thongtin = tachthongtin($dulieu[5], $ngatdong);
-    
-    if ($thongtin['ngaynhac']) {
-      $ngayden = chuyendoithoigian($dulieu[4]);
-      $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
-
-      $sql = "select * from `pet_". PREFIX ."_dieutritaikham` where idkhach = $idkhach and thoigian = $thongtin[ngaynhac]";
-      if (empty($db->fetch($sql))) {
-        $res['taikhamthem']++;
-        $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigian, thoigianden, trangthai) values($idkhach, $thongtin[ngaynhac], $ngayden, 0)";
-        $db->query($sql);
-      }
     }
   }
 }
