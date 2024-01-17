@@ -16,12 +16,16 @@ function danhsachchuyenmuc() {
   global $data, $db;
 
   $userid = checkuserid();
-  $sql = "select id, tenchuyenmuc as ten, socau, thoigian, hienthi from pet_tracnghiem_chuyenmuc order by hienthi desc, id desc";
+  $sql = "select id, nhanvien, tenchuyenmuc as ten, socau, thoigian, hienthi from pet_tracnghiem_chuyenmuc where hienthi = 1 order by hienthi desc, id desc";
   $danhsachchuyenmuc = $db->all($sql);
   
   foreach ($danhsachchuyenmuc as $thutu => $chuyenmuc) {
     $sql = "select * from pet_tracnghiem_baithi where idchuyenmuc = $chuyenmuc[id] and idnhanvien = $userid and nopbai = 1 order by id desc";
     $danhsachbaithi = $db->all($sql);
+
+    // $sql = "select id from pet_tracnghiem_cauhoi "
+
+    $danhsachchuyenmuc[$thutu]["diemgannhat"] = -1;
     $danhsachchuyenmuc[$thutu]["diemgannhat"] = -1;
     $danhsachchuyenmuc[$thutu]["lanthigannhat"] = "không có";
     $danhsachchuyenmuc[$thutu]["diemcaonhat"] = 0;
