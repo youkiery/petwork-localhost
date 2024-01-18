@@ -974,7 +974,7 @@ function danhsachnhantin() {
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
-  $danhsachdienthoai = [];
+  $danhsach = [];
   $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine'], ' tái khám', " đặt lịch"];
   $danhsachloai = [1 => ' siêu âm', ' tái khám', " đặt lịch"];
 
@@ -993,6 +993,8 @@ function danhsachnhantin() {
     }
     
     if (empty($db->fetch($sql)) && $khachhang['loaitru'] == 0) {
+      $loainhac = $mautin["loainhac"];
+      $sukien = $mautin["sukien"];
       if ($mautin['loainhac'] == 0) {
         $sql = "select * from pet_". PREFIX ."_vaccineloai where id = $mautin[typeid]";
         $loaitiem = $db->fetch($sql);
@@ -1018,8 +1020,16 @@ function danhsachnhantin() {
       $mautin['thucung'] = $khachhang['thucung'];
       $mautin['khachhang'] = chuanhoatenkhach($khachhang['name']);
       $mautin['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
-      if (empty($danhsachdienthoai[$khachhang['phone']])) {
-        $danhsachnhantin []= [
+      // mỗi loại nhắc cùng loại chỉ nên gửi khách 1 cái
+      // vd: 2 cái vaccine, xổ giun thì gộp lại, thay đổi mẫu tin, 
+      if (empty($danhsach[$mautin["dienthoai"]])) {
+        $danhsach[$mautin["dienthoai"]] = [];
+      }
+      if (empty($danhsach[$mautin["dienthoai"]][$loainhac])) {
+        $danhsach[$mautin["dienthoai"]][$loainhac] = [];
+      }
+      if (empty($danhsach[$mautin["dienthoai"]][$loainhac][$sukien])) {
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien] = [
           'id' => $mautin['id'],
           'idmautin' => $mautin['idmautin'],
           'loainhac' => $mautin['loainhac'],
@@ -1034,23 +1044,22 @@ function danhsachnhantin() {
           'trangthai' => 0,
           'thoigian' => $thoigian
         ];
-        $danhsachdienthoai[$khachhang['phone']] = 1;
       }
       else {
-        // foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
-        //   if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang'] && $mautin['loainhac'] == 0 && $dulieunhantin["loainhac"] == 0) {
-        //     if (strpos($danhsachnhantin[$thutunhantin]['loainhac'], $mautin['loainhac']) == false) {
-        //       $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $mautin['loainhac'];
-        //       $danhsachnhantin[$thutunhantin]['mautin'] = diendulieu($mautin['mautin'], $danhsachnhantin[$thutunhantin]);
-        //     }
-        //     $danhsachnhantin[$thutunhantin]['id'] .= ',' . $mautin['id'];
-        //     $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $mautin['idmautin'];
-        //     // nếu khác loại thì cập nhật lại loại nhắn
-        //     break;
-        //   }
-        // }
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['loainhac'] .= ', ' . $mautin['loainhac'];
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien] = diendulieu($danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['mautin'], $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]);
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['id'] .= ',' . $mautin['id'];
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['idmautin'] .= ',' . $mautin['idmautin'];
       }
     };
+  }
+
+  foreach ($danhsach as $danhsachsukien) {
+    foreach ($danhsachsukien as $sukien) {
+      foreach ($sukien as $mautin) {
+        $danhsachnhantin []= $mautin;
+      }
+    }
   }
 
   return $danhsachnhantin;
