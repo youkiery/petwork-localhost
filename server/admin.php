@@ -833,7 +833,7 @@ function danhsachmautin() {
 
   $sql = "select * from pet_". PREFIX ."_vaccinemautin where kichhoat = 1 order by lich desc, id desc";
   $danhsach = $db->all($sql);
-  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine mũi đầu'], ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine mũi đầu'], ' tái khám', ' đặt lịch'];
 
   foreach ($danhsach as $thutu => $mautin) {
     if ($mautin['lich'] == 0) $thoigian = 'Đúng ngày';
@@ -887,7 +887,7 @@ function xacnhanthucong() {
 }
 
 function diendulieu($mautin, $dulieu) {
-  $danhsachtruong = ['[loainhac]' => 'loainhac', '[ngayden]' => 'thoigiantoi', '[ngaynhac]' => 'thoigiannhac', '[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai', '[thucung]' => 'thucung'];
+  $danhsachtruong = ['[loainhac]' => 'loainhac', '[ngayden]' => 'thoigiantoi', '[ngaynhac]' => 'thoigiannhac', '[ngaygio]' => 'ngaygio', '[khachhang]' => 'khachhang', '[dienthoai]' => 'dienthoai', '[thucung]' => 'thucung'];
   if (isset($dulieu["khachhang"])) $dulieu["khachhang"] = mb_strtoupper($dulieu["khachhang"]);
   if (isset($dulieu["loainhac"])) $dulieu["loainhac"] = mb_strtoupper($dulieu["loainhac"]);
   foreach ($danhsachtruong as $tentruong => $tenbien) {
@@ -968,12 +968,15 @@ function danhsachnhantin() {
   // nhắn tin tái khám
   $sql = "select a.id, a.thoigianden as cometime, a.thoigian as calltime, a.idkhach as customerid, '' as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_dieutritaikham a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 2 and a.trangthai = 0 and b.kichhoat = 1 and (a.thoigian between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
-  // echo json_encode($danhsachmautin);die();
+
+  // nhắn tin đặt lịch
+  $sql = "select a.id, a.thoigian as cometime, a.ngaydat as calltime, a.idkhachhang as customerid, ghichu as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 3 and a.trangthai = 0 and b.kichhoat = 1 and (a.ngaydat between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
   $danhsachdienthoai = [];
-  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine'], ' tái khám'];
-  $danhsachloai = [1 => ' siêu âm', ' tái khám'];
+  $hauto = [' tái chủng', [' sinh', ' xổ giun', ' vaccine'], ' tái khám', " đặt lịch"];
+  $danhsachloai = [1 => ' siêu âm', ' tái khám', " đặt lịch"];
 
   // lọc loại bỏ những mục đã nhắn tin
   foreach ($danhsachmautin as $mautin) {
@@ -1008,13 +1011,13 @@ function danhsachnhantin() {
       $mautin['loainhac'] = $loaitiem['name'];
       $mautin['thoigiantoi'] = date('d/m/Y', $mautin['cometime']);
       $mautin['thoigiannhac'] = date('d/m/Y', $mautin['calltime']);
+      $mautin['ngaygio'] = date('d/m/Y H:i', $mautin['calltime']);
       if (isset($mautin['vaccinetime']) && !empty($mautin['vaccinetime'])) $mautin['thoigiannhac'] = date('d/m/Y', $mautin['vaccinetime']);
       $mautin['idkhachhang'] = $khachhang['id'];
       $mautin['dienthoai'] = $khachhang['phone'];
       $mautin['thucung'] = $khachhang['thucung'];
       $mautin['khachhang'] = chuanhoatenkhach($khachhang['name']);
       $mautin['mautin'] = str_replace('<br>', PHP_EOL, $mautin['mautin']);
-  
       if (empty($danhsachdienthoai[$khachhang['phone']])) {
         $danhsachnhantin []= [
           'id' => $mautin['id'],
@@ -1034,18 +1037,18 @@ function danhsachnhantin() {
         $danhsachdienthoai[$khachhang['phone']] = 1;
       }
       else {
-        foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
-          if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang']) {
-            if (strpos($danhsachnhantin[$thutunhantin]['loainhac'], $mautin['loainhac']) == false) {
-              $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $mautin['loainhac'];
-              $danhsachnhantin[$thutunhantin]['mautin'] = diendulieu($mautin['mautin'], $danhsachnhantin[$thutunhantin]);
-            }
-            $danhsachnhantin[$thutunhantin]['id'] .= ',' . $mautin['id'];
-            $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $mautin['idmautin'];
-            // nếu khác loại thì cập nhật lại loại nhắn
-            break;
-          }
-        }
+        // foreach ($danhsachnhantin as $thutunhantin => $dulieunhantin) {
+        //   if ($mautin['idkhachhang'] == $dulieunhantin['idkhachhang'] && $mautin['loainhac'] == 0 && $dulieunhantin["loainhac"] == 0) {
+        //     if (strpos($danhsachnhantin[$thutunhantin]['loainhac'], $mautin['loainhac']) == false) {
+        //       $danhsachnhantin[$thutunhantin]['loainhac'] .= ', ' . $mautin['loainhac'];
+        //       $danhsachnhantin[$thutunhantin]['mautin'] = diendulieu($mautin['mautin'], $danhsachnhantin[$thutunhantin]);
+        //     }
+        //     $danhsachnhantin[$thutunhantin]['id'] .= ',' . $mautin['id'];
+        //     $danhsachnhantin[$thutunhantin]['idmautin'] .= ',' . $mautin['idmautin'];
+        //     // nếu khác loại thì cập nhật lại loại nhắn
+        //     break;
+        //   }
+        // }
       }
     };
   }
