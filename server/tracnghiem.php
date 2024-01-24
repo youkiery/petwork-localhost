@@ -8,51 +8,69 @@ function khoitao() {
   else $result['baithicuoi'] = intval($baithi["thoigian"]);
 
   $result['status'] = 1;
+  $result['danhsach'] = danhsachdethi();
+  return $result;
+}
+
+function khoitaochuyenmuc() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
   $result['danhsach'] = danhsachchuyenmuc();
+  return $result;
+}
+
+function khoitaochuyenmucdethi() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['chuyenmuc'] = danhsachchuyenmuc();
+  $result['dethi'] = danhsachdethi();
   return $result;
 }
 
 function danhsachchuyenmuc() {
   global $data, $db;
 
-  $userid = checkuserid();
-  $sql = "select id, nhanvien, tenchuyenmuc as ten, socau, thoigian, hienthi from pet_tracnghiem_chuyenmuc where hienthi = 1 order by hienthi desc, id desc";
+  $sql = "select * from pet_tracnghiem_chuyenmuc where hienthi = 1 order by id desc";
   $danhsachchuyenmuc = $db->all($sql);
-  
-  foreach ($danhsachchuyenmuc as $thutu => $chuyenmuc) {
-    $sql = "select * from pet_tracnghiem_baithi where idchuyenmuc = $chuyenmuc[id] and idnhanvien = $userid and nopbai = 1 order by id desc";
-    $danhsachbaithi = $db->all($sql);
 
-    // $sql = "select id from pet_tracnghiem_cauhoi "
+  foreach ($danhsachchuyenmuc as $thutuchuyemmuc => $chuyenmuc) {
+    $sql = "select id from pet_tracnghiem_cauhoi where idchuyenmuc = $chuyenmuc[id] and hienthi = 1";
+    $danhsachcauhoi = $db->all($sql);
 
-    $danhsachchuyenmuc[$thutu]["diemgannhat"] = -1;
-    $danhsachchuyenmuc[$thutu]["diemgannhat"] = -1;
-    $danhsachchuyenmuc[$thutu]["lanthigannhat"] = "không có";
-    $danhsachchuyenmuc[$thutu]["diemcaonhat"] = 0;
-    $danhsachchuyenmuc[$thutu]["solanthi"] = 0;
-    foreach ($danhsachbaithi as $baithi) {
-      $tongcau = 0;
-      $tongdung = 0;
-      $sql = "select a.luachon from pet_tracnghiem_bailam a inner join pet_tracnghiem_cautraloi b on a.idcautraloi = b.id and b.dapan = 1 and idbaithi = $baithi[id] order by a.id desc";
-      $danhsachcauhoi = $db->all($sql);
-
-      foreach ($danhsachcauhoi as $cauhoi) {
-        $tongcau ++;
-        if ($cauhoi["luachon"] == 1) $tongdung ++;
-      }
-      if ($tongcau) $tongdiem = round($tongdung * 10 / $tongcau, 1);
-      else $tongdiem = 0;
-      if ($danhsachchuyenmuc[$thutu]["diemgannhat"] < 0) {
-        $danhsachchuyenmuc[$thutu]["diemgannhat"] = $tongdiem;
-        $danhsachchuyenmuc[$thutu]["lanthigannhat"] = date("d/m/Y H:i", $baithi["thoigian"]);
-      }
-      if ($danhsachchuyenmuc[$thutu]["diemcaonhat"] < $tongdiem) $danhsachchuyenmuc[$thutu]["diemcaonhat"] = $tongdiem;
-      $danhsachchuyenmuc[$thutu]["solanthi"] ++;
-    }
-    if ($danhsachchuyenmuc[$thutu]["diemgannhat"] < 0) $danhsachchuyenmuc[$thutu]["diemgannhat"] = 0;
+    $danhsachchuyenmuc[$thutuchuyemmuc]["tongsocau"] = count($danhsachcauhoi);
   }
 
   return $danhsachchuyenmuc;
+}
+
+function danhsachdethi() {
+  global $data, $db;
+
+  $userid = checkuserid();
+  $sql = "select * from pet_tracnghiem_dethi where hienthi = 1 order by id desc";
+  $danhsachdethi = $db->all($sql);
+
+  foreach ($danhsachdethi as $thutudethi => $dethi) {
+    $sql = "select b.* from pet_tracnghiem_dethi_chuyenmuc a inner join pet_tracnghiem_chuyenmuc b on a.idchuyenmuc = b.id and a.iddethi = $dethi[id] where b.hienthi = 1";
+    $danhsachchuyenmuc = $db->all($sql);
+    $danhsachdethi[$thutudethi]["tongchuyenmuc"] = count($danhsachchuyenmuc);
+    $danhsachdethi[$thutudethi]["tongsocau"] = 0;
+    $danhsachdethi[$thutudethi]["thoigian"] = 0;
+    $danhsachdethi[$thutudethi]["socau"] = 0;
+
+    foreach ($danhsachchuyenmuc as $chuyenmuc) {
+      $sql = "select id from pet_tracnghiem_cauhoi where idchuyenmuc = $chuyenmuc[id] and hienthi = 1";
+      $danhsachcauhoi = $db->all($sql);
+
+      $danhsachdethi[$thutudethi]["tongsocau"] += count($danhsachcauhoi);
+      $danhsachdethi[$thutudethi]["thoigian"] += $chuyenmuc["thoigian"];
+      $danhsachdethi[$thutudethi]["socau"] += $chuyenmuc["socau"];
+    }
+  }
+
+  return $danhsachdethi;
 }
 
 function batdauthi() {
@@ -61,25 +79,36 @@ function batdauthi() {
   $idnhanvien = checkuserid();
   $thoigian = time();
 
+  // nộp tất cả bài chưa hoàn thành
   $sql = "update pet_tracnghiem_baithi set nopbai = 1 where idnhanvien = $idnhanvien";
   $db->query($sql);
 
-  $sql = "select * from pet_tracnghiem_cauhoi where idchuyenmuc = $data->idchuyenmuc and hienthi = 1 order by rand() limit $data->socau";
-  $danhsachcauhoi = $db->all($sql);
-
-  $sql = "insert into pet_tracnghiem_baithi (idnhanvien, idchuyenmuc, thoigian) values($idnhanvien, $data->idchuyenmuc, $thoigian)";
+  // thêm bài thi mới
+  $sql = "insert into pet_tracnghiem_baithi (idnhanvien, iddethi, thoigian) values($idnhanvien, $data->iddethi, $thoigian)";
   $idbaithi = $db->insertid($sql);
-  
-  foreach ($danhsachcauhoi as $thutucauhoi => $cauhoi) {
-    $sql = "select * from pet_tracnghiem_cautraloi where idcauhoi = $cauhoi[id] order by rand() limit 4";
-    $danhsachcauhoi[$thutucauhoi]["cautraloi"] = $db->all($sql);
 
-    foreach ($danhsachcauhoi[$thutucauhoi]["cautraloi"] as $thutu => $cautraloi) {
-      $sql = "insert into pet_tracnghiem_bailam (idbaithi, idcauhoi, idcautraloi, luachon) values($idbaithi, $cauhoi[id], $cautraloi[id], 0)";
-      $db->query($sql);
-    }
-  }
+  // lấy danh sách câu hỏi từ đề thi
+  $sql = "select b.* from pet_tracnghiem_dethi_chuyenmuc a inner join pet_tracnghiem_chuyenmuc b on a.idchuyenmuc = b.id and a.iddethi = $data->iddethi where b.hienthi = 1";
+  $danhsachchuyenmuc = $db->all($sql);
+  $cauhoidethi = [];
+
+  foreach ($danhsachchuyenmuc as $chuyenmuc) {
+    $sql = "select * from pet_tracnghiem_cauhoi where idchuyenmuc = $chuyenmuc[id] and hienthi = 1 order by rand() limit $chuyenmuc[socau]";
+    $danhsachcauhoi = $db->all($sql);
+
+    foreach ($danhsachcauhoi as $thutucauhoi => $cauhoi) {
+      $sql = "select * from pet_tracnghiem_cautraloi where idcauhoi = $cauhoi[id] order by rand() limit 4";
+      $danhsachcauhoi[$thutucauhoi]["cautraloi"] = $db->all($sql);
   
+      foreach ($danhsachcauhoi[$thutucauhoi]["cautraloi"] as $thutu => $cautraloi) {
+        $sql = "insert into pet_tracnghiem_bailam (idbaithi, idcauhoi, idcautraloi, luachon) values($idbaithi, $cauhoi[id], $cautraloi[id], 0)";
+        $db->query($sql);
+      }
+    }
+
+    $cauhoidethi = array_merge($cauhoidethi, $danhsachcauhoi);
+  }
+
   $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $idnhanvien and nopbai = 0 order by thoigian desc limit 1";
   if (empty($baithi = $db->fetch($sql))) $result['baithicuoi'] = 0;
   else $result['baithicuoi'] = intval($baithi["thoigian"]);
@@ -88,7 +117,7 @@ function batdauthi() {
   $result["bailam"] = [
     "idbaithi" => $idbaithi,
     "nopbai" => 0, 
-    "danhsach" => $danhsachcauhoi,
+    "danhsach" => $cauhoidethi,
     "han" => $thoigian + $data->thoigian * 60
   ];
   return $result;
@@ -185,7 +214,12 @@ function ketquathi() {
   global $data, $db, $result;
 
   $idnhanvien = checkuserid();
-  $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where nopbai = 1 order by id desc limit 10 offset ". ($data->trang - 1) * 10;
+  if ($idnhanvien == 1 || $idnhanvien == 5) {
+    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where nopbai = 1 order by id desc limit 10 offset ". ($data->trang - 1) * 10;
+  }
+  else {
+    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid where idnhanvien = $idnhanvien and nopbai = 1 order by id desc limit 10 offset ". ($data->trang - 1) * 10;
+  }
   $danhsachbaithi = $db->all($sql);
 
   foreach ($danhsachbaithi as $thutu => $baithi) {
@@ -274,6 +308,45 @@ function chitietbaithi() {
   return $result;
 }
 
+function capnhatdethi() {
+  global $data, $db, $result;
+
+  $dulieu = $data->dulieu;
+  if ($dulieu->id) {
+    $sql = "update pet_tracnghiem_dethi set tendethi = '$dulieu->tendethi' where id = $dulieu->id";
+    $db->query($sql);
+  }
+  else {
+    $sql = "insert into pet_tracnghiem_dethi (tendethi, hienthi) values('$dulieu->tendethi', 1)";
+    $dulieu->id = $db->insertid($sql);
+  }
+
+  $danhsachchuyenmuc = [];
+  foreach ($dulieu->danhsachchuyenmuc as $idchuyenmuc => $giatri) {
+    if ($giatri) {
+      $sql = "select id from pet_tracnghiem_dethi_chuyenmuc where idchuyenmuc = $idchuyenmuc and iddethi = $dulieu->id";
+      if (empty($db->fetch($sql))) {
+        $sql = "insert into pet_tracnghiem_dethi_chuyenmuc (idchuyenmuc, iddethi) values($idchuyenmuc, $dulieu->id)";
+        $db->query($sql);
+      }
+
+      $danhsachchuyenmuc[]= $idchuyenmuc;
+    }
+  }
+
+  if (count($danhsachchuyenmuc)) {
+    $sql = "delete from pet_tracnghiem_dethi_chuyenmuc where iddethi = $dulieu->id and idchuyenmuc not in (". implode(", ", $danhsachchuyenmuc) .")";
+  }
+  else {
+    $sql = "delete from pet_tracnghiem_dethi_chuyenmuc where iddethi = $dulieu->id";
+  }
+  $db->query($sql);
+
+  $result["status"] = 1;
+  $result['danhsach'] = danhsachdethi();
+  return $result;
+}
+
 function capnhatchuyenmuc() {
   global $data, $db, $result;
 
@@ -282,11 +355,11 @@ function capnhatchuyenmuc() {
   $dulieu = $data->dulieu;
   $thoigian = intval($dulieu->thoigian);
   if ($dulieu->id) {
-    $sql = "update pet_tracnghiem_chuyenmuc set tenchuyenmuc = '$dulieu->tenchuyenmuc', socau = $dulieu->socau, thoigian = $thoigian where id = $dulieu->id";
+    $sql = "update pet_tracnghiem_chuyenmuc set nhanvien = '$dulieu->nhanvien', tenchuyenmuc = '$dulieu->tenchuyenmuc', socau = $dulieu->socau, thoigian = $thoigian where id = $dulieu->id";
     $db->query($sql);
   }
   else {
-    $sql = "insert into pet_tracnghiem_chuyenmuc (tenchuyenmuc, socau, thoigian) values('$dulieu->tenchuyenmuc', $dulieu->socau, $dulieu->thoigian)";
+    $sql = "insert into pet_tracnghiem_chuyenmuc (tenchuyenmuc, nhanvien, socau, thoigian) values('$dulieu->tenchuyenmuc', '$dulieu->nhanvien', $dulieu->socau, $dulieu->thoigian)";
     $dulieu->id = $db->insertid($sql);
   }
 
@@ -338,6 +411,20 @@ function dulieuchuyenmuc() {
   return $result;
 }
 
+function dulieudethi() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_tracnghiem_dethi where id = $data->iddethi";
+  $dethi = $db->fetch($sql);
+
+  $sql = "select idchuyenmuc, 1 as kiemtra from pet_tracnghiem_dethi_chuyenmuc a inner join pet_tracnghiem_chuyenmuc b on a.idchuyenmuc = b.id where b.hienthi = 1";
+  $danhsachchuyenmuc = $db->obj($sql, "idchuyenmuc", "kiemtra");
+
+  $result["status"] = 1;
+  $result['dethi'] = ["id" => $data->iddethi, "tendethi" => $dethi["tendethi"], "danhsachchuyenmuc" => $danhsachchuyenmuc];
+  return $result;
+}
+
 function xoachuyenmuc() {
   global $data, $db, $result;
 
@@ -349,16 +436,27 @@ function xoachuyenmuc() {
   return $result;
 }
 
-function hoiphucchuyenmuc() {
+function xoadethi() {
   global $data, $db, $result;
 
-  $sql = "update pet_tracnghiem_chuyenmuc set hienthi = 1 where id = $data->idchuyenmuc";
+  $sql = "update pet_tracnghiem_dethi set hienthi = 0 where id = $data->iddethi";
   $db->query($sql);
 
   $result['status'] = 1;
-  $result['danhsach'] = danhsachchuyenmuc();
+  $result['danhsach'] = danhsachdethi();
   return $result;
 }
+
+// function hoiphucchuyenmuc() {
+//   global $data, $db, $result;
+
+//   $sql = "update pet_tracnghiem_chuyenmuc set hienthi = 1 where id = $data->idchuyenmuc";
+//   $db->query($sql);
+
+//   $result['status'] = 1;
+//   $result['danhsach'] = danhsachchuyenmuc();
+//   return $result;
+// }
 
 function tailendanhsach() {
   global $data, $db, $result, $_FILES;
