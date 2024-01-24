@@ -7,6 +7,51 @@ function khoitao() {
   return $result;
 }
 
+function khoitaocauhinh() {
+  global $data, $db, $result;
+  
+  $cauhinh = ["chuongtrinh" => "", "luotdatlich" => 0];
+  $sql = "select * from pet_". PREFIX ."_config where name = 'luotdatlich' and module = 'khachhang'";
+  if (!empty($luotdatlich = $db->fetch($sql))) {
+    $cauhinh["luotdatlich"] = $luotdatlich["value"];
+  }
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'chuongtrinh' and module = 'khachhang'";
+  if (!empty($chuongtrinh = $db->fetch($sql))) {
+    $cauhinh["chuongtrinh"] = $chuongtrinh["value"];
+  }
+
+  $result['status'] = 1;
+  $result['cauhinh'] = $cauhinh;
+  return $result;
+}
+
+function luucauhinh() {
+  global $data, $db, $result;
+  
+  $sql = "select * from pet_". PREFIX ."_config where name = 'luotdatlich' and module = 'khachhang'";
+  if (empty($luotdatlich = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('khachhang', 'luotdatlich', '$data->luotdatlich', 0)";
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = '$data->luotdatlich' where id = $luotdatlich[id]";
+  }
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'chuongtrinh' and module = 'khachhang'";
+  if (empty($chuongtrinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('khachhang', 'chuongtrinh', '$data->chuongtrinh', 0)";
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = '$data->chuongtrinh' where id = $chuongtrinh[id]";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['messenger'] = "Đã lưu cấu hình";
+  return $result;
+}
+
 function tonghop() {
   global $data, $db, $result;
   

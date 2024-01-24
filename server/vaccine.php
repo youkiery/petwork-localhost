@@ -671,6 +671,12 @@ function xacnhanvoucher($ghichu) {
       $sql = "update pet_test_voucher_danhsach set trangthai = 1 where mavoucher = '$ghichu'";
       $db->query($sql);
     }
+
+    $sql = "select * from apet_mavoucher where mavoucher = '$ghichu'";
+    if (!empty($voucher = $db->fetch($sql))) {
+      $sql = "update apet_mavoucher set trangthai = 1 where id = $voucher[id]";
+      $db->query($sql);
+    }
   }
 }
 
