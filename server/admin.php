@@ -992,7 +992,7 @@ function danhsachnhantin() {
       $khachhang = $db->fetch($sql2);
     }
     
-    if (empty($db->fetch($sql)) && $khachhang['loaitru'] == 0) {
+    if (empty($db->fetch($sql)) && isset($khachhang["loaitru"]) && $khachhang['loaitru'] == 0) {
       $loainhac = $mautin["loainhac"];
       $sukien = $mautin["sukien"];
       if ($mautin['loainhac'] == 0) {
@@ -1042,12 +1042,13 @@ function danhsachnhantin() {
           'thucung' => $mautin['thucung'],
           'mautin' => diendulieu($mautin['mautin'], $mautin),
           'trangthai' => 0,
+          'ngaygio' => $mautin['ngaygio'],
           'thoigian' => $thoigian
         ];
       }
       else {
         $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['loainhac'] .= ', ' . $mautin['loainhac'];
-        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien] = diendulieu($danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['mautin'], $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]);
+        $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]["mautin"] = diendulieu($danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['mautin'], $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]);
         $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['id'] .= ',' . $mautin['id'];
         $danhsach[$mautin["dienthoai"]][$loainhac][$sukien]['idmautin'] .= ',' . $mautin['idmautin'];
       }

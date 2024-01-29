@@ -566,6 +566,7 @@ function chitietdulieu() {
   $cuoithangnay = strtotime(date('Y/m/t', isodatetotime($data->cuoithang))) + 60 * 60 * 24 - 1;
   $cuoithangtruoc = $dauthangnay - 1;
   $thangtruoc = 2 * date('m', $dauthangnay) - date('m', $cuoithangnay) - 1;
+  while($thangtruoc > 12) $thangtruoc -= 12;
   if ($thangtruoc < 0) {
     $thangtruoc += 12;
   }
@@ -660,6 +661,7 @@ function thongke() {
   $cuoithangnay = strtotime(date('Y/m/t', isodatetotime($data->cuoithang))) + 60 * 60 * 24 - 1;
   $cuoithangtruoc = $dauthangnay - 1;
   $thangtruoc = 2 * date('m', $dauthangnay) - date('m', $cuoithangnay) - 1;
+  while($thangtruoc > 12) $thangtruoc -= 12;
   if ($thangtruoc < 0) $thangtruoc += 12;
   $dauthangtruoc = strtotime(date('Y', $dauthangnay) . '/'. $thangtruoc . '/1');
 
