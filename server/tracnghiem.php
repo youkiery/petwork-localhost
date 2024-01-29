@@ -93,7 +93,7 @@ function batdauthi() {
   $cauhoidethi = [];
 
   foreach ($danhsachchuyenmuc as $chuyenmuc) {
-    $sql = "select * from pet_tracnghiem_cauhoi where idchuyenmuc = $chuyenmuc[id] and hienthi = 1 order by rand() limit $chuyenmuc[socau]";
+    $sql = "select * from pet_tracnghiem_cauhoi where idchuyenmuc = $chuyenmuc[id] and hienthi = 1 and hoanthanh = 1 order by rand() limit $chuyenmuc[socau]";
     $danhsachcauhoi = $db->all($sql);
 
     foreach ($danhsachcauhoi as $thutucauhoi => $cauhoi) {
@@ -375,9 +375,15 @@ function capnhatchuyenmuc() {
     }
     $danhsachidcauhoi []= $cauhoi->id;
 
+    $bodem = 0;
     foreach ($cauhoi->danhsach as $thutu => $cautraloi) {
+      if (empty($cautraloi->noidung)) $bodem ++;
       if ($cautraloi->id) $sql = "update pet_tracnghiem_cautraloi set noidung = '$cautraloi->noidung' where id = $cautraloi->id";
       else $sql = "insert into pet_tracnghiem_cautraloi (idcauhoi, noidung, dapan) values($cauhoi->id, '$cautraloi->noidung', $cautraloi->dapan)";
+      $db->query($sql);
+    }
+    if ($bodem) {
+      $sql = "update pet_tracnghiem_cauhoi set hoanthanh = 0 where id = $cauhoi->id";
       $db->query($sql);
     }
   }
