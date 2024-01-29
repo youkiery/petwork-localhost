@@ -555,6 +555,9 @@ function excel() {
 
   $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   $dulieuloaidieutri = $db->obj($sql, "code", "id");
+  
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 1 and kichhoat = 1 order by vitri asc";
+  $dulieuloaitaikham = $db->obj($sql, "code", "id");
 
   $cuoingay = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
@@ -597,7 +600,7 @@ function excel() {
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
-      kiemtrataikham($row, $dulieuloaidieutri, $ngatdong);
+      kiemtrataikham($row, $dulieuloaitaikham, $ngatdong);
       kiemtranhantin($row);
       xacnhanvoucher($row[5]);
       kiemtradatlich($row[2]);
