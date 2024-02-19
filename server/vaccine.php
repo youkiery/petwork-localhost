@@ -734,7 +734,6 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
 
     if (in_array($idkhach, $danhsachloaitru) == false) {
       $idthucung = kiemtrathucung($idkhach, $thongtin['thucung']);
-      // thay đổi trạng thái siêu âm
   
       $ngayden = chuyendoithoigian($dulieu[4]);
       if ($ngayden) {
@@ -756,8 +755,8 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
         $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]]["id"] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
           $res['vaccine'] ++;
-          $homnay = strtotime(date('Y/m/d')) + 8 * 60 * 60 * 24 - 1;
-          // cập nhật nhắc vaccine có ngày nhắc trước 7 ngày
+          $homnay = strtotime(date('Y/m/d')) + 14 * 60 * 60 * 24 - 1;
+          // cập nhật nhắc vaccine có ngày nhắc trước 2 tuần
           $xtra = $danhsachloai[$dulieuvaccine[$dulieu[0]]["id"]]['nhom'];
           $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$dulieu[2]' and a.calltime < $homnay $xtra order by a.id asc";
           $danhsachid = $db->arr($sql, 'id');
@@ -1540,7 +1539,7 @@ function typeList() {
 }
 
 function getDoctor() {
-  global $db;
+  global $db, $data;
 
   $sql = "select a.userid, b.fullname as name, b.username from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
   return $db->all($sql);
