@@ -556,7 +556,7 @@ function excel() {
   $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
   $dulieuloaidieutri = $db->obj($sql, "code", "id");
   
-  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 1 and kichhoat = 1 order by vitri asc";
+  $sql = "select * from pet_". PREFIX ."_dieutrima";
   $dulieuloaitaikham = $db->obj($sql, "code", "id");
 
   $cuoingay = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
@@ -845,8 +845,9 @@ function kiemtradieutri($dulieu, $danhsachcong, $danhsachthuoc, $danhsachdieutri
     }
 
     // kiểm tra có nhắc tái khám trước đó không
-    $hantaikham = strtotime(date('Y/m/d')) + 2 * 60 * 60 * 24 - 1; // khách đến tái khám trước 1 ngày
-    $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and $ngayden < $hantaikham and trangthai = 0";
+    $hantaikham = strtotime(date("Y/m/d", $ngayden)) + 2 * 60 * 60 * 24 - 1; // khách đến tái khám trước 1 ngày
+    $motngay = 60 * 60 * 24;
+    $sql = "select * from pet_". PREFIX ."_dieutritaikham where idkhach = $idkhach and (thoigian <= $hantaikham && ($ngayden - thoigianden > $motngay)) and trangthai = 0";
     $danhsachtaikham = $db->arr($sql, 'id');
     if (count($danhsachtaikham)) {
       $res['taikhamden']++;
