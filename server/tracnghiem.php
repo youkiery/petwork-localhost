@@ -377,6 +377,9 @@ function chitietbaithi()
   $sql = "select * from pet_tracnghiem_baithi where id = $data->idbaithi order by thoigian desc limit 1";
   $baithi = $db->fetch($sql);
 
+  $sql = "select * from pet_tracnghiem_dethi where id = $baithi[iddethi]";
+  $dethi = $db->fetch($sql);
+
   $sql = "select * from pet_tracnghiem_bailam where idbaithi = $baithi[id] order by id asc";
   $danhsachbailam = $db->all($sql);
 
@@ -402,7 +405,7 @@ function chitietbaithi()
   $result["status"] = 1;
   $result["bailam"] = [
     "idbaithi" => $baithi["id"],
-    "nopbai" => intval($baithi["nopbai"]),
+    "nopbai" => intval($baithi["nopbai"]) ? 1 : ((time() > $baithi["thoigian"] + $dethi["socau"] * 30) ? 1 : 0),
     "danhsach" => $danhsach,
     "thoigian" => $baithi["thoigian"]
   ];
