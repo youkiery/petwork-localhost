@@ -600,7 +600,7 @@ function excel() {
       kiemtravaccine($row, $dulieuvaccine, $danhsachloaitru, $danhsachbacsi, $danhsachloai, $cuoingay, $ngatdong);
       kiemtrasieuam($row, $dulieusieuam, $danhsachbacsi, $ngatdong);
       kiemtradieutri($row, $danhsachcong, $danhsachthuoc, $danhsachdieutri, $ngatdong);
-      kiemtrataikham($row, $dulieuloaitaikham, $ngatdong);
+      kiemtrataikham($row, $dulieuloaitaikham, $ngatdong, $danhsachbacsi);
       kiemtranhantin($row);
       xacnhanvoucher($row[5]);
       kiemtradatlich($row[2]);
@@ -626,18 +626,19 @@ function kiemtradatlich($dienthoai) {
   }
 }
 
-function kiemtrataikham($dulieu, $loaidieutri, $ngatdong) {
+function kiemtrataikham($dulieu, $loaidieutri, $ngatdong, $danhsachbacsi) {
   global $db;
 
   if (isset($loaidieutri[$dulieu[0]])) {
     // thêm tái khám vào bảng tái khám
     $thongtin = tachthongtin($dulieu[5], $ngatdong);
     $idkhach = kiemtrakhachhang($dulieu[3], $dulieu[2]);
+    $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
     $ngayden = chuyendoithoigian($dulieu[4]);
 
     $sql = "select * from pet_". PREFIX ."_dieutritaikham where thoigianden = $ngayden and thoigian = $thongtin[ngaynhac]";
     if (empty($db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, thoigianden, thoigian, trangthai) values($idkhach, $ngayden, $thongtin[ngaynhac], 0)";
+      $sql = "insert into pet_". PREFIX ."_dieutritaikham (idkhach, idnhanvien, thoigianden, thoigian, trangthai) values($idkhach, $idnhanvien, $ngayden, $thongtin[ngaynhac], 0)";
       $db->query($sql);
     }
   }
