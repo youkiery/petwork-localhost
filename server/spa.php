@@ -558,6 +558,20 @@ function kiemtrachitiet($dulieu) {
 
   return $danhsach;
 }
+function themkieu() {
+  global $db, $data;
+
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_spa_style set ten = '$data->ten', hinhanh = '$data->image' where id = $data->id";
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_spa_style (ten, hinhanh) values('$data->ten', '$data->image')";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  return $result;
+}
 
 function chitietdulieu() {
   global $db, $data, $result;

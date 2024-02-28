@@ -92,6 +92,25 @@ function spa() {
   $result['status'] = 1;
   $result['list'] = $danhsach;
   $result['loainhac'] = dulieuloai();
+  $result['style'] = dulieustyle();
+  return $result;
+}
+
+function dulieustyle() {
+  global $db, $data, $result;
+
+  $sql = "select * from pet_". PREFIX ."_spa_style where kichhoat = 1 order by id desc";
+  return $db->all($sql);
+}
+
+function xoakieu() {
+  global $db, $data, $result;
+
+  $sql = "update pet_". PREFIX ."_spa_style set kichhoat = 0 where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['style'] = dulieustyle();
   return $result;
 }
 
