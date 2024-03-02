@@ -103,6 +103,7 @@ function batdauthi()
     $tonghopcauhoi[$chuyenmuc["id"]] = $danhsachcauhoi;
   }
 
+  shuffle($tonghopcauhoi);
   if ($tongsocau > $data->socau) {
     // có nhiều câu hỏi, lấy mỗi chuyên mục 1 danh sách
     while ($tongsocau > $data->socau) {
@@ -110,6 +111,7 @@ function batdauthi()
       if (count($tonghopcauhoi[$ngaunhienchuyenmuc]) > 1) {
         $ngaunhiencauhoi = rand(0, count($tonghopcauhoi[$ngaunhienchuyenmuc]));
         unset($tonghopcauhoi[$ngaunhienchuyenmuc][$ngaunhiencauhoi]);
+        $tongsocau --;
       }
     }
   }
