@@ -19,7 +19,15 @@ function init() {
   $result['status'] = 1;
   $result['time'] = time();
   $result['list'] = getList();
+  $result['style'] = getstyle();
   return $result;
+}
+
+function getstyle() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_spa_style where kichhoat = 1 order by id desc";
+  return $db->all($sql);
 }
 
 // function auto() {
@@ -509,7 +517,7 @@ function insert() {
   else if ($data->did) $duser = $userid;
   else $duser = 0;
   
-  $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number)";
+  $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number, style) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number, $data->style)";
   $id = $db->insertid($sql);
 
   if (!$data->treat) {
@@ -810,7 +818,7 @@ function update() {
   $userid = checkuserid();
   $data->treat = intval($data->treat);
 
-  $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, style = '$data->style', utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
   $sql = "delete from pet_". PREFIX ."_spa_row where spaid = $data->id";
@@ -924,6 +932,10 @@ function getList() {
     $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
 
+    $sql = "select * from pet_". PREFIX ."_spa_style where id = $row[style]";
+    if (empty($style = $db->fetch($sql))) $style = "";
+    else $style = $style["hinhanh"];
+
     $image = parseimage($row['image']);
     $dimage = parseimage($row['dimage']);
     $list []= array(
@@ -935,6 +947,8 @@ function getList() {
       'phone2' => (empty($c['phone']) ? '' : $c['phone']),
       'tinhcach' => $row['tinhcach'],
       'user' => $row['user'],
+      'hinhanh' => $style,
+      'style' => $row['style'],
       'note' => $row['note'],
       'ltime' => (empty($u['name']) ? '' : date('d/m H:i', $row['ltime'])),
       'luser' => (empty($u['name']) ? '' : $u['name']),
