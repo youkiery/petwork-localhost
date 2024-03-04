@@ -516,6 +516,7 @@ function insert() {
   else if (isset($data->duser) && $data->duser > 0) $duser = $data->duser;
   else if ($data->did) $duser = $userid;
   else $duser = 0;
+  if (empty($data->style)) $data->style = 0;
   
   $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number, style) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number, $data->style)";
   $id = $db->insertid($sql);
@@ -817,7 +818,8 @@ function update() {
   
   $userid = checkuserid();
   $data->treat = intval($data->treat);
-
+  if (empty($data->style)) $data->style = 0;
+  
   $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, style = '$data->style', utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
