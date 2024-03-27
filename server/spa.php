@@ -687,9 +687,15 @@ function thongke() {
   while($thangtruoc > 12) $thangtruoc -= 12;
   if ($thangtruoc < 0) $thangtruoc += 12;
   $dauthangtruoc = strtotime(date('Y', $dauthangnay) . '/'. $thangtruoc . '/1');
+  
+  if ($dauthangtruoc > $cuoithangtruoc) {
+    // giảm 1 năm thang trước
+    $dauthangtruoc = strtotime((date("Y", $dauthangtruoc) - 1) . date("/m/1", $dauthangtruoc));
+  }
 
   // viết hàm lấy dữ liệu khách hàng trong khoảng thời gian
   // dữ liệu gồm, tổng tiền spa, số lần spa, trung bình mỗi lần bao nhiêu tiền
+  
   $thangnay = chitietthongke($dauthangnay, $cuoithangnay);
   $thangtruoc = chitietthongke($dauthangtruoc, $cuoithangtruoc);
 
