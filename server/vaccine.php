@@ -742,8 +742,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
         $ghichu = $thongtin["ghichu"];
       }
       else {
-        $trangthai = 5;
-        $ghichu = $dulieu[5];
+          return 0;
       }
       $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
 
