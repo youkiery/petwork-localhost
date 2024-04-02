@@ -312,19 +312,17 @@ function xoanhanvien() {
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_usg set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_spa set doctorid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+  $sql = "update pet_". PREFIX ."_spa set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_import set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_hotel set returnuserid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+  $sql = "update pet_". PREFIX ."_hotel set returnuserid = $data->nhanvienchuyen where returnuserid = $data->nhanvienxoa";
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_exam set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_kaizen set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_physical set doctor = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_profile set doctor = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+  $sql = "update pet_". PREFIX ."_xetnghiem set idnhanvien = $data->nhanvienchuyen where idnhanvien = $data->nhanvienxoa";
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_ride set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
@@ -332,7 +330,7 @@ function xoanhanvien() {
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_xquang set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xray set doctorid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+  $sql = "update pet_". PREFIX ."_xray set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
   $db->query($sql);
   $sql = "update pet_". PREFIX ."_xray_read set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
   $db->query($sql);
@@ -340,7 +338,7 @@ function xoanhanvien() {
   // xóa đăng ký lịch
   $sql = "delete from pet_". PREFIX ."_row where user_id = $data->nhanvienxoa";
   $db->query($sql);
-  $sql = "delete from pet_". PREFIX ."_row_log where user_id = $data->nhanvienxoa";
+  $sql = "delete from pet_". PREFIX ."_row_log where userid = $data->nhanvienxoa";
   $db->query($sql);
 
   // xóa lương
