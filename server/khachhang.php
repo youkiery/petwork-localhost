@@ -92,7 +92,7 @@ function henngay() {
   global $data, $db, $result;
   
   $ngayhen = isodatetotime($data->ngayhen);
-  $sql = "update pet_". PREFIX ."_datlich set thoigian = $ngayhen where id = $data->id";
+  $sql = "update pet_". PREFIX ."_datlich set ngaydat = $ngayhen where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;

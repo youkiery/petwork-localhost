@@ -318,17 +318,28 @@ function getOld() {
         
     foreach ($content as $k => $val) {
     	foreach ($val->list as $k2 => $d) {
-    		if (empty($d->kiot)) $val->list[$k2]->thoigian = chuyendoithoigian(explode(' ', $d->bank)[0]);
-    		else $val->list[$k2]->thoigian = chuyendoithoigian(explode(' ', $d->kiot)[0]);
+    		if (empty($d->kiot)) $val->list[$k2]->thoigian = chuyendoithoigian(explode(': ', $d->bank)[0]);
+    		else {
+    		    $chuyendoi = explode(': ', $d->kiot);
+    		    $thoigian = date("d/m/Y", chuyendoithoigian2($chuyendoi[0]));
+    		    $val->list[$k2]->thoigian = $thoigian;
+    		    $val->list[$k2]->kiot = $thoigian . ": ". $chuyendoi[1];
+    		}
     	}
     	usort($val->list, 'sosanh');
     	
     }
     $list[$key]['content'] = json_encode($content);
   }
-
   return $list;
 }
+
+function chuyendoithoigian2($serial) {
+  $utc_days  = floor($serial - 25569);
+  $utc_value = $utc_days * 86400;
+  return strtotime(date("Y/m/d", $utc_value));
+}
+
 
 function sosanh($a, $b) {
 	return $a->thoigian > $b->thoigian;

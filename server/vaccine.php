@@ -745,12 +745,12 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
           return 0;
       }
       $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
+      $idloainhac = $dulieuvaccine[$dulieu[0]]["id"];
 
-      $sql = "select * from pet_". PREFIX ."_vaccine where petid = $idthucung and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien";
+      $sql = "select * from pet_". PREFIX ."_vaccine where petid = $idthucung and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien and typeid = $idloainhac";
 
       if (empty($db->fetch($sql))) {
         $sql = "insert into pet_vaccinemoi (dienthoai, ngaymua, ngaynhac, sanpham) values('$dulieu[2]', $ngayden, $thongtin[ngaynhac], ". $dulieuvaccine[$dulieu[0]]["name"] .")";
-        $db->query($sql);
 
         $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]]["id"] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
         if ($db->query($sql)) {
@@ -1327,7 +1327,7 @@ function getlist($today = false) {
   $start = strtotime(date('Y/m/d'));
 
   if ($today) {
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 order by a.id desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 and calltime > 0 order by a.id desc limit 50";
     $list = dataCover($db->all($sql));
   }
   else if (empty($data->keyword)) {
@@ -1364,15 +1364,15 @@ function getlist($today = false) {
     }
     else $xtra2 = "0";
 
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and $xtra2 and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra order by a.calltime asc";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and $xtra2 and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.calltime > 0 order by a.calltime asc";
     $list[0] = dataCover($db->all($sql));
     
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.status < 3 order by a.calltime asc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.status < 3 and a.calltime > 0 order by a.calltime asc limit 50";
     $list[1] = dataCover($db->all($sql));
   }
   else {
     $key = trim($data->keyword);
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 order by a.calltime desc, a.recall desc limit 50";
+    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 and a.calltime > 0 order by a.calltime desc, a.recall desc limit 50";
     $list = dataCover($db->all($sql));
   }
 
@@ -1402,7 +1402,7 @@ function getOverList() {
   global $db, $data;
 
   $time = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status < 3 and calltime < $time order by a.calltime asc limit 50";
+  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status < 3 and calltime > 0 and calltime < $time order by a.calltime asc limit 50";
   return dataCover($db->all($sql));
 }
 
