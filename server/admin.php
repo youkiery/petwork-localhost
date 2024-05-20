@@ -1103,6 +1103,14 @@ function xacnhandagui() {
       $danhsachdaxacnhan[$idmautin] = $idmautin . $danhsachvaccine[$thutu];
       $sql = "insert into pet_". PREFIX ."_vaccinenhantin (idvaccine, idmautin, loainhan, thoigian) values($danhsachvaccine[$thutu], $idmautin, 0, $thoigian)";
       $db->query($sql);
+
+      $sql = "select * from pet_". PREFIX ."_vaccine where id = $danhsachvaccine[$thutu]";
+      $vaccine = $db->fetch($sql);
+
+      if ($vaccine["onetime"]) {
+        $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id = $danhsachvaccine[$thutu]";
+        $db->query($sql);
+      }
     }
   }
 

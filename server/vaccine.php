@@ -742,7 +742,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
         $ghichu = $thongtin["ghichu"];
       }
       else {
-          return 0;
+        return 0;
       }
       $idnhanvien = checkExcept($danhsachbacsi, $dulieu[1]);
       $idloainhac = $dulieuvaccine[$dulieu[0]]["id"];
@@ -753,7 +753,12 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
         $sql = "insert into pet_vaccinemoi (dienthoai, ngaymua, ngaynhac, sanpham) values('$dulieu[2]', $ngayden, $thongtin[ngaynhac], ". $dulieuvaccine[$dulieu[0]]["name"] .")";
 
         $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]]["id"] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
+                
         if ($db->query($sql)) {
+          // nếu có mũi tiêm cùng ngày nhưng khác ngày nhắc thì đánh dấu chỉ nhắc 1 lần
+          $sql = "update from pet_". PREFIX ."_vaccine set onetime = 1 where cometime = $ngayden and calltime <> $thongtin[ngaynhac]";
+          $db->query($sql);
+
           $res['vaccine'] ++;
           $homnay = strtotime(date('Y/m/d'));
           $toida = $homnay + 14 * 60 * 60 * 24 - 1;
@@ -763,9 +768,15 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
           $sql = "select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2 or a.status = 5) and c.phone = '$dulieu[2]' and a.calltime < $toida and cometime < $ngayden $xtra";
           $danhsachid = $db->arr($sql, 'id');
 
-          // tìm thú cưng cùng tên các mũi tiêm gần nhất
-          $sql = "select id from pet_". PREFIX ."_vaccine where petid = $idthucung and (status <= 2 or status = 5) and cometime < $ngayden $xtra";
+          // tìm thú cưng cùng tên các mũi tiêm trước đó nhưng quá hạn
+          $sql = "select id from pet_". PREFIX ."_vaccine where petid = $idthucung and (status <= 2 or status = 5) and cometime < $ngayden and calltime < $ngayden $xtra";
           $danhsachid = array_merge($danhsachid, $db->arr($sql, 'id'));
+
+          // tìm thú cưng cùng tên các mũi tiêm trước đó nhưng chỉ lấy mũi gần nhất
+          $sql = "select id from pet_". PREFIX ."_vaccine where petid = $idthucung and (status <= 2 or status = 5) and cometime < $ngayden and calltime >= $ngayden $xtra order by calltime asc";
+          if (!empty($dlid = $db->fetch($sql))) {
+            $danhsachid []= $dlid["id"];
+          }
 
           if (count($danhsachid)) {
             $res['recalled'] += count($danhsachid);
