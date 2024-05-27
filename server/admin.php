@@ -388,6 +388,7 @@ function getList() {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'donhang' => 0,
     'xetnghiem' => 0,
     'tailieu' => 0,
     'lichban' => 0,
