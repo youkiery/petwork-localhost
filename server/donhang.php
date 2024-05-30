@@ -20,8 +20,9 @@ function danhsachdonhang() {
 
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai = 0 or (trangthai between $daungay and $cuoingay) order by id desc";
+  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai < 4 order by id desc";
   $danhsachdonhang = $db->all($sql);
+	$trangthai = [0 => "Chưa xác nhận", "Chờ giao hàng", "Đã giao", "Đã huỷ"];
 
   foreach ($danhsachdonhang as $thutu => $donhang) {
     $danhsachdonhang[$thutu]["thoigian"] = date("d/m/Y H:i", $donhang["thoigian"]);
@@ -40,6 +41,7 @@ function danhsachdonhang() {
         $danhsachdonhang[$thutu]["nhanvien"] = $nhanvien["fullname"];
       }
     }
+    $danhsachdonhang[$thutu]["tinhtrang"] = $trangthai[$donhang["trangthai"]];
   }
   return $danhsachdonhang;
 }
@@ -49,10 +51,23 @@ function guihang() {
 
   $thoigian = time();
   $idnhanvien = checkuserid();
-  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = $thoigian, idnhanvien = $idnhanvien where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $idnhanvien where id = $data->id";
   $db->query($sql);
 
   guithongbaoapp($data->token, $data->idkhach, "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachdonhang();
+  return $result;
+}
+
+function hoanthanh() {
+  global $data, $db, $result;
+
+  $thoigian = time();
+  $idnhanvien = checkuserid();
+  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 2, idnhanvien = $idnhanvien where id = $data->id";
+  $db->query($sql);
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdonhang();
@@ -70,7 +85,21 @@ function xacnhannhieu() {
       guithongbaoapp($data->token, $data->idkhach, "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
     }
 
-    $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = $thoigian, idnhanvien = $data->uid where id = $iddonhang";
+    $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $data->uid where id = $iddonhang";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachdonhang();
+  return $result;
+}
+
+function hoanthanhnhieu() {
+  global $data, $db, $result;
+
+  $thoigian = time();
+  foreach ($data->danhsach as $iddonhang) {
+    $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 2, idnhanvien = $data->uid where id = $iddonhang";
     $db->query($sql);
   }
 
