@@ -417,11 +417,11 @@ function thembanggia() {
 
   $danhsachdathem = [];
   foreach ($data->image as $hinhanh) {
-    if (empty($hanghoa)) continue;
+    if (empty($hinhanh)) continue;
     
     $sql = "select * from pet_banggia where idchinhanh = $data->id and hinhanh = '$hinhanh'";
     if (empty($banggia = $db->fetch($sql))) {
-      $sql = "insert into pet_banggia (idchinhanh, hinhanh) values($data->id, $hinhanh)";
+      $sql = "insert into pet_banggia (idchinhanh, hinhanh) values($data->id, '$hinhanh')";
       $danhsachdathem []= $db->insertid($sql);
     }
     else {
