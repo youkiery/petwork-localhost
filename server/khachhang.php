@@ -4,10 +4,12 @@ function khoitao() {
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
+  $result['danhgia'] = danhsachdanhgia();
+  $result['gopy'] = danhsachgopy();
   return $result;
 }
 
-function khoitaocauhinh() {
+function laycauhinh() {
   global $data, $db, $result;
   
   $cauhinh = ["chuongtrinh" => "", "luotdatlich" => 0];
@@ -15,15 +17,21 @@ function khoitaocauhinh() {
   if (!empty($luotdatlich = $db->fetch($sql))) {
     $cauhinh["luotdatlich"] = $luotdatlich["value"];
   }
+  else $cauhinh["luotdatlich"] = 1;
 
   $sql = "select * from pet_". PREFIX ."_config where name = 'chuongtrinh' and module = 'khachhang'";
   if (!empty($chuongtrinh = $db->fetch($sql))) {
     $cauhinh["chuongtrinh"] = $chuongtrinh["value"];
   }
+  else $cauhinh["chuongtrinh"] = "";
 
-  $result['status'] = 1;
-  $result['cauhinh'] = $cauhinh;
-  return $result;
+  $sql = "select * from pet_". PREFIX ."_config where name = 'chuongtrinhdichvu' and module = 'khachhang'";
+  if (!empty($chuongtrinh = $db->fetch($sql))) {
+    $cauhinh["chuongtrinhdichvu"] = $chuongtrinh["value"];
+  }
+  else $cauhinh["chuongtrinhdichvu"] = "";
+
+  return $cauhinh;
 }
 
 function luucauhinh() {
@@ -44,6 +52,15 @@ function luucauhinh() {
   }
   else {
     $sql = "update pet_". PREFIX ."_config set value = '$data->chuongtrinh' where id = $chuongtrinh[id]";
+  }
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'chuongtrinhdichvu' and module = 'khachhang'";
+  if (empty($chuongtrinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('khachhang', 'chuongtrinhdichvu', '$data->chuongtrinhdichvu', 0)";
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = '$data->chuongtrinhdichvu' where id = $chuongtrinh[id]";
   }
   $db->query($sql);
 
@@ -231,6 +248,7 @@ function khoitaochuyenmon() {
   $result['danhsach'] = danhsachnhanvien();
   $result['dichvu'] = danhsachdichvu();
   $result['chuyenmon'] = danhsachchuyenmon();
+  $result['cauhinh'] = laycauhinh();
   return $result;
 }
 
@@ -344,9 +362,9 @@ function khoitaodanhgia() {
 function danhsachdanhgia() {
   global $data, $db, $result;
 
-  $dauthang = strtotime(date("Y/m/1", isodatetotime($data->thoigian)));
-  $cuoithang = strtotime(date("Y/m/t", isodatetotime($data->thoigian))) + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_". PREFIX ."_danhgia where thoigian between $dauthang and $cuoithang order by thoigian desc";
+  $tungay = strtotime(date("Y/m/d", isodatetotime($data->tungay)));
+  $denngay = strtotime(date("Y/m/d", isodatetotime($data->denngay))) + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_". PREFIX ."_danhgia where thoigian between $tungay and $denngay order by thoigian desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $key => $value) {
@@ -369,11 +387,58 @@ function khoitaochinhanh() {
   return $result;
 }
 
+function xoachinhanh() {
+  global $data, $db, $result;
+  
+  $sql = "delete from pet_chinhanh where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachchinhanh();
+  return $result;
+}
+
 function danhsachchinhanh() {
   global $data, $db, $result;
 
   $sql = "select * from pet_chinhanh order by id";
-  return $db->all($sql);
+  $danhsachchinhanh = $db->all($sql);
+
+  foreach ($danhsachchinhanh as $thutu => $chinhanh) {
+    $sql = "select * from pet_banggia where idchinhanh = $chinhanh[id]";
+    $danhsachchinhanh[$thutu]["banggia"] = $db->arr($sql, "hinhanh");
+  }
+  
+  return $danhsachchinhanh;
+}
+
+function thembanggia() {
+  global $data, $db, $result;
+
+  $danhsachdathem = [];
+  foreach ($data->image as $hinhanh) {
+    if (empty($hanghoa)) continue;
+    
+    $sql = "select * from pet_banggia where idchinhanh = $data->id and hinhanh = '$hinhanh'";
+    if (empty($banggia = $db->fetch($sql))) {
+      $sql = "insert into pet_banggia (idchinhanh, hinhanh) values($data->id, $hinhanh)";
+      $danhsachdathem []= $db->insertid($sql);
+    }
+    else {
+      $danhsachdathem []= $banggia["id"];
+    }
+  }
+
+  if (count($danhsachdathem)) {
+    $sql = "delete from pet_banggia where idchinhanh = $data->id and id not in (". implode(", ", $danhsachdathem) .")";
+  }
+  else {
+    $sql = "delete from pet_banggia where idchinhanh = $data->id";
+  }
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  return $result;
 }
 
 function khoitaokhachvip() {
@@ -381,6 +446,141 @@ function khoitaokhachvip() {
 
   $result['status'] = 1;
   $result['thongke'] = danhsachkhachvip();
+  return $result;
+}
+
+function khoitaotintuc() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['dichvu'] = laydichvu();
+  $result['thietbi'] = laythietbi();
+  $result['daotao'] = laydaotao();
+  $result['tintuc'] = laytintuc();
+  return $result;
+}
+
+function laydichvu() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_dichvu where loai = 0 order by id desc";
+  $danhsachdichvu = $db->all($sql);
+
+  foreach ($danhsachdichvu as $thutu => $dichvu) {
+    $danhsachdichvu[$thutu]["loai"] = intval($dichvu["loai"]);
+  }
+
+  return $danhsachdichvu;
+}
+
+function laythietbi() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_dichvu where loai = 1 order by id desc";
+  $danhsachdichvu = $db->all($sql);
+
+  foreach ($danhsachdichvu as $thutu => $dichvu) {
+    $danhsachdichvu[$thutu]["loai"] = intval($dichvu["loai"]);
+  }
+
+  return $danhsachdichvu;
+}
+
+function themdichvu() {
+  global $data, $db, $result;
+
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_dichvu set tendichvu = '$data->tendichvu', noidung = '$data->noidung', loai = '$data->loai', hinhanh = '$data->image' where id = $data->id"; 
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_dichvu (tendichvu, noidung, loai, hinhanh) values('$data->tendichvu', '$data->noidung', '$data->loai', '$data->image')";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['dichvu'] = laydichvu();
+  $result['thietbi'] = laythietbi();
+  return $result;
+}
+
+function xoadichvu() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_dichvu where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['dichvu'] = laydichvu();
+  $result['thietbi'] = laythietbi();
+  return $result;
+}
+
+function laydaotao() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_daotao order by id desc";
+  return $db->all($sql);
+}
+
+function themdaotao() {
+  global $data, $db, $result;
+
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_daotao set hocvien = '$data->hocvien', khoahoc = '$data->khoahoc', hinhanh = '$data->image' where id = $data->id"; 
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_daotao (hocvien, khoahoc, hinhanh) values('$data->hocvien', '$data->khoahoc', '$data->image')";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['daotao'] = laydaotao();
+  return $result;
+}
+
+function xoadaotao() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_daotao where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['daotao'] = laydaotao();
+  return $result;
+}
+
+function laytintuc() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_chuongtrinh order by id desc";
+  return $db->all($sql);
+}
+
+function themtintuc() {
+  global $data, $db, $result;
+
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_chuongtrinh set tieude = '$data->tieude', mota = '$data->mota', noidung = '$data->noidung', hinhanh = '$data->image' where id = $data->id"; 
+  }
+  else {
+    $thoigian = time();
+    $sql = "insert into pet_". PREFIX ."_chuongtrinh (tieude, mota, noidung, hinhanh, thoigian) values('$data->tieude', '$data->mota', '$data->noidung', '$data->image', $thoigian)";
+  }
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['tintuc'] = laytintuc();
+  return $result;
+}
+
+function xoatintuc() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_daotao where id = $data->id";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['tintuc'] = laytintuc();
   return $result;
 }
 
@@ -498,7 +698,9 @@ function khoitaogopy() {
 function danhsachgopy() {
   global $data, $db, $result;
   
-  $sql = "select * from pet_gopy order by thoigian desc limit 10 offset ". ($data->trang - 1) * 10;
+  $tungay = strtotime(date("Y/m/d", isodatetotime($data->tungay)));
+  $denngay = strtotime(date("Y/m/d", isodatetotime($data->denngay))) + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_gopy where thoigian between $tungay and $denngay order by thoigian";
   $danhsachgopy = $db->all($sql);
 
   foreach ($danhsachgopy as $thutu => $gopy) {

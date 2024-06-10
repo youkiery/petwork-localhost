@@ -147,6 +147,9 @@ function getinitdata($userid) {
 
   $sql = "select id from pet_". PREFIX ."_danhgia where (thoigian between $daungay and $cuoingay)";
   $datlich3 = $db->count($sql);
+  
+  $sql = "select id from pet_". PREFIX ."_hanghoa_donhang where trangthai = 0";
+  $donhang = $db->count($sql);
 
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
@@ -154,6 +157,7 @@ function getinitdata($userid) {
     'branch' => BRANCH,
     'userid' => $userid,
     'chotlich' => $chotlich,
+    'donhang' => $donhang,
     'datlich' => $datlich,
     'datlich2' => $datlich2,
     'datlich3' => $datlich3,
