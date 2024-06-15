@@ -4,8 +4,7 @@ function khoitao() {
   
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
-  $result['danhgia'] = danhsachdanhgia();
-  $result['gopy'] = danhsachgopy();
+  $result['homnay'] = danhsachtonghop();
   return $result;
 }
 
@@ -114,6 +113,7 @@ function henngay() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
+  $result['homnay'] = danhsachtonghop();
   return $result;
 }
 
@@ -125,6 +125,7 @@ function khongden() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
+  $result['homnay'] = danhsachtonghop();
   return $result;
 }
 
@@ -136,6 +137,7 @@ function khongdentonghop() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachtonghop();
+  $result['homnay'] = danhsachtonghop();
   return $result;
 }
 
@@ -147,6 +149,7 @@ function dadendieutri() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdatlich();
+  $result['homnay'] = danhsachtonghop();
   return $result;
 }
 
@@ -698,9 +701,7 @@ function khoitaogopy() {
 function danhsachgopy() {
   global $data, $db, $result;
   
-  $tungay = strtotime(date("Y/m/d", isodatetotime($data->tungay)));
-  $denngay = strtotime(date("Y/m/d", isodatetotime($data->denngay))) + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_gopy where thoigian between $tungay and $denngay order by thoigian";
+  $sql = "select * from pet_gopy order by thoigian limit 10 offset ". ($data->trang - 1) * 10;
   $danhsachgopy = $db->all($sql);
 
   foreach ($danhsachgopy as $thutu => $gopy) {
@@ -759,5 +760,59 @@ function khoitaothongke() {
   
   $result['status'] = 1;
   $result['dulieu'] = $dulieu;
+  $result['danhsach'] = danhsachgopy();
+  return $result;
+}
+
+function khoitaovaccine() {
+  global $data, $db, $result;
+ 
+  // danh sách khách yêu cầu
+  // danh sách khách đã tiêm năm trước nhưng năm nay chưa tiêm
+    // danh sách vaccine những năm trước
+    // nếu năm nay chưa có thì thêm vào bảng
+  $homnay = time();
+  $namtruoc = strtotime("last year");
+  $namtruocnua = strtotime("-2 years");
+  $danhsachkhachhang = [];
+  $danhsach = [];
+
+  $sql = "select id from pet_". PREFIX ."_vaccineloainhom where name like '%vaccine%'";
+  $danhsachloai = implode(", ", $db->arr($sql, "id"));
+  // nếu chưa tiêm loại thì bỏ qua
+  if (!empty($danhsachloai)) {
+    // lấy danh sách khách tiêm năm trước
+    $sql = "select petid, calltime from pet_". PREFIX ."_vaccine where (calltime < $namtruoc) and typeid in (". $danhsachloai .") group by petid order by calltime desc";
+    $danhsachvaccine = $db->all($sql);
+  
+    foreach ($danhsachvaccine as $vaccine) {
+      $sql = "select * from pet_". PREFIX ."_pet where id = $vaccine[petid]";
+      $thucung = $db->fetch($sql);
+
+      if (empty($thucung["customerid"])) continue;
+
+      $sql = "select * from pet_". PREFIX ."_pet where customerid = $thucung[customerid]";
+      $danhsachthucung = implode(", ", $db->arr($sql, "id"));
+
+      // nếu khách hàng đã kiểm tra thì bỏ qua
+      if (!empty($danhsachkhachhang[$thucung["customerid"]])) continue;
+
+      $danhsachkhachhang[$thucung["customerid"]] = 1; // đánh dấu đã kiểm tra
+      $sql = "select petid from pet_". PREFIX ."_vaccine where (cometime >= $namtruoc) and typeid in (". $danhsachloai .") and petid in (". $danhsachthucung .") group by petid";
+      if (!empty($db->fetch($sql))) continue; // nếu năm nay đã tiêm thì bỏ qua
+      // nếu không thì lấy ngày gần nhất tiêm phòng, thông tin khách hàng
+      $tiemcuoi = date("d/m/Y", $vaccine["calltime"]);
+      $sql = "select * from pet_". PREFIX ."_customer where id = $thucung[customerid]";
+      $khachhang = $db->fetch($sql);
+      $danhsach []= [
+        "khachhang" => $khachhang["name"],
+        "dienthoai" => $khachhang["phone"],
+        "tiemcuoi" => $tiemcuoi
+      ];
+    }
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = $danhsach;
   return $result;
 }
