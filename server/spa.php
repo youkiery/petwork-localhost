@@ -277,8 +277,8 @@ function coverData($data) {
 
   $list = array();
   foreach ($data as $key => $row) {
-    $sql = "select b.name from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
-    $service = $db->arr($sql, 'name');
+    $sql = "select b.tendanhmuc from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
+    $service = $db->arr($sql, 'tendanhmuc');
   
     $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
@@ -348,10 +348,9 @@ function statrate() {
 function statistic() {
   global $data, $db, $result;
 
-  $data->start = totime($data->start);
-  $data->end = totime($data->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
-  
+  $start = isodatetotime($data->filter->start);
+  $end = isodatetotime($data->filter->end) + 60 * 60 * 24 - 1;
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $start and $end) order by time desc";
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
 
