@@ -5,7 +5,44 @@ function khoitao() {
   $result['status'] = 1;
   $result['danhsach'] = danhsachdonhang();
   $result['nhanvien'] = danhsachnhanvien();
+  $result['hanghoa'] = danhsachhanghoa();
   return $result;
+}
+
+function khoitaodonhang() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachdonhang();
+  $result['nhanvien'] = danhsachnhanvien();
+  return $result;
+}
+
+function khoitaohanghoa() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['hanghoa'] = danhsachhanghoa();
+  return $result;
+}
+
+function danhsachhanghoa() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_". PREFIX ."_hanghoa order by id desc limit 10 offset ". ($data->trang - 1) * 10;
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $hanghoa) {
+    if ($hanghoa["hinhanh"] == "") $hinhanh = [];
+    else $hinhanh = explode(",", $hanghoa["hinhanh"]);
+    $danhsach[$thutu]["image"] = $hinhanh;
+    $danhsach[$thutu]["giaban"] = number_format($hanghoa["giaban"]);
+
+    $sql = "select mahang, chuyendoi from pet_". PREFIX ."_hanghoathanhphan where idhang = $hanghoa[id]";
+    $danhsach[$thutu]["chuyendoi"] = $db->all($sql);
+  }
+
+  return $danhsach;
 }
 
 function danhsachnhanvien() {
@@ -20,7 +57,7 @@ function danhsachdonhang() {
 
   $daungay = strtotime(date("Y/m/d"));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai < 4 order by id desc";
+  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai < 2 order by id desc";
   $danhsachdonhang = $db->all($sql);
 	$trangthai = [0 => "Chưa xác nhận", "Chờ giao hàng", "Đã giao", "Đã huỷ"];
 
