@@ -2,6 +2,25 @@
 define('SERVERSIDE', 0);
 define('CLIENTSIDE', 1);
 
+function khoitao() {
+  global $data, $db, $result;
+  
+  $result['status'] = 1;
+  $result['list'] = getlist();
+  $result['nhanvien'] = laydanhsachnhanvien();
+  $result['type'] = gettypelist();
+  $result['disease'] = getdiseaselist();
+  return $result;
+}
+
+function filter() {
+  global $data, $db, $result;
+  
+  $result['status'] = 1;
+  $result['list'] = getlist();
+  return $result;
+}
+
 function add() {
   global $data, $db, $result;
 
@@ -501,16 +520,6 @@ function checkcustomer() {
   return $customer['id'];
 }
 
-function filter() {
-  global $data, $db, $result;
-  
-  $result['status'] = 1;
-  $result['list'] = getlist();
-  $result['type'] = gettypelist();
-  $result['disease'] = getdiseaselist();
-  return $result;
-}
-
 function getdiseaselist() {
   global $data, $db, $result;
 
@@ -662,16 +671,9 @@ function getlist($id = 0) {
   $role = $db->fetch($sql);
   
   if ($role['type'] < 2) $xtra []= " (a.doctorid = $userid or a.share = 1 or pos = 1) ";
-  else if (isset($filter->{'docs'})) {
-    if (empty($filter->docscover)) $filter->docscover = '';
-    $docs = implode(',', $filter->docs);
-    $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
-    $db->query($sql);
-    $sql = "update pet_". PREFIX ."_config set value = '$filter->docscover' where module = 'docscover' and name = '$userid'";
-    $db->query($sql);
-    if (count($filter->docs)) $xtra []= " a.doctorid in ($docs) ";
+  else if (!empty($data->chonnhanvien)) {
+    $xtra []= " a.doctorid in (". implode(',', $data->chonnhanvien) .") ";
   }
-
 
   if (count($xtra)) $xtra = implode(" and ", $xtra) . "and";
   else $xtra = "";
@@ -742,8 +744,6 @@ function getlist($id = 0) {
   }
   return $list;
 }
-
-
 
 function changesc() {
   global $db, $data;

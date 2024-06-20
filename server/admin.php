@@ -5,11 +5,12 @@ foreach ($xr as $key => $value) {
   $x[$value] = $key;
 }
 
-function auto() {
+function khoitao() {
   global $db, $data, $result;
   
   $result['status'] = 1;
   $result['list'] = getList();
+  $result['nhanvien'] = laydanhsachnhanvien();
   return $result;
 }
 

@@ -5,6 +5,7 @@ function init() {
   $result['status'] = 1;
   $result['cat'] = getcatlist();
   $result['list'] = getlist();
+  $result['nhanvien'] = laydanhsachnhanvien();
   return $result;
 }
 

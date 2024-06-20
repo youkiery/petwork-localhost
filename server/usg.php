@@ -47,17 +47,12 @@ function gettemplist() {
 
   $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
-  else if (!empty($data->docs)) {
-    $xtra []= " a.userid in ($docs) ";
+  else if (!empty($data->chonnhanvien)) {
+    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
-  $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
-  $db->query($sql);
   if (!empty($data->time)) {
     $data->time = isodatetotime($data->time) + 60 * 60 * 24 - 1;
     $xtra []= " a.time < $data->time ";
@@ -114,24 +109,12 @@ function getlist($today = false) {
   $userid = checkuserid();
   $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
-  $docs = implode(',', $data->docs);
 
   $xtra = array();
   if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
-  else if (!empty($data->docs)) {
-    $xtra []= " a.userid in ($docs) ";
-    if (!isset($data->{'docscover'})) $data->docscover = '';
-
-    $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
-    $db->query($sql);
-    $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
-    $db->query($sql);
+  else if (!empty($data->chonnhanvien)) {
+    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
-
-  $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
-  $db->query($sql);
 
   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
   else $xtra = "";

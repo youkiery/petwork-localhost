@@ -20,7 +20,30 @@ function init() {
   $result['time'] = time();
   $result['list'] = getList();
   $result['style'] = getstyle();
+  $result['nhanvien'] = laydanhsachnhanvien();
+  $result['macdinh'] = layspamacdinh();
+  $result['dichvu'] = laydanhsachdichvu();
   return $result;
+}
+
+function laydanhsachdichvu() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  return $db->all($sql);
+}
+
+function layspamacdinh() {
+  global $db;
+
+  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
+  $danhsachspa = $db->all($sql);
+  $ds = [];
+
+  foreach ($danhsachspa as $key => $spa) {
+    if ($spa['macdinh']) $ds []= $spa['id'];
+  }
+  return $ds;
 }
 
 function getstyle() {

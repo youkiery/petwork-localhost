@@ -21,8 +21,9 @@ function session() {
       $result['status'] = 1;
       $sql = "update pet_". PREFIX ."_session set time = $time where id = $user[id]";
       $db->query($sql);
-      $result['data'] = getinitdata($user['userid']);
-      $result['config'] = permission($user['userid']);
+      $result['data'] = khoitaodulieu($user['userid']);
+      $result['badge'] = khoitaobadge($user['userid']);
+      $result['phanquyen'] = permission($user['userid']);
       $result['site'] = getsiteconfig();
     }
     else {
@@ -59,126 +60,22 @@ function getHisChatCount($userid) {
   return $count;
 }
 
-function getinitdata($userid) {
+function khoitaodulieu($userid) {
   global $db;
-  $admin = 0;
-  if ($userid == 1 || $userid == 5) $admin = 1;
-  else {
-    $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'admin' and type = 1";
-    if (!empty($db->fetch($sql))) $admin = 1;
-  }
 
   $sql = "select username, name, fullname from pet_". PREFIX ."_users where userid = $userid";
   $userinfo = $db->fetch($sql);
 
-  $sql = "select userid, fullname as name, fullname, username from pet_". PREFIX ."_users where userid in (select userid from pet_". PREFIX ."_user_per where module = 'doctor' and type = 1)";
-  $doctor = $db->all($sql);
-
-  $sql = "select * from pet_". PREFIX ."_vaccineloai where active = 1";
-  $type = $db->all($sql);
-
-  $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
-  $sql = "select * from pet_". PREFIX ."_usg where status < 7 and recall < $lim and userid = $userid and utemp = 0";
-  $uc = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_usg where status = 9 and userid = $userid";
-  $ut = $db->count($sql);
-
-  $sql = "select * from pet_". PREFIX ."_vaccine where status < 2 and recall < $lim and userid = $userid and utemp = 0";
-  $vc = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_vaccine where status = 5 and userid = $userid";
-  $vt = $db->count($sql);
-
-  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
-  $danhsachspa = $db->all($sql);
-  $ds = [];
-
-  foreach ($danhsachspa as $key => $spa) {
-    if ($spa['macdinh']) $ds []= $spa['id'];
-  }
-
-  $sql = "select * from pet_". PREFIX ."_config where module = 'docs' and name = '$userid'";
-  if (empty($docs = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values ('docs', $userid, '')";
-    $db->query($sql);
-    $docs['value'] = '';
-  }
-  $sql = "select * from pet_". PREFIX ."_config where module = 'docscover' and name = '$userid'";
-  if (empty($docscover = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values ('docscover', $userid, '')";
-    $db->query($sql);
-    $docscover['value'] = '';
-  }
-  if (!strlen($docs['value'])) $docs = array();
-  else $docs = explode(', ', $docs['value']);
-
-  $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
-  $usgcode = $db->all($sql);
-
   $homnay = date('d/m');
   $ngaymai = date('d/m', time() + 60 * 60 * 24);
 
-  $sql = "select birthday, fullname from pet_". PREFIX ."_users where birthday > 0";
-  $danhsachsinhnhat = $db->all($sql);
-  $sinhnhat = [];
-  foreach ($danhsachsinhnhat as $key => $ngaysinh) {
-    $ngaythangsinh = date('d/m', $ngaysinh['birthday']);
-    if ($ngaythangsinh == $homnay || $ngaythangsinh == $ngaymai) $sinhnhat []= ['fullname' => $ngaysinh['fullname'], 'birthday' => date('d/m/Y', $ngaysinh['birthday'])];
-  }
-
-  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
-  $chotlich = $db->fetch($sql);
-  if (empty($chotlich)) $chotlich = "0";
-  else $chotlich = $chotlich['value'];
-
-  $config = [
-    "servername" => "localhost",
-    "username" => "root",
-    "password" => "",
-    "database" => "thanhxuanpet",
-  ];
-
-  $daungay = strtotime(date("Y/m/d"));
-  $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and ngaydat < $cuoingay";
-  $datlich = $db->count($sql);
-
-  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and (thoigian between $daungay and $cuoingay)";
-  $datlich2 = $db->count($sql);
-
-  $sql = "select id from pet_". PREFIX ."_danhgia where (thoigian between $daungay and $cuoingay)";
-  $datlich3 = $db->count($sql);
-  
-  $sql = "select id from pet_". PREFIX ."_hanghoa_donhang where trangthai = 0";
-  $donhang = $db->count($sql);
-
   return array(
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
-    'prefix' => PREFIX,
-    'branch' => BRANCH,
-    'userid' => $userid,
-    'chotlich' => $chotlich,
-    'donhang' => $donhang,
-    'datlich' => $datlich,
-    'datlich2' => $datlich2,
-    'datlich3' => $datlich3,
-    'username' => $userinfo['username'],
-    'name' => $userinfo['name'],
-    'fullname' => $userinfo['fullname'],
-    'admin' => $admin,
-    'doctor' => $doctor,
-    'type' => $type,
-    'spa' => $danhsachspa,
-    'birthday' => $sinhnhat,
-    'usgcode' => $usgcode,
     'today' => date('d/m/Y'),
     'next' => date('d/m/Y', time() + 60 * 60 * 24 * 21),
-    'usg' => $uc + $ut,
-    'vaccine' => $vc + $vt,
-    'default' => array(
-      'spa' => $ds,
-      'docs' => $docs,
-      'docscover' => $docscover['value']
-    )
+    'userid' => $userid,
+    'username' => $userinfo['username'],
+    'fullname' => $userinfo['fullname'],
   );
 }
 
@@ -201,11 +98,71 @@ function login() {
     $db->query($sql);
     $result['status'] = 1;
     $result['session'] = $session;
-    $result['data'] = getinitdata($user['userid']);
-    $result['config'] = permission($user['userid']);
+    $result['data'] = khoitaodulieu($user['userid']);
+    $result['badge'] = khoitaobadge($user['userid']);
+    $result['phanquyen'] = permission($user['userid']);
     $result['site'] = getsiteconfig();
   }
   return $result;
+}
+
+function khoitaobadge($userid) {
+  global $data, $db, $result;
+
+  $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
+  $sql = "select * from pet_". PREFIX ."_usg where status < 7 and recall < $lim and userid = $userid and utemp = 0";
+  $uc = $db->count($sql);
+  $sql = "select * from pet_". PREFIX ."_usg where status = 9 and userid = $userid";
+  $ut = $db->count($sql);
+
+  $sql = "select * from pet_". PREFIX ."_vaccine where status < 2 and recall < $lim and userid = $userid and utemp = 0";
+  $vc = $db->count($sql);
+  $sql = "select * from pet_". PREFIX ."_vaccine where status = 5 and userid = $userid";
+  $vt = $db->count($sql);
+
+  $daungay = strtotime(date("Y/m/d"));
+  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and ngaydat < $cuoingay";
+  $datlich = $db->count($sql);
+
+  $sql = "select id from pet_". PREFIX ."_datlich where trangthai = 0 and (thoigian between $daungay and $cuoingay)";
+  $datlichhomnay = $db->count($sql);
+
+  $sql = "select id from pet_". PREFIX ."_danhgia where (thoigian between $daungay and $cuoingay)";
+  $danhgia = $db->count($sql);
+  
+  $sql = "select id from pet_". PREFIX ."_hanghoa_donhang where trangthai = 0";
+  $donhang = $db->count($sql);
+  
+  $sql = "select * from pet_". PREFIX ."_xray where insult = 0";
+  $dieutri = $db->count($sql);
+
+  $sql = "select * from pet_". PREFIX ."_kaizen where active = 1 and done = 0";
+  $kaizen = $db->count($sql);
+
+  $sql = "select * from pet_". PREFIX ."_xray_row where sinhhoa < 0 or sinhly < 0";
+  $xetnghiem = $db->count($sql);
+
+  $sql = "select * from pet_". PREFIX ."_exam where status = 0";
+  $xetnghiemkhac = $db->count($sql);
+
+  $hansudung = time() + 60 * 60 * 24 * 90;
+  $sql = "select * from pet_". PREFIX ."_hansudung where trangthai = 0 and hansudung <= $hansudung";
+  $result['data']['hsd'] = $db->count($sql);
+
+
+  return [
+    "donhang" => $donhang,
+    "datlich" => $datlich,
+    "datlichhomnay" => $datlichhomnay,
+    "danhgia" => $danhgia,
+    "vaccine" => $vc + $vt,
+    "sieuam" => $uc + $ut,
+    "dieutri" => $dieutri,
+    "kaizen" => $kaizen,
+    "xetnghiem" => $xetnghiem,
+    "xetnghiemkhac" => $xetnghiemkhac,
+  ];
 }
 
 function logout() {
@@ -241,8 +198,8 @@ function signin() {
 
     $result['status'] = 1;
     $result['session'] = $session;
-    $result['data'] = getinitdata($userid);
-    $result['config'] = permission($userid);
+    $result['data'] = khoitaodulieu($userid);
+    $result['phanquyen'] = permission($userid);
     $result['site'] = getsiteconfig();
   }
   return $result;
@@ -281,29 +238,6 @@ function password() {
       $result['messenger'] = 'Đã đổi mật khẩu';
     }
   }
-  return $result;
-}
-
-function badge() {
-  global $data, $db, $result;
-
-  $result['data'] = array(
-    'his' => 0, 'kaizen' => 0, 'profile' => 0, 'physical' => 0, 'xquang' => 0, 'sieuam' => 0, 'other' => 0, 'hsd' => 0, 'init' => true
-  );
-  $sql = "select * from pet_". PREFIX ."_xray where insult = 0";
-  $result['data']['his'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_kaizen where active = 1 and done = 0";
-  $result['data']['kaizen'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_xray_row where sinhhoa < 0 or sinhly < 0";
-  $result['data']['xetnghiem'] = $db->count($sql);
-  $sql = "select * from pet_". PREFIX ."_exam where status = 0";
-  $result['data']['other'] = $db->count($sql);
-  $result['status'] = 1;
-
-  $hansudung = time() + 60 * 60 * 24 * 90;
-  $sql = "select * from pet_". PREFIX ."_hansudung where trangthai = 0 and hansudung <= $hansudung";
-  $result['data']['hsd'] = $db->count($sql);
-
   return $result;
 }
 
@@ -347,7 +281,8 @@ function permission($userid) {
     'voucher' => 0,
   ];
 
-  if ($userid == 1) {
+  if ($userid == 1 || $userid == 5) {
+    $c["chucvu"] = 3; // 3: quản trị, 2: quản lý, 1: nhân viên
     foreach ($c as $key => $value) {
       $c[$key] = 2;
     }
