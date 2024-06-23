@@ -752,8 +752,6 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
       $sql = "select * from pet_". PREFIX ."_vaccine where petid = $idthucung and cometime = $ngayden and calltime = $thongtin[ngaynhac] and userid = $idnhanvien and typeid = $idloainhac";
 
       if (empty($db->fetch($sql))) {
-        $sql = "insert into pet_vaccinemoi (dienthoai, ngaymua, ngaynhac, sanpham) values('$dulieu[2]', $ngayden, $thongtin[ngaynhac], ". $dulieuvaccine[$dulieu[0]]["name"] .")";
-
         $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, recall, userid, time, called) values($idthucung, ". $dulieuvaccine[$dulieu[0]]["id"] .", $ngayden, $thongtin[ngaynhac], '$ghichu', $trangthai, $thongtin[ngaynhac], $idnhanvien, ". time() .", 0)";
                 
         if ($db->query($sql)) {

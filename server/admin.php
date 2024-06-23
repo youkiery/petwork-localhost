@@ -9,9 +9,74 @@ function khoitao() {
   global $db, $data, $result;
   
   $result['status'] = 1;
-  $result['list'] = getList();
-  $result['nhanvien'] = laydanhsachnhanvien();
+  $result['nhanvien'] = laydanhsachphanquyen();
   return $result;
+}
+
+function doiphanquyen() {
+  global $db, $data, $result;
+
+  $reversal = array(0 => 1, 2, 0);
+  $sql = "select * from pet_nhanvien_phanquyen where idchinhanh = $data->idchinhanh and idnhanvien = $data->userid and chucnang = '$data->per'";
+  if (empty($p = $db->fetch($sql))) {
+    $sql = "insert into pet_nhanvien_phanquyen (idnhanvien, idchinhanh, chucnang, vaitro) values ($data->userid, $data->idchinhanh, '$data->per', 1)";
+    $db->query($sql);
+  }
+  else {
+    $rev = $reversal[$p['vaitro']];
+    $sql = "update pet_nhanvien_phanquyen set vaitro = $rev where id = $p[id]";
+    $db->query($sql);
+  }
+
+  $result['status'] = 1;
+  $result['nhanvien'] = laydanhsachphanquyen();
+  return $result;
+}
+
+function laydanhsachphanquyen() {
+  global $db, $data;
+
+  // nếu là quản trị, lấy toàn bộ danh sách
+  // nếu là quản lý, lấy toàn bộ danh sách được phân quyền chi nhánh
+  // nếu là nhân viên, bỏ qua
+  if ($data->idnguoidung == 1 || $data->idnguoidung == 5) {
+    $sql = "select * from pet_nhanvien where kichhoat = 1";
+  }
+  else {
+    $sql = "select * from pet_nhanvien where id in (select idnhanvien as id from pet_nhanvien_phanquyen where idchinhanh = $data->idchinhanh) and kichhoat = 1";
+  }
+  $danhsachnhanvien = $db->all($sql);
+  
+  foreach ($danhsachnhanvien as $thutu => $nhanvien) {
+    if ($nhanvien["id"] == 1 || $nhanvien["id"] == 5) $danhsachnhanvien[$thutu]["chucvu"] = 2;
+    else {
+      $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $nhanvien[id] and chucnang = 'chucvu'";
+      $chucvu = $db->fetch($sql);
+      if (empty($chucvu)) $chucvu = ["vaitro" => 0];
+      $danhsachnhanvien[$thutu]["chucvu"] = $chucvu["vaitro"];
+    }
+
+    if ($nhanvien['sinhnhat']) $danhsachnhanvien[$thutu]['sinhnhat'] = date("d/m/Y", $nhanvien['sinhnhat']);
+    else $danhsachnhanvien[$thutu]['sinhnhat'] = "-";
+    $danhsachnhanvien[$thutu]['phanquyen'] = layphanquyen($nhanvien["id"], $data->idchinhanh);
+  }
+  return $danhsachnhanvien;
+}
+
+function chitietnhanvien() {
+  global $db, $data, $result;
+
+  $chitietphanquyen = [];
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnhanvien";
+  $danhsachphanquyen = $db->all($sql);
+
+  foreach ($danhsachphanquyen as $phanquyen) {
+    if (empty($phanquyen["vaitro"])) continue;
+    if (empty($chitietphanquyen[$phanquyen["idchinhanh"]])) $chitietphanquyen[$phanquyen["idchinhanh"]] = [];
+    $chitietphanquyen[$phanquyen["idchinhanh"]][$phanquyen]["chucnang"] = $phanquyen["vaitro"];
+  }
+  $result['status'] = 1;
+  $result['chitiet'] = $chitietphanquyen;
 }
 
 function getform() {
@@ -191,78 +256,54 @@ function danhsachdanhmucspa() {
 function toggle() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = '$data->per'";
+  $sql = "select * from pet_". PREFIX ."nhanvien_phanquyen where userid = $data->userid and module = '$data->per'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
+    $sql = "insert into pet_". PREFIX ."nhanvien_phanquyen (userid, module, type) values ($data->userid, '$data->per', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."nhanvien_phanquyen set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
   $result['status'] = 1;
-  $result['config'] = getConfig();
-  $result['list'] = getList();
-  return $result;
-}
-
-function change() {
-  global $db, $data, $result;
-
-  $reversal = array(0 => 1, 2, 0);
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = '$data->per'";
-  if (empty($p = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$data->per', 1)";
-    $db->query($sql);
-  }
-  else {
-    $rev = $reversal[$p['type']];
-    $sql = "update pet_". PREFIX ."_user_per set type = $rev where id = $p[id]";
-    $db->query($sql);
-  }
-
-  $result['status'] = 1;
-  $result['config'] = getConfig();
-  $result['list'] = getList();
+  $result['list'] = laydanhsachphanquyen();
   return $result;
 }
 
 function manager() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = 'manager'";
+  $sql = "select * from pet_". PREFIX ."nhanvien_phanquyen where userid = $data->userid and module = 'manager'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, 'manager', 1)";
+    $sql = "insert into pet_". PREFIX ."nhanvien_phanquyen (userid, module, type) values ($data->userid, 'manager', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."nhanvien_phanquyen set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
   $result['status'] = 1;
-  $result['config'] = getConfig();
-  $result['list'] = getList();
+  $result['list'] = laydanhsachphanquyen();
   return $result;
 }
 
 function admin() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->userid and module = 'admin'";
+  $sql = "select * from pet_". PREFIX ."nhanvien_phanquyen where userid = $data->userid and module = 'admin'";
   if (empty($p = $db->fetch($sql))){
-    $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, 'admin', 1)";
+    $sql = "insert into pet_". PREFIX ."nhanvien_phanquyen (userid, module, type) values ($data->userid, 'admin', 1)";
     $db->query($sql);
   }
   else {
-    $sql = "update pet_". PREFIX ."_user_per set type = ". intval(!$p['type']) ." where id = $p[id]";
+    $sql = "update pet_". PREFIX ."nhanvien_phanquyen set type = ". intval(!$p['type']) ." where id = $p[id]";
     $db->query($sql);
   }
 
   $result['status'] = 1;
-  $result['config'] = getConfig();
-  $result['list'] = getList();
+  $result['list'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -273,7 +314,7 @@ function insert() {
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = filterUser();
-  $result['admin'] = getList();
+  $result['admin'] = laydanhsachphanquyen();
   $result['messenger'] = 'Đã thêm nhân viên';
   
   return $result;
@@ -286,21 +327,20 @@ function update() {
   $db->query($sql);
 
   foreach ($data->module as $name => $value) {
-    $sql = "select * from pet_". PREFIX ."_user_per where module = '$name' and userid = $data->userid";
+    $sql = "select * from pet_". PREFIX ."nhanvien_phanquyen where module = '$name' and userid = $data->userid";
     $userinfo = $db->fetch($sql);
   
     if (empty($userinfo)) {
-      $sql = "insert into pet_". PREFIX ."_user_per (userid, module, type) values ($data->userid, '$name', '$value')";
+      $sql = "insert into pet_". PREFIX ."nhanvien_phanquyen (userid, module, type) values ($data->userid, '$name', '$value')";
     }
     else {
-      $sql = "update pet_". PREFIX ."_user_per set type = '$value' where module = '$name' and userid = $data->userid";
+      $sql = "update pet_". PREFIX ."nhanvien_phanquyen set type = '$value' where module = '$name' and userid = $data->userid";
     }
     $db->query($sql);
   }
     
   $result['status'] = 1;
-  $result['list'] = getList();
-  $result['config'] = getConfig();
+  $result['list'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -349,80 +389,20 @@ function xoanhanvien() {
   $db->query($sql);
 
   // xóa đăng nhập
-  $sql = "delete from pet_". PREFIX ."_session where userid = $data->nhanvienxoa";
+  $sql = "delete from pet_nhanvien_phiendangnhap where userid = $data->nhanvienxoa";
   $db->query($sql);
 
   // xóa quyền
-  $sql = "delete from pet_". PREFIX ."_user_per where userid = $data->nhanvienxoa";
+  $sql = "delete from pet_nhanvien_phanquyen where userid = $data->nhanvienxoa";
   $db->query($sql);
 
   // xóa người dùng
-  $sql = "delete from pet_". PREFIX ."_users where userid = $data->nhanvienxoa";
+  $sql = "delete from pet_nhanvien where userid = $data->nhanvienxoa";
   $db->query($sql);
 
   $result['status'] = 1;
-  $result['list'] = getList();
+  $result['list'] = laydanhsachphanquyen();
   return $result;
-}
-
-function getList() {
-  global $db;
-
-  $module = [
-    'spa' => 0,
-    'vaccine' => 0,
-    'schedule' => 0,
-    'item' => 0,
-    'kaizen' => 0,
-    'drug' => 0,
-    'price' => 0,
-    'ride' => 0,
-    'profile' => 0,
-    'physical' => 0,
-    'his' => 0,
-    'sieuam' => 0,
-    'xquang' => 0,
-    'transport' => 0,
-    'excel' => 0,
-    'hotel' => 0,
-    'other' => 0,
-    'luong' => 0,
-    'accounting' => 0,
-    'vattu' => 0,
-    'donhang' => 0,
-    'xetnghiem' => 0,
-    'tailieu' => 0,
-    'lichban' => 0,
-    'thongkenghi' => 0,
-    'thietbi' => 0,
-    'taichinh' => 0,
-    'work' => 0,
-    'nhantin' => 0,
-    'loinhuan' => 0,
-    'khachhang' => 0,
-    'chuyenmon' => 0,
-    'tracnghiem' => 0,
-    'voucher' => 0,
-  ];
-
-  $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo, zalouid from pet_". PREFIX ."_users where active = 1";
-  $list = $db->all($sql);
-  
-  foreach ($list as $index => $row) {
-    $sql = "select * from pet_". PREFIX ."_config where id = $row[placeid]";
-    if (empty($place = $db->fetch($sql))) $place = array('name' => 'Chưa chọn');
-    $list[$index]['place'] = $place['name'];
-    $list[$index]['birthday'] = date(DATE_ISO8601, $row['birthday']);
-
-    $sql = "select * from pet_". PREFIX ."_user_per where userid = $row[userid]";
-    $query = $db->query($sql);
-    $temp = $module;
-    while ($info = $query->fetch_assoc()) {
-      $temp[$info['module']] = $info['type'];
-    }
-    $list[$index]['module'] = $temp;
-  }
-  return $list;
 }
 
 function getPer() {
@@ -431,14 +411,6 @@ function getPer() {
   $sql = "select name, 0 as per from pet_". PREFIX ."_config where module = 'setting'";
   $c = $db->obj($sql, 'name', 'per');
   return $c;
-}
-
-function getConfig() {
-  global $db;
-  
-  $userid = checkuserid();
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid";
-  return $db->obj($sql, 'module', 'type');
 }
 
 function filterUser() {
@@ -460,18 +432,18 @@ function signup() {
   include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
-  $birthday = 0;
-  if (isset($data->birthday)) $birthday = isodatetotime($data->birthday);
+  $sinhnhat = 0;
+  if (isset($data->sinhnhat)) $sinhnhat = isodatetotime($data->sinhnhat);
 
-  $sql = "select userid, password from `pet_". PREFIX ."_users` where LOWER(username) = '$username'";
+  $sql = "select id, matkhau from `pet_". PREFIX ."_users` where LOWER(username) = '$username' and kichhoat = 1";
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, name, fullname, password, photo, regdate, sinhnhat, active) values ('$data->username', '$data->idvantay', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $sinhnhat, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
-    $result['list'] = getList();
+    $result['list'] = laydanhsachphanquyen();
   }
   return $result;
 }
@@ -484,13 +456,13 @@ function updateuser() {
   include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
-  $birthday = isodatetotime($data->birthday);
+  $sinhnhat = isodatetotime($data->sinhnhat);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->userid";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', sinhnhat = $sinhnhat where userid = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
-  $result['list'] = getList();
+  $result['list'] = laydanhsachphanquyen();
   
   return $result;
 }
@@ -602,7 +574,7 @@ function placeupdate() {
 
   $result['status'] = 1;
   $result['placelist'] = placelist();
-  $result['adminlist'] = getlist();
+  $result['adminlist'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -617,7 +589,7 @@ function placeinsert() {
 
   $result['status'] = 1;
   $result['placelist'] = placelist();
-  $result['adminlist'] = getlist();
+  $result['adminlist'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -628,7 +600,7 @@ function placeselect() {
   $db->query($sql);
 
   $result['status'] = 1;
-  $result['adminlist'] = getlist();
+  $result['adminlist'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -980,7 +952,7 @@ function danhsachnhantin() {
   $danhsachmautin = $db->all($sql);
 
   // nhắn tin siêu âm
-  // nếu sự kiện = 0 thì dùng birthday, nếu sự kiện = 1 thì deworm
+  // nếu sự kiện = 0 thì dùng sinhnhat, nếu sự kiện = 1 thì deworm
   $sql = "select a.id, a.cometime, a.recall as calltime, a.vaccinetime, a.customerid, a.note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 1 and ((b.sukien = 2 and b.kichhoat = 1 and (a.vaccinetime between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))) or (b.sukien < 2 and (a.status = 3 + b.sukien or a.status = 9 + b.sukien) and a.number > 0 and b.kichhoat = 1 and (a.recall between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))))";
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
@@ -1313,7 +1285,7 @@ function khoitaothongke() {
 
       if ($vaccine["status"] == 3) {
         $dulieu["danhsachden"] []= $khach;
-        if (empty($index)) $index = 1;
+        if (empty($thutu)) $thutu = 1;
       }
       else {
         if (empty($danhsachkhongden[$vaccine["userid"]])) {

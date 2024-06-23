@@ -1,70 +1,99 @@
 <?php
-function check() {
+
+function kiemtradangnhap() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_users where session = '$data->session'";
+  $hientai = time();
+  $giahan = $hientai + 60 * 60 * 24 * 7; // gia hạn phiên 7 ngày
+  if (empty($data->phiendangnhap)) {
+    $thongtindangnhap = $data->thongtindangnhap;
+    $taikhoan = mb_strtolower($thongtindangnhap->taikhoan);
+    $matkhau = $thongtindangnhap->matkhau;
 
-  if (empty($user = $db->fetch($sql))) return true;
-  return false;
-}
+    include_once(DIR . '/include/Encryption.php');
+    $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
+    $crypt = new NukeViet\Core\Encryption($sitekey);
 
-function session() {
-  global $data, $db, $result;
-
-  $sql = "select a.* from pet_". PREFIX ."_session a inner join pet_". PREFIX ."_users b on a.userid = b.userid where b.active = 1 and a.session = '$data->sess'";
-  $user = $db->fetch($sql);
-  $time = time();
-  $end = $time - 60 * 60 * 24 * 7; // 7 days
-
-  if (!empty($user)) {
-    if ($user['time'] > $end) {
-      $result['status'] = 1;
-      $sql = "update pet_". PREFIX ."_session set time = $time where id = $user[id]";
-      $db->query($sql);
-      $result['data'] = khoitaodulieu($user['userid']);
-      $result['badge'] = khoitaobadge($user['userid']);
-      $result['phanquyen'] = permission($user['userid']);
-      $result['site'] = getsiteconfig();
-    }
+    $sql = "select id, matkhau from pet_nhanvien where kichhoat = 1 and LOWER(taikhoan) = '$taikhoan'";
+    if (empty($nhanvien = $db->fetch($sql))) $result['messenger'] = 'Người dùng không tồn tại';
+    else if (!$crypt->validate_password($matkhau, $nhanvien['matkhau'])) $result['messenger'] = 'Sai mật khẩu';
     else {
-      $sql = "delete from pet_". PREFIX ."_session where id = $user[id]";
+      $phien = randomString();
+      $sql = "insert into pet_nhanvien_phiendangnhap (idnhanvien, phien, thoigian) values($nhanvien[id], '$phien', $giahan)";
       $db->query($sql);
-      $result['messenger'] = "Phiên đăng nhập hết hạn";
+      return laydulieudangnhap($nhanvien["id"], $phien);
     }
   }
   else {
+    $sql = "select * from pet_nhanvien_phiendangnhap where phien = '$data->phiendangnhap'";
+    $phien = $db->fetch($sql);
     $result['messenger'] = "Phiên đăng nhập hết hạn";
+    if (!empty($phien)) {
+      $sql = "select * from pet_nhanvien where id = $phien[idnhanvien]";
+      $nhanvien = $db->fetch($sql);
+
+      if (!empty($nhanvien) && $phien["thoigian"] > $hientai) {
+        $sql = "update pet_nhanvien_phiendangnhap set thoigian = $giahan where id = $phien[id]";
+        $db->query($sql);
+        return laydulieudangnhap($nhanvien["id"], $data->phiendangnhap);
+      }
+      else {
+        $sql = "delete from pet_nhanvien_phiendangnhap where idnhanvien = $nhanvien[id] and thoigian < $hientai";
+        $db->query($sql);
+      }
+    }
   }
   return $result;
 }
 
-function getHisChatCount($userid) {
-  global $db;
-  
-  $sql = "select * from pet_". PREFIX ."_xray where doctorid = $userid or pos = 1";
-  $c = $db->all($sql);
+function laydulieudangnhap($idnhanvien, $phien) {
+  global $data, $db, $result;
 
-  $count = 0;
-  foreach ($c as $row) {
-    $sql = "select * from pet_". PREFIX ."_xray_read where side = 0 and userid = $userid and postid = $row[id]";
-    if (empty($r = $db->fetch($sql))) {
-      $sql = "insert into pet_". PREFIX ."_xray_read (side, userid, postid, time) values(0, $userid, $row[id], 0)";
-      $db->query($sql);
-      $r = array('time' => 0);
-    }
-
-    $sql = "select id from pet_". PREFIX ."_xray_chat where postid = $row[id] and side = 1 and time > $r[time]";
-    $count += intval($db->count($sql));
+  // nếu chưa có tiền tố thì hiển thị danh sách chi nhánh và phân quyền
+  // nếu không lấy dữ liệu đăng nhập
+  if ($idnhanvien == 1 || $idnhanvien == 5) {
+    $sql = "select * from pet_chinhanh where tiento <> ''";
   }
-  
-  return $count;
+  else {
+    $sql = "select * from pet_chinhanh where id in (select idchinhanh as id from pet_nhanvien_phanquyen where idnhanvien = $idnhanvien group by idchinhanh) and tiento <> ''";
+  }
+  $danhsachchinhanh = $db->all($sql);
+  $kiemtra = true;
+  foreach ($danhsachchinhanh as $thutu => $chinhanh) {
+    if ($chinhanh["id"] == $data->idchinhanh) {
+      $kiemtra = false;
+      break;
+    }
+  }
+  if ($kiemtra) $data->idchinhanh = 0;
+
+  if (empty($data->idchinhanh)) {
+    $chucvu = 0;
+    if ($idnhanvien == 1 || $idnhanvien == 5) $chucvu = 3;
+
+    return [
+      "status" => 1,
+      "chucvu" => $chucvu,
+      "chinhanh" => $danhsachchinhanh,
+      "phiendangnhap" => $phien,
+      "phanquyen" => layphanquyen($idnhanvien),
+    ];
+  }
+  return [
+    "status" => 1,
+    "phiendangnhap" => $phien,
+    "chinhanh" => $danhsachchinhanh,
+    "phanquyen" => layphanquyen($idnhanvien, $data->idchinhanh),
+    "thongbao" => laythongbao($idnhanvien, $data->idchinhanh),
+    "thongtin" => laythongtin($idnhanvien),
+  ];
 }
 
-function khoitaodulieu($userid) {
+function laythongtin($idnhanvien) {
   global $db;
 
-  $sql = "select username, name, fullname from pet_". PREFIX ."_users where userid = $userid";
-  $userinfo = $db->fetch($sql);
+  $sql = "select * from pet_nhanvien where id = $idnhanvien";
+  $nhanvien = $db->fetch($sql);
 
   $homnay = date('d/m');
   $ngaymai = date('d/m', time() + 60 * 60 * 24);
@@ -73,40 +102,24 @@ function khoitaodulieu($userid) {
     'month' => array('start' => date('Y-m-01'), 'end' => date('Y-m-t')),
     'today' => date('d/m/Y'),
     'next' => date('d/m/Y', time() + 60 * 60 * 24 * 21),
-    'userid' => $userid,
-    'username' => $userinfo['username'],
-    'fullname' => $userinfo['fullname'],
+    'idnhanvien' => $idnhanvien,
+    'taikhoan' => $nhanvien['taikhoan'],
+    'hoten' => $nhanvien['hoten'],
   );
 }
 
-function login() {
-  global $data, $db, $result;
-  $username = mb_strtolower($data->username);
-  $password = $data->password;
+// function login() {
+//   global $data, $db, $result;
+//     $result['status'] = 1;
+//     $result['session'] = $session;
+//     $result['data'] = khoitaodulieu($user['userid']);
+//     $result['badge'] = khoitaobadge($user['userid']);
+//     $result['phanquyen'] = layphanquyen($user['userid']);
+//     $result['site'] = getsiteconfig();
+//   return $result;
+// }
 
-  include_once(DIR . '/include/Encryption.php');
-  $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
-  $crypt = new NukeViet\Core\Encryption($sitekey);
-
-  $sql = "select userid, password from `pet_". PREFIX ."_users` where active = 1 and LOWER(username) = '$username'";
-  if (empty($user = $db->fetch($sql))) $result['messenger'] = 'Người dùng không tồn tại';
-  else if (!$crypt->validate_password($password, $user['password'])) $result['messenger'] = 'Sai mật khẩu';
-  else {
-    $session = randomString();
-    $time = time();
-    $sql = "insert into pet_". PREFIX ."_session (userid, session, time) values($user[userid], '$session', $time)";
-    $db->query($sql);
-    $result['status'] = 1;
-    $result['session'] = $session;
-    $result['data'] = khoitaodulieu($user['userid']);
-    $result['badge'] = khoitaobadge($user['userid']);
-    $result['phanquyen'] = permission($user['userid']);
-    $result['site'] = getsiteconfig();
-  }
-  return $result;
-}
-
-function khoitaobadge($userid) {
+function laythongbao($userid) {
   global $data, $db, $result;
 
   $lim = strtotime(date('Y/m/d')) + 60 * 60 * 24 * 3 - 1;
@@ -168,40 +181,10 @@ function khoitaobadge($userid) {
 function logout() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_session where session = '$data->session'";
+  $sql = "delete from pet_nhanvien_phiendangnhap where phien = '$data->phiendangnhap'";
   $db->query($sql);
 
   $result['status'] = 1;
-  return $result;
-}
-
-function signin() {
-  global $data, $db, $result;
-  $username = mb_strtolower($data->username);
-  $password = $data->password;
-
-  include_once(DIR . '/include/Encryption.php');
-  $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
-  $crypt = new NukeViet\Core\Encryption($sitekey);
-
-  $sql = "select userid, password from `pet_". PREFIX ."_users` where LOWER(username) = '$username'";
-  if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
-  else {
-    $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, name, fullname, password, photo, regdate, active) values ('$data->username', '$data->name', '$data->fullname', '". $crypt->hash_password($data->password) ."', '', $time, 1)";
-    $userid = $db->insertid($sql);
-    
-    $session = randomString();
-    $time = time();
-    $sql = "insert into pet_". PREFIX ."_session (userid, session, time) values($userid, '$session', $time)";
-    $db->query($sql);
-
-    $result['status'] = 1;
-    $result['session'] = $session;
-    $result['data'] = khoitaodulieu($userid);
-    $result['phanquyen'] = permission($userid);
-    $result['site'] = getsiteconfig();
-  }
   return $result;
 }
 
@@ -239,64 +222,6 @@ function password() {
     }
   }
   return $result;
-}
-
-function permission($userid) {
-  global $data, $db;
-
-  $c = [
-    'spa' => 0,
-    'vaccine' => 0,
-    'schedule' => 0,
-    'item' => 0,
-    'kaizen' => 0,
-    'drug' => 0,
-    'price' => 0,
-    'ride' => 0,
-    'profile' => 0,
-    'physical' => 0,
-    'his' => 0,
-    'sieuam' => 0,
-    'xquang' => 0,
-    'transport' => 0,
-    'excel' => 0,
-    'hotel' => 0,
-    'other' => 0,
-    'luong' => 0,
-    'accounting' => 0,
-    'vattu' => 0,
-    'donhang' => 0,
-    'xetnghiem' => 0,
-    'tailieu' => 0,
-    'lichban' => 0,
-    'thongkenghi' => 0,
-    'thietbi' => 0,
-    'taichinh' => 0,
-    'work' => 0,
-    'nhantin' => 0,
-    'loinhuan' => 0,
-    'khachhang' => 0,
-    'chuyenmon' => 0,
-    'tracnghiem' => 0,
-    'voucher' => 0,
-  ];
-
-  if ($userid == 1 || $userid == 5) {
-    $c["chucvu"] = 3; // 3: quản trị, 2: quản lý, 1: nhân viên
-    foreach ($c as $key => $value) {
-      $c[$key] = 2;
-    }
-    return $c;
-  }
-  else {
-    $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid";
-    $query = $db->query($sql);
-    
-    while ($row = $query->fetch_assoc()) {
-      $c[$row['module']] = intval($row['type']);
-    }
-    return $c;
-  }
 }
 
 function getsiteconfig() {
