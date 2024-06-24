@@ -43,13 +43,12 @@ function filter() {
 
 function gettemplist() {
   global $db, $data;
-  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) {
     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
@@ -106,12 +105,11 @@ function tempdatacover($data) {
 function getlist($today = false) {
   global $db, $data, $userid;
 
-  $userid = checkuserid();
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) {
     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
@@ -207,9 +205,8 @@ function insert() {
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
-  $userid = checkuserid();
 
-  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $userid, $data->cometime, $data->calltime, $data->calltime, $data->number, 3, '$data->note', ". time() .", 0)";
+  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $data->idnguoidung, $data->cometime, $data->calltime, $data->calltime, $data->number, 3, '$data->note', ". time() .", 0)";
   $result['status'] = 1;
   $result['vid'] = $db->insertid($sql);
   $result['list'] = getlist();
@@ -427,7 +424,6 @@ function removeall() {
 function doneall() {
   global $data, $db, $result;
 
-  $userid = checkuserid();
   $time = time();
   foreach ($data->list as $id) {
     $sql = "select a.number, a.calltime, a.cometime, b.* from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_pet b on a.customerid = b.id where a.id = $id";
@@ -475,8 +471,6 @@ function confirm() {
 
   $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $data->id";
   $c = $db->fetch($sql);
-
-  $userid = checkuserid();
 
   $sql = "update pet_". PREFIX ."_usg set status = 3, utemp = 1, time = ". time() ." where id = $data->id";
   $db->query($sql);

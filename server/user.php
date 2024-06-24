@@ -191,8 +191,7 @@ function logout() {
 function changename() {
   global $data, $db, $result;
 
-  $userid = checkuserid();
-  $sql = "update pet_". PREFIX ."_users set name = '$data->name' where userid = $userid";
+  $sql = "update pet_nhanvien set hoten = '$data->name' where id = $data->idnguoidung";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -208,14 +207,13 @@ function password() {
   if (empty($data->old)) $result['messenger'] = 'Mật khẩu cũ trống';
   else if (empty($data->new)) $result['messenger'] = 'Mật khẩu mới trống';
   else {
-    $userid = checkuserid();
-    $sql = "select password from `pet_". PREFIX ."_users` where userid = $userid";
-    $user_info = $db->fetch($sql);
-    if (empty($user_info)) $result['messenger'] = 'Người dùng không tồn tại';
-    else if (!$crypt->validate_password($data->old, $user_info['password'])) $result['messenger'] = 'Sai mật khẩu cũ';
+    $sql = "select matkhau from `pet_nhanvien` where id = $data->idnguoidung";
+    $nguoidung = $db->fetch($sql);
+    if (empty($nguoidung)) $result['messenger'] = 'Người dùng không tồn tại';
+    else if (!$crypt->validate_password($data->old, $nguoidung['matkhau'])) $result['messenger'] = 'Sai mật khẩu cũ';
     else {
       $password = $crypt->hash_password($data->new, '{SSHA512}');
-      $sql = "update `pet_". PREFIX ."_users` set password = '$password' where userid = $userid";
+      $sql = "update `pet_nhanvien` set matkhau = '$password' where id = $data->idnguoidung";
       $db->query($sql);
       $result['status'] = 1;
       $result['messenger'] = 'Đã đổi mật khẩu';

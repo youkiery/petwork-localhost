@@ -182,7 +182,6 @@ function doneall() {
   global $data, $db, $result;
 
   $c = array();
-  $userid = checkuserid();
   foreach ($data->list as $id) {
     $sql = "select b.* from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where a.id = $id";
     $v = $db->fetch($sql);
@@ -217,12 +216,11 @@ function inserthistory() {
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
-  $userid = checkuserid();
 
   $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id = $data->id";
   $db->query($sql);
 
-  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $userid, ". time() .")";
+  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $data->idnguoidung, ". time() .")";
   $db->query($sql);
   $result['status'] = 1;
   $result['messenger'] = 'Đã xác nhận và hoàn thành phiếu nhắc cũ';
@@ -238,8 +236,6 @@ function updatehistory() {
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
-  $userid = checkuserid();
-
   $sql = "update pet_". PREFIX ."_vaccine set petid = $petid, typeid = $data->typeid, cometime = $data->cometime, calltime = $data->calltime, status = 0, recall = $data->calltime, note = '$data->note', utemp = 1, time = ". time() ." where id = $data->id";
   $db->query($sql);
 
@@ -378,8 +374,6 @@ function confirm() {
   $c = $db->fetch($sql);
   $c['cometime'] = date('d/m/Y', $c['cometime']);
   $c['calltime'] = date('d/m/Y', $c['calltime']);
-
-  $userid = checkuserid();
 
   $sql = "update pet_". PREFIX ."_vaccine set status = 0, utemp = 1, recall = calltime, time = ". time() ." where id = $data->id";
   $db->query($sql);
@@ -964,12 +958,11 @@ function insert() {
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
-  $userid = checkuserid();
 
   $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = '$data->phone' order by a.id asc)";
   $db->query($sql);
 
-  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $userid, ". time() .")";
+  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $data->idnguoidung, ". time() .")";
   $result['status'] = 1;
   $result['vid'] = $db->insertid($sql);
   $result['list'] = getlist();
@@ -1269,13 +1262,12 @@ function vaccined() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end);
-  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $userid and type = 2";
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $data->idnguoidung and type = 2";
   $p = $db->fetch($sql);
   $xtra = "";
   if (empty($p)) {
-    $xtra = "and a.userid = $userid;";
+    $xtra = "and a.userid = $data->idnguoidung;";
   }
   
   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
@@ -1297,13 +1289,12 @@ function resetvaccine() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end);
-  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $userid and type = 2";
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $data->idnguoidung and type = 2";
   $p = $db->fetch($sql);
   $xtra = "";
   if (empty($p)) {
-    $xtra = "and a.userid = $userid;";
+    $xtra = "and a.userid = $data->idnguoidung;";
   }
 
   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
@@ -1316,12 +1307,11 @@ function resetvaccine() {
 function getlist($today = false) {
   global $db, $data, $userid;
 
-  $userid = checkuserid();
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) {
     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
@@ -1453,13 +1443,12 @@ function dataCover($list, $over = 0) {
 
 function gettemplist() {
   global $db, $data;
-  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) $xtra []= " a.userid in (". implode(", ", $data->chonnhanvien) .") ";
 
   if (!empty($data->time)) {
@@ -1577,12 +1566,11 @@ function checkpet() {
 function getusglist($today = false) {
   global $db, $data, $userid;
 
-  $userid = checkuserid();
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) {
     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
@@ -1657,13 +1645,12 @@ function usgdataCover($list) {
 
 function getusgtemplist() {
   global $db, $data;
-  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
   $role = $db->fetch($sql);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
   else if (!empty($data->chonnhanvien)) {
     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }

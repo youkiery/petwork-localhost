@@ -48,7 +48,7 @@ function danhsachhanghoa() {
 function danhsachnhanvien() {
   global $data, $db, $result;
   
-  $sql = "select a.userid, a.fullname as name from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_user_per b on a.userid = b.userid where b.module = 'spa' and b.type > 0";
+  $sql = "select a.id, a.hoten from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien where b.chucnang = 'donhang' and vaitro > 0 and idchinhanh = $data->idchinhanh";
   return $db->all($sql);
 }
 
@@ -73,9 +73,9 @@ function danhsachdonhang() {
     $danhsachdonhang[$thutu]["hanghoa"] = $chitietdonhang;
     $danhsachdonhang[$thutu]["nhanvien"] = "Chưa chọn";
     if (!empty($donhang["idnhanvien"])) {
-      $sql = "select * from pet_". PREFIX ."_users where userid = $donhang[idnhanvien]";
+      $sql = "select * from pet_nhanvien where id = $donhang[idnhanvien]";
       if (!empty($nhanvien = $db->fetch($sql))) {
-        $danhsachdonhang[$thutu]["nhanvien"] = $nhanvien["fullname"];
+        $danhsachdonhang[$thutu]["nhanvien"] = $nhanvien["hoten"];
       }
     }
     $danhsachdonhang[$thutu]["tinhtrang"] = $trangthai[$donhang["trangthai"]];
@@ -87,8 +87,7 @@ function guihang() {
   global $data, $db, $result;
 
   $thoigian = time();
-  $idnhanvien = checkuserid();
-  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $idnhanvien where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $data->idnguoidung where id = $data->id";
   $db->query($sql);
 
   guithongbaoapp($data->token, $data->idkhach, "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
@@ -102,8 +101,7 @@ function hoanthanh() {
   global $data, $db, $result;
 
   $thoigian = time();
-  $idnhanvien = checkuserid();
-  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 2, idnhanvien = $idnhanvien where id = $data->id";
+  $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 2, idnhanvien = $data->idnguoidung where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;

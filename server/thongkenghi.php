@@ -275,8 +275,8 @@ function dulieuthongke() {
 
   // echo json_encode($ketquachamcong);die();
 
-  $sql = "select userid, fullname from pet_". PREFIX ."_users";
-  $danhsachnhanvien = $db->obj($sql, "userid", "fullname");
+  $sql = "select id, hoten from pet_nhanvien";
+  $danhsachnhanvien = $db->obj($sql, "id", "hoten");
 
   // chuyển đổi kết quả chấm công thành dạng có thể đọc được
   // kiểm tra ngày đó có bao 
@@ -375,10 +375,9 @@ function tailen() {
   $filename = $_FILES['file']['tmp_name'];
   $handle = fopen($filename, "r");
 
-  $sql = "select * from pet_". PREFIX ."_users where idvantay > 0";
-  $nhanvien = $db->obj($sql, "idvantay", "userid");
+  $sql = "select * from pet_nhanvien where idvantay > 0";
+  $nhanvien = $db->obj($sql, "idvantay", "id");
 
-  
   if ($handle) {
     while (($line = fgets($handle)) !== false) {
       $data = explode("\t", $line);

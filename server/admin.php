@@ -67,7 +67,7 @@ function chitietnhanvien() {
   global $db, $data, $result;
 
   $chitietphanquyen = [];
-  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnhanvien";
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung";
   $danhsachphanquyen = $db->all($sql);
 
   foreach ($danhsachphanquyen as $phanquyen) {
@@ -310,7 +310,7 @@ function admin() {
 function insert() {
   global $db, $data, $result;
 
-  $sql = "update pet_". PREFIX ."_users set active = 1 where userid = $data->userid";
+  $sql = "update pet_nhanvien set kichhoat = 1 where id = $data->userid";
   $db->query($sql);
   $result['status'] = 1;
   $result['list'] = filterUser();
@@ -323,7 +323,7 @@ function insert() {
 function update() {
   global $db, $data, $result;
   
-  $sql = "update pet_". PREFIX ."_users set fullname = '$data->fullname', name = '$data->fullname' where userid = $data->userid";
+  $sql = "update pet_nhanvien set hoten = '$data->fullname' where id = $data->userid";
   $db->query($sql);
 
   foreach ($data->module as $name => $value) {
@@ -413,17 +413,6 @@ function getPer() {
   return $c;
 }
 
-function filterUser() {
-  global $db, $data;
-  
-  $sql = "select userid from pet_". PREFIX ."_users";
-  $list = $db->obj($sql, 'userid', 'userid');
-  
-  $sql = "select userid, fullname, username from pet_". PREFIX ."_users where active = 0 and (username like '%$data->key%' or fullname like '%$data->key%')";
-
-  return $db->all($sql);
-}
-
 function signup() {
   global $data, $db, $result;
   $username = mb_strtolower($data->username);
@@ -435,11 +424,11 @@ function signup() {
   $sinhnhat = 0;
   if (isset($data->sinhnhat)) $sinhnhat = isodatetotime($data->sinhnhat);
 
-  $sql = "select id, matkhau from `pet_". PREFIX ."_users` where LOWER(username) = '$username' and kichhoat = 1";
+  $sql = "select id, matkhau from `pet_nhanvien` where LOWER(taikhoan) = '$username' and kichhoat = 1";
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, name, fullname, password, photo, regdate, sinhnhat, active) values ('$data->username', '$data->idvantay', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $sinhnhat, 1)";
+    $sql = "insert into pet_nhanvien (taikhoan, idvantay, hoten, matkhau, sinhnhat, kichhoat) values ('$data->username', '$data->idvantay', '$data->fullname', '". $crypt->hash_password($data->password) ."', $sinhnhat, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -458,7 +447,7 @@ function updateuser() {
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $sinhnhat = isodatetotime($data->sinhnhat);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', sinhnhat = $sinhnhat where userid = $data->userid";
+  $sql = "update pet_nhanvien set taikhoan = '$data->taikhoan', idvantay = '$data->idvantay', hoten = '$data->fullname', matkhau = '". $crypt->hash_password($data->password) ."', sinhnhat = $sinhnhat where id = $data->userid";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
@@ -533,74 +522,6 @@ function customer() {
 
   $result['messenger'] = 'Đã tải file Excel lên';
   $result['status'] = 1;
-  return $result;
-}
-
-function placeinit() {
-  global $db, $result, $data;
-
-  $result['status'] = 1;
-  $result['list'] = placelist();
-  return $result;
-}
-
-function placelist() {
-  global $db, $result, $data;
-
-  $sql = "select id, name from pet_". PREFIX ."_config where module = 'place' and alt = 1";
-  $list = $db->all($sql);
-  return $list;
-}
-
-function placeremove() {
-  global $db, $result, $data;
-
-  $sql = "update pet_". PREFIX ."_config where set alt = 0 where id = $data->placeid";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['list'] = placelist();
-  return $result;
-}
-
-function placeupdate() {
-  global $db, $result, $data;
-
-  $sql = "update pet_". PREFIX ."_config set name = '$data->name' where id = $data->placeid";
-  $db->query($sql);
-
-  $sql = "update pet_". PREFIX ."_users set placeid = $data->placeid where userid = $data->userid";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['placelist'] = placelist();
-  $result['adminlist'] = laydanhsachphanquyen();
-  return $result;
-}
-
-function placeinsert() {
-  global $db, $result, $data;
-
-  $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('place', '$data->name', '', 1)";
-  $id = $db->insertid($sql);
-
-  $sql = "update pet_". PREFIX ."_users set placeid = $id where userid = $data->userid";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['placelist'] = placelist();
-  $result['adminlist'] = laydanhsachphanquyen();
-  return $result;
-}
-
-function placeselect() {
-  global $db, $result, $data;
-
-  $sql = "update pet_". PREFIX ."_users set placeid = $data->placeid where userid = $data->userid";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['adminlist'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -1192,8 +1113,8 @@ function khoitaothongke() {
     'nhomnhantin' => []
   ];
 
-  $sql = "select * from pet_". PREFIX ."_users";
-  $dulieunhanvien = $db->obj($sql, 'userid', 'name');
+  $sql = "select * from pet_nhanvien";
+  $dulieunhanvien = $db->obj($sql, 'id', 'hoten');
 
   $sql = "select *, 0 as tick from pet_". PREFIX ."_vaccineloainhom where active = 1 order by name asc";
   $dulieu['nhomnhantin'] = $db->all($sql);
@@ -1289,7 +1210,7 @@ function khoitaothongke() {
       }
       else {
         if (empty($danhsachkhongden[$vaccine["userid"]])) {
-          $sql = "select * from pet_". PREFIX ."_users where userid = $vaccine[userid]";
+          $sql = "select * from pet_nhanvien where userid = $vaccine[userid]";
           $nhanvien = $db->fetch($sql);
           $danhsachkhongden[$vaccine["userid"]] = [
             "ten" => $nhanvien["fullname"],
@@ -1565,7 +1486,7 @@ function khoitaozalo() {
 function chonzalo() {
   global $db, $data, $result;
 
-  $sql = "update pet_". PREFIX ."_users set zalouid = '$data->zalouid' where userid = $data->userid";
+  $sql = "update pet_nhanvien set zalouid = '$data->zalouid' where id = $data->userid";
   $db->query($sql);
 
   $result['status'] = 1;
