@@ -10,65 +10,192 @@ $res = array(
   'error' => array(), 
 );
 
-function auto() {
+function khoitao() {
   global $data, $db, $result;
 
   $result['status'] = 1;
-  $result['dathem'] = danhsachdathem();
   $result['nhanvien'] = laydanhsachnhanvien();
   $result['loainhac'] = laydanhsachloainhac();
-  $result['vaccine'] = array(
-    'list' => getlist(),
-    'new' => getlist(true),
-    'temp' => gettemplist(),
-    'over' => getOverlist(),
-  );
-  $result['usg'] = array(
-    'list' => getusglist(),
-    'new' => getusglist(true),
-    'temp' => getusgtemplist(),
-  );
+  $result['danhsach'] = [
+    "vaccine" => [
+      'chuagoi' => laydanhsachvaccine(false, false),
+      'dagoi' => laydanhsachvaccine(false, true),
+      'moithem' => laydanhsachvaccine(true),
+    ],
+    "sieuam" => [
+      'chuagoi' => laydanhsachsieuam(false, false),
+      'dagoi' => laydanhsachsieuam(false, true),
+      'moithem' => laydanhsachsieuam(true)
+    ]
+  ];
   
   return $result;
 }
 
-function danhsachdathem() {
-  global $data, $db, $result;
+function laydanhsachvaccine($homnay = false, $dagoi = false) {
+  global $db, $data;
 
-  $daungay = strtotime(date("Y/m/d"));
-  $cuoingay = $daungay + 60 * 60 * 24 - 1;
+  $phanquyen = kiemtraquyen("vaccine", $data->idnguoidung);
 
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address, 0 as number from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where time between $daungay and $cuoingay";
-  $vaccine = $db->all($sql);
-  $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where time between $daungay and $cuoingay";
-  $sieuam = $db->all($sql);
-  return [
-    "vaccine" => diendulieu($vaccine),
-    "sieuam" => diendulieu($sieuam),
-  ];
+  $xtra = array();
+  if ($phanquyen < 2) $xtra []= " a.userid = $data->idnguoidung ";
+  else if (!empty($data->chonnhanvien)) {
+    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
+  }
+
+  if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
+  else $xtra = "";
+
+  $start = strtotime(date('Y/m/d'));
+
+  if ($homnay) {
+    $sql = "select a.*, c.hoten as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 and calltime > 0 order by a.id desc limit 50";
+    return dataCover($db->all($sql));
+  }
+  
+  if (empty($data->keyword)) {
+    $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
+    if (empty($config = $db->fetch($sql))) $ngay = 0;
+    else $ngay = $config['value'];
+  
+    $homnay = strtotime(date('Y/m/d'));
+    $cuoingay = $homnay + 60 * 60 * 24 - 1;
+
+    // lấy cấu hình
+    $sql = "select * from pet_". PREFIX ."_vaccinecauhinh";
+    $danhsachcauhinh = $db->all($sql);
+    $cauhinh = [];
+
+    foreach ($danhsachcauhinh as $chitietcauhinh) {
+      if (empty($cauhinh[$chitietcauhinh['ngay']])) $cauhinh[$chitietcauhinh['ngay']] = [];
+      $cauhinh[$chitietcauhinh['ngay']] []= $chitietcauhinh['idnhom'];
+    }
+
+    // tạo query từ cấu hình
+    if (count($cauhinh)) {
+      $xtra2 = [];
+      foreach ($cauhinh as $ngay => $danhsachnhom) {
+        $gioihan = $homnay - $ngay * 60 * 60 * 24 + 60 * 60 * 24 - 1;
+        $xtra2 []= "(d.idnhom in (". implode(', ', $danhsachnhom) .") and calltime < $gioihan)";
+      }
+      $xtra2 = "(". implode(' or ', $xtra2) .")";
+    }
+    else $xtra2 = "0";
+
+    if ($dagoi) $xxx = "called between $homnay and $cuoingay";
+    else $xxx = "called not between $homnay and $cuoingay";
+    
+    $sql = "select a.*, c.hoten as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and $xtra2 and ($xxx) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.calltime > 0 order by a.calltime asc";
+    return dataCover($db->all($sql));
+  }
+
+  if ($dagoi) return [];
+  $key = trim($data->keyword);
+  $sql = "select a.*, c.hoten as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 and a.calltime > 0 order by a.calltime desc, a.recall desc limit 50";
+  return dataCover($db->all($sql));
 }
 
-function diendulieu($danhsachdulieu) {
-  $danhsach = [];
-  foreach ($danhsachdulieu as $thutu => $dulieu) {
-    $danhsach []= array(
-      'id' => $dulieu['id'],
-      'note' => $dulieu['note'],
-      'doctor' => $dulieu['doctor'],
-      'customerid' => $dulieu['customerid'],
-      'name' => $dulieu['name'],
-      'petname' => $dulieu['petname'],
-      'phone' => $dulieu['phone'],
-      'address' => $dulieu['address'],
-      'number' => $dulieu['number'],
-      'called' => ($dulieu['called'] ? date('d/m/Y', $dulieu['called']) : ''),
-      'cometime' => date('d/m/Y', $dulieu['cometime']),
-      'calltime' => ($dulieu['calltime'] ? date('d/m/Y', $dulieu['calltime']) : ''),
-      'time' => date('d/m/Y', $dulieu['time']),
-      'vaccine' => $dulieu['type'],
-    );
+
+function laydanhsachsieuam($homnay = false, $dagoi = false) {
+  global $db, $data;
+
+  $phanquyen = kiemtraquyen("vaccine", $data->idnguoidung);
+
+  $xtra = array();
+  if ($phanquyen < 2) $xtra []= " a.userid = $data->idnguoidung ";
+  else if (!empty($data->chonnhanvien)) {
+    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
   }
-  return $danhsach;
+
+  if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
+  else $xtra = "";
+
+  $start = strtotime(date('Y/m/d'));
+
+  if ($homnay) {
+    // danh sách đã thêm hôm nay
+    $sql = "select a.*, c.hoten as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.time between $start and ". time() . ") $xtra and a.status < 6 order by a.id desc";
+    return usgdataCover($db->all($sql));
+  }
+  
+  if (empty($data->keyword)) {
+    // danh sách nhắc hôm nay
+    $daungay = strtotime(date('Y/m/d'));
+    $cuoingay = $daungay + 60 * 60 * 24 - 1;
+    if ($dagoi) $xxx = "(called between $daungay and $cuoingay)";
+    else  $xxx = "a.status = 3 and (calltime < $cuoingay) and called = 0";
+
+    $sql = "select a.*, c.hoten as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_customer b on a.customerid = b.id where $xxx $xtra order by a.recall asc";
+    return usgdataCover($db->all($sql));
+  }
+  
+  // danh sách tìm kiếm khách hàng
+  if ($dagoi) return [];
+  $key = trim($data->keyword);
+  $sql = "select a.*, c.hoten as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 8 order by a.recall desc";
+  return usgdataCover($db->all($sql));
+}
+
+function themvaccine() {
+  global $data, $db, $result;
+
+  $petid = checkpet();
+  $data->cometime = isodatetotime($data->cometime);
+  $data->calltime = isodatetotime($data->calltime);
+
+  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = '$data->phone' order by a.id asc)";
+  $db->query($sql);
+
+  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $data->idnguoidung, ". time() .")";
+  $result['status'] = 1;
+  $result['messenger'] = "Đã thêm vào danh sách nhắc";
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachvaccine(false, false),
+    'dagoi' => laydanhsachvaccine(false, true),
+    'moithem' => laydanhsachvaccine(true),
+  ];
+  return $result;
+}
+
+function xoavaccine() {
+  global $data, $db, $result;
+  $sql = "delete from pet_". PREFIX ."_vaccine where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['messenger'] = "Đã xóa phiếu nhắc";
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachvaccine(false, false),
+    'dagoi' => laydanhsachvaccine(false, true),
+    'moithem' => laydanhsachvaccine(true),
+  ];
+  return $result;
+}
+
+function capnhatvaccine() {
+  global $data, $db, $result;
+
+  $petid = checkpet();
+  $data->cometime = isodatetotime($data->cometime);
+  $data->calltime = isodatetotime($data->calltime);
+  
+  $sql = "update pet_". PREFIX ."_vaccine set petid = $petid, typeid = $data->typeid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $data->calltime where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachvaccine(false, false),
+    'dagoi' => laydanhsachvaccine(false, true),
+    'moithem' => laydanhsachvaccine(true),
+  ];
+  $result['messenger'] = "Đã cập nhật phiếu nhắc";
+  return $result;
+}
+
+function searchcustomer() {
+  global $data, $db, $result;
+
+  $result['status'] = 1;
+  $result['list'] = laydanhsachvaccine();
+  return $result;
 }
 
 function xuatfile() {
@@ -80,7 +207,7 @@ function xuatfile() {
   $objPHPExcel = PHPExcel_IOFactory::load($filemau);
   $sheet = $objPHPExcel->getSheet(0); 
 
-  $danhsachvaccine = getlist();
+  $danhsachvaccine = laydanhsachvaccine(false, false);
   $thutu = 2;
   foreach ($danhsachvaccine[0] as $vaccine) {
     $objPHPExcel->setActiveSheetIndex(0)
@@ -99,32 +226,6 @@ function xuatfile() {
   $objWriter->save(DIR . $outFile);
   $result['status'] = 1;
   $result['link'] = $outFile;
-  return $result;
-}
-
-function filter() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = getlist();
-  
-  return $result;
-}
-
-function searchcustomer() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = getlist();
-  return $result;
-}
-
-function tempauto() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = gettemplist();
-  
   return $result;
 }
 
@@ -155,101 +256,6 @@ function tempdatacover($data) {
   );
 }
 
-function doctorauto() {
-  global $data, $db, $result;
-
-  $result['status'] = 1;
-  $result['list'] = getDoctor();
-  
-  return $result;
-}
-
-function removeall() {
-  global $data, $db, $result;
-
-  foreach ($data->list as $id) {
-    $sql = "delete from pet_". PREFIX ."_vaccine where id = $id";
-    $db->query($sql);
-  }
-
-  $result['status'] = 1;
-  $result['messenger'] = "Đã xóa các phiếu nhắc tạm";
-  $result['list'] = gettemplist();
-  return $result;
-}
-
-function doneall() {
-  global $data, $db, $result;
-
-  $c = array();
-  foreach ($data->list as $id) {
-    $sql = "select b.* from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id where a.id = $id";
-    $v = $db->fetch($sql);
-    $c []= $v['customerid'];
-  
-    $sql = "update pet_". PREFIX ."_vaccine set status = 0, recall = calltime, utemp = 1, time = ". time() ." where id = $id";
-    $db->query($sql);
-  }
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.id in (". implode(',', $c) .") order by a.id asc)";
-  $db->query($sql);
-  $result['old'] = array();
-  $result['list'] = gettemplist();
-  $result['messenger'] = "Đã xác nhận các phiếu nhắc tạm";
-  $result['status'] = 1;
-  return $result;
-}
-
-function history() {
-  global $data, $db, $result;
-
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, d.name as type, b.phone, b.name, b.address from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
-  $result['status'] = 1;
-  $result['old'] = dataCover($db->all($sql));
-  return $result;
-}
-
-function inserthistory() {
-  global $data, $db, $result;
-
-  $petid = checkpet();
-  
-  $data->cometime = isodatetotime($data->cometime);
-  $data->calltime = isodatetotime($data->calltime);
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id = $data->id";
-  $db->query($sql);
-
-  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $data->idnguoidung, ". time() .")";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã xác nhận và hoàn thành phiếu nhắc cũ';
-  $result['new'] = getlist(true);
-
-  return $result;
-}
-
-function updatehistory() {
-  global $data, $db, $result;
-
-  $petid = checkpet();
-  
-  $data->cometime = isodatetotime($data->cometime);
-  $data->calltime = isodatetotime($data->calltime);
-  $sql = "update pet_". PREFIX ."_vaccine set petid = $petid, typeid = $data->typeid, cometime = $data->cometime, calltime = $data->calltime, status = 0, recall = $data->calltime, note = '$data->note', utemp = 1, time = ". time() ." where id = $data->id";
-  $db->query($sql);
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status = 1 or a.status = 2) and c.phone = '$data->phone' order by a.id asc)";
-  $db->query($sql);
-
-  $result['status'] = 1;
-  $result['messenger'] = 'Đã xác nhận và thêm vào danh sách nhắc';
-  $result['old'] = array();
-  $result['list'] = gettemplist();
-
-  return $result;
-}
-
 function loaitru() {
   global $data, $db, $result;
 
@@ -269,7 +275,11 @@ function loaitru() {
 
   $result['status'] = 1;
   $result['messenger'] = "Đã đưa khách vào danh sách loại trừ";
-  $result['list'] = getlist();
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachvaccine(false, false),
+    'dagoi' => laydanhsachvaccine(false, true),
+    'moithem' => laydanhsachvaccine(true),
+  ];
   return $result;
 }
 
@@ -319,7 +329,7 @@ function themcauhinh() {
   return $result;
 }
 
-function called() {
+function dagoivaccine() {
   global $data, $db, $result;
 
   $sql = "select * from pet_". PREFIX ."_vaccine where id = $data->id";
@@ -335,7 +345,7 @@ function called() {
   return $result;
 }
 
-function uncalled() {
+function chuagoivaccine() {
   global $data, $db, $result;
 
   $sql = "select * from pet_". PREFIX ."_vaccine where id = $data->id";
@@ -351,42 +361,101 @@ function uncalled() {
   return $result;
 }
 
-function transfer() {
+function chuagoisieuam() {
   global $data, $db, $result;
 
-  foreach ($data->list as $id) {
-    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->uid where id = $id";
-    $db->query($sql);
-  }
-  $sql = "select a.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
-  $d = $db->fetch($sql);
+  $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
+  $v = $db->fetch($sql);
+  $time = time();
+  $recall = $v['recall'] + 60 * 60 * 24;
+  if ($time > $v['recall']) $recall = $time + 60 * 60 * 24;
+
+  $sql = "update pet_". PREFIX ."_usg set note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+  $db->query($sql);
   $result['status'] = 1;
-  $result['messenger'] = "Đã chuyển phiếu nhắc sang cho nhân viên: $d[name]";
-  $result['list'] = gettemplist();
+  $result['messenger'] = "Đã chuyển dời ngày nhắc đến ". date('d/m/Y', $recall);
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachsieuam(false, false),
+    'dagoi' => laydanhsachsieuam(false, true),
+    'moithem' => laydanhsachsieuam(true)
+  ];
+  
+  return $result;
+}
+
+function khongnhacsieuam() {
+  global $data, $db, $result;
+
+  $sql = "update pet_". PREFIX ."_usg set status = 8, note = '$data->note' where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['messenger'] = "Phiếu nhắc đã không được theo dõi nữa";
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachsieuam(false, false),
+    'dagoi' => laydanhsachsieuam(false, true),
+    'moithem' => laydanhsachsieuam(true)
+  ];
+  
+  return $result;
+}
+
+function dasinh() {
+  global $data, $db, $result, $cover;
+
+  $calltime = isodatetotime($data->calltime);
+  $recall = isodatetotime($data->deworm);
+  $time = time();
+  if (!empty($data->vaccine)) $vaccine = isodatetotime($data->vaccine);
+  else $vaccine = 0;
+
+  $sql = "update pet_". PREFIX ."_usg set vaccinetime = $vaccine, status = 4, called = $time, note = '". $data->note ."', number = $data->number, calltime = $calltime, recall = $recall where id = $data->id";
+  $db->query($sql);
+  $result['status'] = 1;
+  $result['messenger'] = "Đã thay đổi trạng thái";
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachsieuam(false, false),
+    'dagoi' => laydanhsachsieuam(false, true),
+    'moithem' => laydanhsachsieuam(true)
+  ];
 
   return $result;
 }
 
-function confirm() {
+function themsieuam() {
   global $data, $db, $result;
 
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.id = $data->id";
-  $c = $db->fetch($sql);
-  $c['cometime'] = date('d/m/Y', $c['cometime']);
-  $c['calltime'] = date('d/m/Y', $c['calltime']);
+  $customerid = checkcustomer();
+  $data->cometime = isodatetotime($data->cometime);
+  $data->calltime = isodatetotime($data->calltime);
 
-  $sql = "update pet_". PREFIX ."_vaccine set status = 0, utemp = 1, recall = calltime, time = ". time() ." where id = $data->id";
+  if ($data->id) {
+    $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $data->calltime, number = $data->number where id = $data->id";    
+  }
+  else {
+    $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $data->idnguoidung, $data->cometime, $data->calltime, $data->calltime, $data->number, 3, '$data->note', ". time() .", 0)";
+  }
   $db->query($sql);
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.id = $c[customerid] order by a.id asc)";
-  $db->query($sql);
-
   $result['status'] = 1;
-  $result['messenger'] = "Đã xác nhận và chuyển vào danh sách nhắc";
-  $result['old'] = array();  
-  $result['ov'] = $c;
-  $result['temp'] = gettemplist();
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachsieuam(false, false),
+    'dagoi' => laydanhsachsieuam(false, true),
+    'moithem' => laydanhsachsieuam(true)
+  ];
+  $result['messenger'] = "Đã thêm vào danh sách nhắc";
+  return $result;
+}
 
+function xoasieuam() {
+  global $data, $db, $result;
+
+  $sql = "delete from pet_". PREFIX ."_usg where id = $data->id";
+  $result['status'] = 1;
+  $result['danhsach'] = [
+    'chuagoi' => laydanhsachsieuam(false, false),
+    'dagoi' => laydanhsachsieuam(false, true),
+    'moithem' => laydanhsachsieuam(true)
+  ];
+  $result['messenger'] = "Đã thêm vào danh sách nhắc";
   return $result;
 }
 
@@ -951,27 +1020,6 @@ function getvacid($id) {
   return $db->fetch($sql);
 }
 
-function insert() {
-  global $data, $db, $result;
-
-  $petid = checkpet();
-  
-  $data->cometime = isodatetotime($data->cometime);
-  $data->calltime = isodatetotime($data->calltime);
-
-  $sql = "update pet_". PREFIX ."_vaccine set status = 3 where id in (select a.id from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_pet b on a.petid = b.id inner join pet_". PREFIX ."_customer c on b.customerid = c.id where (a.status <= 2) and c.phone = '$data->phone' order by a.id asc)";
-  $db->query($sql);
-
-  $sql = "insert into pet_". PREFIX ."_vaccine (petid, typeid, cometime, calltime, note, status, called, recall, userid, time) values ($petid, $data->typeid, $data->cometime, $data->calltime, '$data->note', 0, 0, $data->calltime, $data->idnguoidung, ". time() .")";
-  $result['status'] = 1;
-  $result['vid'] = $db->insertid($sql);
-  $result['list'] = getlist();
-  $result['new'] = getlist(true);
-  $result['old'] = array();
-  $result['messenger'] = "Đã thêm vào danh sách nhắc";
-  return $result;
-}
-
 function themloai() {
   global $data, $db, $result;
   $data->name = trim($data->name);
@@ -1212,16 +1260,6 @@ function chuyendulieuvaccine() {
   return $result;
 }
 
-function removevaccine() {
-  global $data, $db, $result;
-  $sql = "delete from pet_". PREFIX ."_vaccine where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['new'] = getlist(true);
-  $result['messenger'] = "Đã xóa phiếu nhắc";
-  return $result;
-}
-
 function removetemp() {
   global $data, $db, $result;
   $sql = "delete from pet_". PREFIX ."_vaccine where id = $data->id";
@@ -1240,42 +1278,26 @@ function search() {
   return $result;
 }
 
-function update() {
-  global $data, $db, $result;
 
-  $petid = checkpet();
+// function vaccined() {
+//   global $data, $db, $result;
+
+//   $start = isodatetotime($data->start);
+//   $end = isodatetotime($data->end);
+
+//   $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $data->idnguoidung and type = 2";
+//   $p = $db->fetch($sql);
+//   $xtra = "";
+//   if (empty($p)) {
+//     $xtra = "and a.userid = $data->idnguoidung;";
+//   }
   
-  $data->cometime = isodatetotime($data->cometime);
-  $data->calltime = isodatetotime($data->calltime);
-  
-  $sql = "update pet_". PREFIX ."_vaccine set petid = $petid, typeid = $data->typeid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $data->calltime where id = $data->id";
-  $db->query($sql);
-  $result['status'] = 1;
-  $result['list'] = getlist();
-  $result['new'] = getlist(true);
-  $result['messenger'] = "Đã cập nhật phiếu nhắc";
-  return $result;
-}
-
-function vaccined() {
-  global $data, $db, $result;
-
-  $start = isodatetotime($data->start);
-  $end = isodatetotime($data->end);
-
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vaccine' and userid = $data->idnguoidung and type = 2";
-  $p = $db->fetch($sql);
-  $xtra = "";
-  if (empty($p)) {
-    $xtra = "and a.userid = $data->idnguoidung;";
-  }
-  
-  $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
-  $list = dataCover($db->all($sql));
-  $result['status'] = 1;
-  $result['list'] = $list;
-  return $result;
-}
+//   $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.calltime between $start and $end) and status = 3 $xtra order by a.calltime desc, a.recall desc limit 50";
+//   $list = dataCover($db->all($sql));
+//   $result['status'] = 1;
+//   $result['list'] = $list;
+//   return $result;
+// }
 
 function resetvaccine() {
   global $data, $db, $result;
@@ -1304,75 +1326,6 @@ function resetvaccine() {
   return $result;
 }
 
-function getlist($today = false) {
-  global $db, $data, $userid;
-
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
-  $role = $db->fetch($sql);
-
-  $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
-  else if (!empty($data->chonnhanvien)) {
-    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
-  }
-
-  if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
-  else $xtra = "";
-
-  $start = strtotime(date('Y/m/d'));
-
-  if ($today) {
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.time between $start and ". time() . ") $xtra and a.status < 3 and calltime > 0 order by a.id desc limit 50";
-    $list = dataCover($db->all($sql));
-  }
-  else if (empty($data->keyword)) {
-    $list = array(
-      0 => array(),
-      array(),
-    );
-
-    $sql = "select * from pet_". PREFIX ."_config where module = 'vaccine' and name = 'ngay'";
-    if (empty($config = $db->fetch($sql))) $ngay = 0;
-    else $ngay = $config['value'];
-  
-    $homnay = strtotime(date('Y/m/d'));
-    $cuoingay = $homnay + 60 * 60 * 24 - 1;
-
-    // lấy cấu hình
-    $sql = "select * from pet_". PREFIX ."_vaccinecauhinh";
-    $danhsachcauhinh = $db->all($sql);
-    $cauhinh = [];
-
-    foreach ($danhsachcauhinh as $chitietcauhinh) {
-      if (empty($cauhinh[$chitietcauhinh['ngay']])) $cauhinh[$chitietcauhinh['ngay']] = [];
-      $cauhinh[$chitietcauhinh['ngay']] []= $chitietcauhinh['idnhom'];
-    }
-
-    // tạo query từ cấu hình
-    if (count($cauhinh)) {
-      $xtra2 = [];
-      foreach ($cauhinh as $ngay => $danhsachnhom) {
-        $gioihan = $homnay - $ngay * 60 * 60 * 24 + 60 * 60 * 24 - 1;
-        $xtra2 []= "(d.idnhom in (". implode(', ', $danhsachnhom) .") and calltime < $gioihan)";
-      }
-      $xtra2 = "(". implode(' or ', $xtra2) .")";
-    }
-    else $xtra2 = "0";
-
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where a.status = 0 and $xtra2 and (called not between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.calltime > 0 order by a.calltime asc";
-    $list[0] = dataCover($db->all($sql));
-    
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (a.called between $homnay and $cuoingay) and g.customerid not in (select idkhach as id from pet_". PREFIX ."_vaccineloaitru) $xtra and a.status < 3 and a.calltime > 0 order by a.calltime asc limit 50";
-    $list[1] = dataCover($db->all($sql));
-  }
-  else {
-    $key = trim($data->keyword);
-    $sql = "select a.*, c.fullname as doctor, g.name as petname, g.customerid, b.name, b.phone, b.address, d.name as type from pet_". PREFIX ."_vaccine a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_pet g on a.petid = g.id inner join pet_". PREFIX ."_customer b on g.customerid = b.id inner join pet_". PREFIX ."_vaccineloai d on a.typeid = d.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 5 and a.calltime > 0 order by a.calltime desc, a.recall desc limit 50";
-    $list = dataCover($db->all($sql));
-  }
-
-  return $list;
-}
 
 // function getCurrent($status, $xtra) {
 //   global $db, $data;
@@ -1563,51 +1516,6 @@ function checkpet() {
   return $p['id'];
 }
 
-function getusglist($today = false) {
-  global $db, $data, $userid;
-
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
-  $role = $db->fetch($sql);
-
-  $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
-  else if (!empty($data->chonnhanvien)) {
-    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
-  }
-
-  if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
-  else $xtra = "";
-
-  $start = strtotime(date('Y/m/d'));
-
-  if ($today) {
-    // danh sách đã thêm hôm nay
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.time between $start and ". time() . ") $xtra and a.status < 6 order by a.id desc";
-    $list = usgdataCover($db->all($sql));
-  }
-  else if (empty($data->keyword)) {
-    // danh sách nhắc hôm nay
-    $daungay = strtotime(date('Y/m/d'));
-    $cuoingay = $daungay + 60 * 60 * 24 - 1;
-
-    $list = array(0 => array());
-    
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 3 and (calltime < $cuoingay) and called = 0 $xtra order by a.recall asc";
-    $list[0] = usgdataCover($db->all($sql));
-    
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (called between $daungay and $cuoingay) $xtra order by a.recall asc";
-    $list[1] = usgdataCover($db->all($sql));
-  }
-  else {
-    // danh sách tìm kiếm khách hàng
-    $key = trim($data->keyword);
-    $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 8 order by a.recall desc";
-    $list = usgdataCover($db->all($sql));
-  }
-
-  return $list;
-}
-
 function usgdataCover($list) {
   global $start;
   $lim = strtotime(date('Y/m/d')) - 1 + 60 * 60 * 24;
@@ -1703,3 +1611,438 @@ function tempusgdatacover($data) {
     'time' => date('d/m/Y', $data['time']),
   );
 }
+
+// 0: 'Nhắc tiêm phòng trước salơ',
+// 1: 'Nhắc test Progesterone',
+// 2: 'Tư vấn trước sinh',
+// 3: 'Ngày sinh',
+// 4: 'Nhắc sổ giun lần 1',
+// 5: 'Nhắc tiêm vaccine',
+// 6: 'Đã gọi tiêm vaccine',
+// 7: 'Đã hoàn thành',
+// 8: 'Không theo dõi nữa',
+// 9: 'Phiếu tạm',
+$aday = 60 * 60 * 24;
+$cover = array(
+  0 => array('s' => 1, 't' => $aday * 30 * 6),
+  1 => array('s' => 1, 't' => $aday * 30 * 6),
+  2 => array('s' => 3, 't' => $aday * 1), 
+  3 => array('s' => 4, 't' => $aday * 7 * 5), 
+  4 => array('s' => 5, 't' => $aday * 7 * 6), 
+  5 => array('s' => 6, 't' => 0), 
+);
+
+// function auto() {
+//   global $data, $db, $result;
+
+//   $result['status'] = 1;
+//   $result['list'] = getlist();
+//   $result['new'] = getlist(true);
+//   // $result['type'] = gettypeobj();
+//   // $result['doctor'] = getDoctor();
+//   $result['temp'] = gettemplist();
+  
+//   return $result;
+// }
+
+// function filter() {
+//   global $data, $db, $result;
+
+//   $result['status'] = 1;
+//   $result['list'] = getlist();
+  
+//   return $result;
+// }
+
+// function gettemplist() {
+//   global $db, $data;
+
+//   $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
+//   $role = $db->fetch($sql);
+
+//   $xtra = array();
+//   if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
+//   else if (!empty($data->chonnhanvien)) {
+//     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
+//   }
+//   if (!empty($data->time)) {
+//     $data->time = isodatetotime($data->time) + 60 * 60 * 24 - 1;
+//     $xtra []= " a.time < $data->time ";
+//   }
+//   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
+//   else $xtra = "";
+
+//   $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.fullname as doctor from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer d on a.customerid = d.id where a.status = 9 $xtra order by a.id desc";
+//   $v = $db->all($sql);
+//   $e = array();
+//   $l = array();
+//   $list = array(
+//     0 => array(), array()
+//   );
+
+//   foreach ($v as $row) {
+//     $temp = tempdatacover($row);
+//     if (empty($temp['phone']) || !$row['calltime']) $e []= $temp;
+//     else $l []= $temp;
+//   }
+
+//   $list[0] = array_merge($l, $e);
+//   $start = strtotime(date('Y/m/d'));
+//   $end = $start + 60 * 60 * 24 - 1;
+//   $sql = "select a.*, d.id as customerid, d.name, d.phone, d.address, c.fullname as doctor from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer d on a.customerid = d.id where utemp = 1 and (time between $start and $end) $xtra order by a.id desc";
+//   $l = $db->all($sql);
+
+//   foreach ($l as $row) {
+//     $list[1] []= tempdatacover($row);
+//   }
+//   return $list;
+// }
+
+// function tempdatacover($data) {
+//   return array(
+//     'id' => $data['id'],
+//     'note' => $data['note'],
+//     'doctor' => $data['doctor'],
+//     'customerid' => $data['customerid'],
+//     'name' => $data['name'],
+//     'phone' => $data['phone'],
+//     'address' => $data['address'],
+//     'number' => $data['number'],
+//     'called' => ($data['called'] ? date('d/m/Y', $data['called']) : ''),
+//     'cometime' => date('d/m/Y', $data['cometime']),
+//     'calltime' => ($data['calltime'] ? date('d/m/Y', $data['calltime']) : ''),
+//     'time' => date('d/m/Y', $data['time']),
+//   );
+// }
+
+// function getlist($today = false) {
+//   global $db, $data, $userid;
+
+//   $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
+//   $role = $db->fetch($sql);
+
+//   $xtra = array();
+//   if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
+//   else if (!empty($data->chonnhanvien)) {
+//     $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
+//   }
+
+//   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
+//   else $xtra = "";
+
+//   $start = strtotime(date('Y/m/d'));
+
+//   if ($today) {
+//     // danh sách đã thêm hôm nay
+//     $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (a.time between $start and ". time() . ") $xtra and a.status < 6 order by a.id desc";
+//     $list = dataCover($db->all($sql));
+//   }
+//   else if (empty($data->keyword)) {
+//     // danh sách nhắc hôm nay
+//     $daungay = strtotime(date('Y/m/d'));
+//     $cuoingay = $daungay + 60 * 60 * 24 - 1;
+
+//     $list = array(0 => array());
+    
+//     $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status = 3 and (calltime < $cuoingay) and called = 0 $xtra order by a.recall asc";
+//     $list[0] = dataCover($db->all($sql));
+    
+//     $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (called between $daungay and $cuoingay) $xtra order by a.recall asc";
+//     $list[1] = dataCover($db->all($sql));
+//   }
+//   else {
+//     // danh sách tìm kiếm khách hàng
+//     $key = trim($data->keyword);
+//     $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where (b.name like '%$key%' or b.phone like '%$key%') and status < 8 order by a.recall desc";
+//     $list = dataCover($db->all($sql));
+//   }
+
+//   return $list;
+// }
+
+// function dataCover($list) {
+//   global $start;
+//   $lim = strtotime(date('Y/m/d')) - 1 + 60 * 60 * 24;
+//   $v = array();
+//   $stoday = strtotime(date('Y/m/d'));
+//   $etoday = $stoday + 60 * 60 * 24  - 1;
+
+//   foreach ($list as $row) {
+//     // thời gian gọi
+//     if (!$row['called']) $called = '-';
+//     else if ($row['called'] >= $stoday && $row['called'] <= $etoday) $called = 'Hôm hay đã gọi';
+//     else $called = date('d/m/Y', $row['called']);
+//     // nếu status < 6, kiểm tra recall < lim hay không
+//     // nếu không thì bỏ qua
+//     $over = (($row['status'] < 6 && $row['recall'] < $lim) ? 1 : 0);  
+//     $v []= array(
+//       'id' => $row['id'],
+//       'note' => $row['note'],
+//       'doctor' => $row['doctor'],
+//       'customerid' => $row['customerid'],
+//       'name' => $row['name'],
+//       'phone' => $row['phone'],
+//       'address' => $row['address'],
+//       'number' => $row['number'],
+//       'status' => $row['status'],
+//       'over' => $over,
+//       'called' => $called,
+//       'cometime' => date('d/m/Y', $row['cometime']),
+//       'calltime' => date('d/m/Y', $row['calltime']),
+//       'recall' => date('d/m/Y', $row['recall']),
+//     );
+//   }
+//   return $v;
+// }
+
+// function search() {
+//   global $data, $db, $result;
+//   $result['status'] = 1;
+//   $result['list'] = getlist();
+
+//   return $result;
+// }
+
+// function searchcustomer() {
+//   global $data, $db, $result;
+//   $result['status'] = 1;
+//   $result['list'] = getlist();
+
+//   return $result;
+// }
+
+// function update() {
+//   global $data, $db, $result;
+
+//   $customerid = checkcustomer();
+//   $data->cometime = isodatetotime($data->cometime);
+//   $data->calltime = isodatetotime($data->calltime);
+  
+//   $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $data->calltime, number = $data->number where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['list'] = getlist();
+//   $result['new'] = getlist(true);
+//   $result['messenger'] = "Đã cập nhật phiếu nhắc";
+//   return $result;
+// }
+
+// function updatehistory() {
+//   global $data, $db, $result;
+
+//   $customerid = checkcustomer();
+//   $data->cometime = isodatetotime($data->cometime);
+//   $data->calltime = isodatetotime($data->calltime);
+
+//   $sql = "update pet_". PREFIX ."_usg set customerid = $customerid, note = '$data->note', cometime = $data->cometime, calltime = $data->calltime, recall = $data->calltime, number = $data->number where id = $data->id";
+//   $db->query($sql);
+
+//   $result['status'] = 1;
+//   $result['messenger'] = 'Đã xác nhận và thêm vào danh sách nhắc';
+//   $result['old'] = array();
+//   $result['list'] = gettemplist();
+
+//   return $result;
+// }
+
+// // function called() {
+// //   global $data, $db, $result, $cover;
+
+// //   $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
+// //   $u = $db->fetch($sql);
+// //   $time = time();
+// //   if ($u['status'] == 0) $recall = $u['cometime'] + $cover[$u['status']]['t'];
+// //   else $recall = $u['calltime'] + $cover[$u['status']]['t'];
+// //   $status = $cover[$u['status']]['s'];
+
+// //   $sql = "update pet_". PREFIX ."_usg set status = $status, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+// //   $db->query($sql);
+// //   $result['status'] = 1;
+// //   $result['messenger'] = "Đã thay đổi trạng thái";
+// //   $result['list'] = getlist();
+
+// //   return $result;
+// // }
+
+// // function deworm() {
+// //   global $data, $db, $result, $cover;
+
+// //   $sql = "select * from pet_". PREFIX ."_usg where id = $data->id";
+// //   $u = $db->fetch($sql);
+// //   $time = time();
+// //   // neu co deworm thi cap nhat, neu khong + 5 tuan
+// //   if (isset($data->deworm)) {
+// //     $t = str_replace('-', '/', $data->deworm);
+// //     $recall = strtotime($t);
+// //   } 
+// //   else $recall = $u['calltime'] + 60 * 60 * 24 * 7 * 6;
+
+// //   $sql = "update pet_". PREFIX ."_usg set status = 5, note = '". $data->note ."', called = $time, recall = $recall where id = $data->id";
+// //   $db->query($sql);
+// //   $result['status'] = 1;
+// //   $result['messenger'] = "Đã thay đổi trạng thái";
+// //   $result['list'] = getlist();
+
+// //   return $result;
+// // }
+
+// // function repregnant() {
+// //   global $data, $db, $result;
+
+// //   $time = time();
+// //   $recall = $time + 60 * 60 * 24 * 30 * 5;
+// //   $sql = "update pet_". PREFIX ."_usg set status = 0, number = 0, cometime = $time, calltime = $recall, recall = $recall, note = '$data->note' where id = $data->id";
+// //   $db->query($sql);
+// //   $result['status'] = 1;
+// //   $result['messenger'] = "Phiếu nhắc đã lặp lại 5 tháng sau";
+// //   $result['list'] = getlist();
+  
+// //   return $result;
+// // }
+
+// function checkcustomer() {
+//   global $db, $data;
+
+//   $sql = "select * from pet_". PREFIX ."_customer where phone = '$data->phone'";
+//   if (!empty($customer = $db->fetch($sql))) {
+//     $sql = "update pet_". PREFIX ."_customer set name = '$data->name', address = '$data->address' where id = $customer[id]";
+//     $db->query($sql);
+//   }
+//   else {
+//     $sql = "insert into pet_". PREFIX ."_customer (name, phone, address) values ('$data->name', '$data->phone', '$data->address')";
+//     $customer['id'] = $db->insertid($sql);
+//   }
+
+//   return $customer['id'];
+// }
+
+// function tempauto() {
+//   global $data, $db, $result;
+
+//   $result['status'] = 1;
+//   $result['list'] = gettemplist();
+  
+//   return $result;
+// }
+
+// function typeauto() {
+//   global $data, $db, $result;
+
+//   $result['status'] = 1;
+//   $result['list'] = gettypeobj();
+  
+//   return $result;
+// }
+
+// function doctorauto() {
+//   global $data, $db, $result;
+
+//   $result['status'] = 1;
+//   $result['list'] = getDoctor();
+  
+//   return $result;
+// }
+
+// function removeall() {
+//   global $data, $db, $result;
+
+//   foreach ($data->list as $id) {
+//     $sql = "delete from pet_". PREFIX ."_usg where id = $id";
+//     $db->query($sql);
+//   }
+
+//   $result['status'] = 1;
+//   $result['messenger'] = "Đã xóa các phiếu nhắc tạm";
+//   $result['list'] = gettemplist();
+//   return $result;
+// }
+
+// function history() {
+//   global $data, $db, $result;
+
+//   $sql = "select a.*, c.fullname as doctor, b.phone, b.name, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.status < 3 and b.phone = '$data->phone' order by a.id asc";
+//   $result['status'] = 1;
+//   $result['old'] = dataCover($db->all($sql));
+//   return $result;
+// }
+
+// function transfer() {
+//   global $data, $db, $result;
+
+//   foreach ($data->list as $id) {
+//     $sql = "update pet_". PREFIX ."_usg set userid = $data->uid where id = $id";
+//     $db->query($sql);
+//   }
+//   $sql = "select a.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'doctor' and a.type = 1 and a.userid = $data->uid";
+//   $d = $db->fetch($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Đã chuyển phiếu nhắc sang cho nhân viên: $d[name]";
+//   $result['list'] = gettemplist();
+
+//   return $result;
+// }
+
+// function confirm() {
+//   global $data, $db, $result;
+
+//   $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $data->id";
+//   $c = $db->fetch($sql);
+
+//   $sql = "update pet_". PREFIX ."_usg set status = 3, utemp = 1, time = ". time() ." where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['messenger'] = "Đã xác nhận và chuyển vào danh sách nhắc";
+//   $result['temp'] = gettemplist();
+
+//   return $result;
+// }
+
+// function removetemp() {
+//   global $data, $db, $result;
+//   $sql = "delete from pet_". PREFIX ."_usg where id = $data->id";
+//   $db->query($sql);
+//   $result['status'] = 1;
+//   $result['list'] = gettemplist();
+//   $result['messenger'] = "Đã xóa phiếu tạm";
+//   return $result;
+// }
+
+// function removetype() {
+//   global $data, $db, $result;
+
+//   $sql = "update pet_". PREFIX ."_config set module = 'usg-deleted' where id = $data->id";
+//   $db->query($sql);
+
+//   $result['status'] = 1;
+//   $result['list'] = gettypelist();
+//   return $result;
+// }
+
+// function updatetype() {
+//   global $data, $db, $result;
+
+//   $sql = "update pet_". PREFIX ."_config set name = '$data->name' where id = $data->id";
+//   $db->query($sql);
+
+//   $result['status'] = 1;
+//   $result['list'] = gettypelist();
+//   return $result;
+// }
+
+// function inserttype() {
+//   global $data, $db, $result;
+
+//   $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('usg', '$data->name', '')";
+//   $db->query($sql);
+
+//   $result['status'] = 1;
+//   $result['list'] = gettypelist();
+//   return $result;
+// }
+
+// function gettypelist() {
+//   global $db;
+
+//   $sql = "select id, name from pet_". PREFIX ."_config where module = 'usg'";
+//   return $db->all($sql);
+// }

@@ -76,13 +76,13 @@ function initList() {
   $danhsach = $db->all($sql);
   
   foreach ($danhsach as $row) {
-    $user = checkUserById($row['userid']);
+    $user = laydulieunhanvien($row['userid']);
     $image = parseimage($row['image']);
     $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
     $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
-      'name' => $user['name'],
+      'name' => $user['hoten'],
       'done' => intval($row['done']),
       'problem' => $row['problem'],
       'solution' => $row['solution'],
@@ -101,13 +101,13 @@ function initList() {
   $query = $db->query($sql);
   
   while ($row = $query->fetch_assoc()) {
-    $user = checkUserById($row['userid']);
+    $user = laydulieunhanvien($row['userid']);
     $image = parseimage($row['image']);
     $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
     $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
-      'name' => $user['name'],
+      'name' => $user['hoten'],
       'done' => intval($row['done']),
       'problem' => $row['problem'],
       'solution' => $row['solution'],
@@ -169,9 +169,9 @@ function checkData() {
 }
 
 function checkRole() {
-  global $db;
+  global $db, $data;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'kaizen' and userid = $data->idnguoidung";
-  if (!empty($p = $db->fetch($sql))) return $p['type'];
+  $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'kaizen' and idnhanvien = $data->idnguoidung";
+  if (!empty($p = $db->fetch($sql))) return $p['vaitro'];
   return 0;
 }

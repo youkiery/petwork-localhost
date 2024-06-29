@@ -90,7 +90,12 @@ function guihang() {
   $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $data->idnguoidung where id = $data->id";
   $db->query($sql);
 
-  guithongbaoapp($data->token, $data->idkhach, "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
+  $sql = "select trangthai from pet_". PREFIX ."_hanghoa_donhang where id = $data->id";
+  $donhang = $db->fetch($sql);
+  if (empty($donhang["trangthai"])) {
+    // gửi thông báo lần đầu
+    guithongbaoapp($donhang["token"], $donhang["idkhach"], "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
+  }
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachdonhang();
@@ -115,9 +120,10 @@ function xacnhannhieu() {
   $thoigian = time();
   foreach ($data->danhsach as $iddonhang) {
     $sql = "select trangthai from pet_". PREFIX ."_hanghoa_donhang where id = $iddonhang";
-    if (empty($db->fetch($sql)["trangthai"])) {
+    $donhang = $db->fetch($sql);
+    if (empty($donhang["trangthai"])) {
       // gửi thông báo lần đầu
-      guithongbaoapp($data->token, $data->idkhach, "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
+      guithongbaoapp($donhang["token"], $donhang["idkhach"], "Cập nhật đơn hàng", "Đơn hàng quý khách đặt đang trên đường giao, vui lòng chờ 1-3 tiếng nếu là đơn nội thành, 1-3 ngày đối vớI đơn huyện, 1-7 ngày đối với các tỉnh khác");
     }
 
     $sql = "update pet_". PREFIX ."_hanghoa_donhang set trangthai = 1, idnhanvien = $data->uid where id = $iddonhang";

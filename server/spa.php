@@ -471,13 +471,13 @@ function chuyenngaunhienspa() {
 }
 
 function chuyenngaunhien($duser = 0) {
-  global $db;
+  global $db, $data;
   $daungay = strtotime(date('Y/m/d'));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
   $hientai = time();
 
   // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
-  $sql = "select id from pet_nhanvien where kichhoat = 1 and id in (select idnhanvien as id from pet_nhanvien where chucnang = 'spa' and vaitro > 0) and id not in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'manager' and vaitro > 0) and id not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+  $sql = "select id from pet_nhanvien where kichhoat = 1 and id in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'spa' and vaitro > 0) and id not in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'manager' and vaitro > 0) and id not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
   $danhsachnhanvien = $db->arr($sql, 'id');
 
   // lấy danh sách nhân viên bận loại trừ khỏi danh sách

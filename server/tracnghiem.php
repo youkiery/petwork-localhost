@@ -325,9 +325,9 @@ function ketquathi()
   global $data, $db, $result;
 
   if ($data->idnguoidung == 1 || $data->idnguoidung == 5) {
-    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_" . PREFIX . "_users b on a.idnhanvien = b.userid where nopbai = 1 order by id desc limit 10 offset " . ($data->trang - 1) * 10;
+    $sql = "select a.*, hoten as nguoithi from pet_tracnghiem_baithi a inner join pet_nhanvien b on a.idnhanvien = b.id where nopbai = 1 order by a.id desc limit 10 offset " . ($data->trang - 1) * 10;
   } else {
-    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_" . PREFIX . "_users b on a.idnhanvien = b.userid where idnhanvien = $data->idnguoidung and nopbai = 1 order by id desc limit 10 offset " . ($data->trang - 1) * 10;
+    $sql = "select a.*, hoten as nguoithi from pet_tracnghiem_baithi a inner join pet_nhanvien b on a.idnhanvien = b.id where idnhanvien = $data->idnguoidung and nopbai = 1 order by a.id desc limit 10 offset " . ($data->trang - 1) * 10;
   }
   $danhsachbaithi = $db->all($sql);
 

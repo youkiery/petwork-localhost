@@ -338,7 +338,7 @@ function dulieuthongke() {
       "idnhanvien" => $idnhanvien,
       "tennhanvien" => count($hoten) ? $hoten[count($hoten) - 1] : '',
       "dulieu" => $ketquachamcong[$idnhanvien],
-      "tongtre" => chuyendoiphut($tongtre),
+      "tongtre" => $tongtre,
       "tongkhongcham" => $tongkhongcham, // không chấm theo buổi
       "tongkhongcong" => $tongkhongcong, // không chấm theo ngày
     ];
@@ -375,15 +375,16 @@ function tailen() {
   $filename = $_FILES['file']['tmp_name'];
   $handle = fopen($filename, "r");
 
-  $sql = "select * from pet_nhanvien where idvantay > 0";
-  $nhanvien = $db->obj($sql, "idvantay", "id");
-
+  $sql = "select * from pet_". PREFIX ."_users where idvantay > 0";
+  $nhanvien = $db->obj($sql, "idvantay", "userid");
+  
   if ($handle) {
     while (($line = fgets($handle)) !== false) {
       $data = explode("\t", $line);
       if (isset($nhanvien[intval($data[2])])) {
         $idnhanvien = $nhanvien[intval($data[2])];
         $thoigian = strtotime($data[6]);
+        if (empty($thoigian)) continue;
 
         $sql = "select * from pet_". PREFIX ."_lichchamcong where idnhanvien = $idnhanvien and thoigian = $thoigian";
         if (empty($db->fetch($sql))) {

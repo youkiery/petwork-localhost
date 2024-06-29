@@ -356,7 +356,7 @@ function dulieuvattu() {
 function danhsachnhanvien() {
   global $db, $data;
 
-  $sql = "select id, nhanvien as name from pet_nhanvien where kichhoat = 1 order by hoten asc";
+  $sql = "select id, hoten as name from pet_nhanvien where kichhoat = 1 order by hoten asc";
   return $db->all($sql);
 }
 

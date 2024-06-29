@@ -81,7 +81,7 @@ function statistic() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'ride' and type = 2";
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'ride' and vaitro = 2";
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.userid = $data->idnguoidung and";
 
@@ -98,9 +98,9 @@ function statistic() {
     $data['cole'] += $row['money'];
     $data['count'] ++;
     if (empty($temp[$row['userid']])) {
-      $sql = "select fullname from pet_nhanvien where userid = $row[userid]";
+      $sql = "select hoten from pet_nhanvien where id = $row[userid]";
       $u = $db->fetch($sql);
-      $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
+      $temp[$row['userid']] = array('name' => $u['hoten'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
     $temp[$row['userid']]['clock'] += $row['clocke'] - $row['clockf'];
     $temp[$row['userid']]['cole'] += $row['money'];
