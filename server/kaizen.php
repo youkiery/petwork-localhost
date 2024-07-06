@@ -171,7 +171,7 @@ function checkData() {
 function checkRole() {
   global $db, $data;
 
-  $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'kaizen' and idnhanvien = $data->idnguoidung";
+  $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'kaizen' and idnhanvien = $data->idnguoidung and idchinhanh = $data->idchinhanh";
   if (!empty($p = $db->fetch($sql))) return $p['vaitro'];
   return 0;
 }

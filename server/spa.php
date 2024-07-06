@@ -11,7 +11,7 @@ function filter() {
 function init() {
   global $data, $db, $result;
 
-  $sql = "select a.id, a.hoten as name from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien where b.chucnang = 'spa' and b.vaitro > 0";
+  $sql = "select a.id, a.hoten as name from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien where b.chucnang = 'spa' and b.vaitro > 0 and idchinhanh = $data->idchinhanh";
   $result['nhanvien'] = $db->all($sql);
 
   $result['status'] = 1;
@@ -477,7 +477,7 @@ function chuyenngaunhien($duser = 0) {
   $hientai = time();
 
   // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
-  $sql = "select id from pet_nhanvien where kichhoat = 1 and id in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'spa' and vaitro > 0) and id not in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'manager' and vaitro > 0) and id not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+  $sql = "select id from pet_nhanvien where kichhoat = 1 and id in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'spa' and vaitro > 0 and idchinhanh = $data->idchinhanh) and id not in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'manager' and vaitro > 0 and idchinhanh = $data->idchinhanh) and id not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
   $danhsachnhanvien = $db->arr($sql, 'id');
 
   // lấy danh sách nhân viên bận loại trừ khỏi danh sách
@@ -897,7 +897,7 @@ function work() {
 function getuserobj() {
   global $db;
 
-  $sql = "select a.id, a.hoten from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'doctor'";
+  $sql = "select a.id, a.hoten from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'doctor' and idchinhanh = $data->idchinhanh";
   $list = $db->all($sql);
 
   $data = array();
@@ -983,7 +983,8 @@ function getList() {
       'time' => date('H:i', $row['time']),
       'option' => $option,
       'dtime' => intval($row['time']) * 1000,
-      'service' => (count($service) ? implode(',', $service) : '-')
+      'service' => (count($service) ? implode(',', $service) : '-'),
+      'hinhanh' => []
     );
   }
 

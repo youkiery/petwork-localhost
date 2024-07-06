@@ -81,7 +81,7 @@ function statistic() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'ride' and vaitro = 2";
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'ride' and vaitro = 2 and idchinhanh = $data->idchinhanh";
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.userid = $data->idnguoidung and";
 

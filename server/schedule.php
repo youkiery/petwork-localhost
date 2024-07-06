@@ -77,10 +77,10 @@
     $cuoithangnay = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
     $ngaychunhat = $dauthangnay + (7 - date('w', $dauthangnay)) * $motngay;
 
-    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'manager' and b.vaitro > 0";
+    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'manager' and b.vaitro > 0 and a.idchinhanh = $data->idchinhanh";
     $songoaile = $db->fetch($sql)['soluong'];
 
-    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'schedule' and b.vaitro > 0";
+    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'schedule' and b.vaitro > 0 and a.idchinhanh = $data->idchinhanh";
     $sonhanvien = $db->fetch($sql)['soluong'] - $songoaile;
 
     // danhsach: [ {ngay: {sang: chophep = true, chieu: khongchophep = false}} ]
@@ -271,7 +271,7 @@
   function getRole() {
     global $db, $data;
 
-    $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'schedule'";
+    $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'schedule' and idchinhanh = $data->idchinhanh";
     $role = $db->fetch($sql);
     return $role['vaitro'];
   }
@@ -304,10 +304,10 @@
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
     }
 
-    $sql = "select b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'manager' and vaitro = 1";
+    $sql = "select b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
     $danhsachngoaile = $db->arr($sql, 'hoten');
 
-    $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'manager' and idnhanvien = $data->idnguoidung";
+    $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'manager' and idnhanvien = $data->idnguoidung and idchinhanh = $data->idchinhanh";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
     $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
     if (empty($cauhinh = $db->fetch($sql))) {
@@ -400,7 +400,7 @@
       'dangky' => array()
     );
     
-    $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idnhanvien <> 1";
+    $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
     $danhsachnhanvien = $db->all($sql);
 
     $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -479,23 +479,23 @@
   }
 
   function getScheduleUser() {
-    global $db;
+    global $db, $data;
 
-    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'doctor' and vaitro = 1";
+    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
     return $db->arr($sql, 'name');
   }
 
   function getExcept() {
     global $db;
 
-    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'except' and vaitro = 1";
+    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'except' and vaitro = 1 and idchinhanh = $data->idchinhanh";
     return $db->arr($sql, 'name');
   }
 
   function xemchotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idnhanvien <> 1";
+    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idnhanvien <> 1 and idchinhanh = $data->idchinhanh";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
@@ -610,7 +610,7 @@
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
     }
 
-    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0";
+    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and idchinhanh = $data->idchinhanh";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $danhsachchuasapxep = array();
@@ -619,7 +619,7 @@
     $config = $db->fetch($sql);
     $config = json_decode($config['value']);  
 
-    $sql = "select b.id from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'manager' and vaitro = 1";
+    $sql = "select b.id from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'manager' and vaitro = 1 and idchinhanh = $data->idchinhanh";
     $danhsachngoaile = $db->arr($sql, 'id');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);

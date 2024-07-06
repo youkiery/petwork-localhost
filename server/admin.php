@@ -349,32 +349,34 @@ function xoanhanvien() {
 
   $time = time();
   // chuyển sang cho người dùng khác
-  $sql = "update pet_". PREFIX ."_vaccine set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_usg set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_spa set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_import set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_hotel set returnuserid = $data->nhanvienchuyen where returnuserid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_exam set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_kaizen set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xetnghiem set idnhanvien = $data->nhanvienchuyen where idnhanvien = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_ride set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_sieuam set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xquang set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xray set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
-  $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xray_read set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
-  $db->query($sql);
+  if ($data->nhanvienchuyen > 0) {
+    $sql = "update pet_". PREFIX ."_vaccine set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_usg set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_spa set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_import set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_hotel set returnuserid = $data->nhanvienchuyen where returnuserid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_exam set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_kaizen set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_xetnghiem set idnhanvien = $data->nhanvienchuyen where idnhanvien = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_ride set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_sieuam set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_xquang set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_xray set doctorid = $data->nhanvienchuyen where doctorid = $data->nhanvienxoa";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_xray_read set userid = $data->nhanvienchuyen where userid = $data->nhanvienxoa";
+    $db->query($sql);
+  }
   
   // xóa đăng ký lịch
   $sql = "delete from pet_". PREFIX ."_row where user_id = $data->nhanvienxoa";
@@ -401,7 +403,7 @@ function xoanhanvien() {
   $db->query($sql);
 
   $result['status'] = 1;
-  $result['list'] = laydanhsachphanquyen();
+  $result['danhsach'] = laydanhsachphanquyen();
   return $result;
 }
 
@@ -413,46 +415,30 @@ function getPer() {
   return $c;
 }
 
-function signup() {
+function themnhanvien() {
   global $data, $db, $result;
-  $username = mb_strtolower($data->username);
-  $password = $data->password;
+  $taikhoan = mb_strtolower($data->taikhoan);
 
   include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
-  $sinhnhat = 0;
-  if (isset($data->sinhnhat)) $sinhnhat = isodatetotime($data->sinhnhat);
 
-  $sql = "select id, matkhau from `pet_nhanvien` where LOWER(taikhoan) = '$username' and kichhoat = 1";
-  if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
-  else {
-    $time = time();
-    $sql = "insert into pet_nhanvien (taikhoan, idvantay, hoten, matkhau, sinhnhat, kichhoat) values ('$data->username', '$data->idvantay', '$data->fullname', '". $crypt->hash_password($data->password) ."', $sinhnhat, 1)";
-    $userid = $db->insertid($sql);
-    
-    $result['status'] = 1;
-    $result['list'] = laydanhsachphanquyen();
+  // không trùng trên tài khoản với người khác, vân tay trống thì = 0
+  $sql = "select * from pet_nhanvien where id <> $data->id and LOWER(taikhoan) = '$taikhoan' and kichhoat = 1";
+  if (!empty($db->fetch($sql))) return ["messenger" => "Tài khoản đã tồn tại"];
+
+  if (empty($data->idvantay)) $data->idvantay = 0;
+
+  if ($data->id) {
+    $sql = "update pet_nhanvien set taikhoan = '$taikhoan', idvantay = '$data->idvantay', hoten = '$data->hoten', matkhau = '". $crypt->hash_password($data->matkhau) ."', hinhanh = '$data->hinhanh' where id = $data->id";
   }
-  return $result;
-}
+  else {
+    $sql = "insert into pet_nhanvien (taikhoan, idvantay, hoten, matkhau, sinhnhat, zalouid, kichhoat, hinhanh) values ('$taikhoan', '$data->idvantay', '$data->hoten', '". $crypt->hash_password($data->matkhau) ."', 0, '$data->zalouid', 1, '$data->hinhanh')";
+  }
+  $db->query($sql);
 
-function updateuser() {
-  global $data, $db, $result;
-  
-  $password = $data->password;
-
-  include_once(DIR . '/include/Encryption.php');
-  $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
-  $crypt = new NukeViet\Core\Encryption($sitekey);
-  $sinhnhat = isodatetotime($data->sinhnhat);
-  
-  $sql = "update pet_nhanvien set taikhoan = '$data->taikhoan', idvantay = '$data->idvantay', hoten = '$data->fullname', matkhau = '". $crypt->hash_password($data->password) ."', sinhnhat = $sinhnhat where id = $data->userid";
-  $userid = $db->insertid($sql);
-    
   $result['status'] = 1;
-  $result['list'] = laydanhsachphanquyen();
-  
+  $result['nhanvien'] = laydanhsachphanquyen();
   return $result;
 }
 

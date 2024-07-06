@@ -55,9 +55,9 @@ function danhsachnhanvien() {
 function danhsachdonhang() {
   global $data, $db, $result;
 
-  $daungay = strtotime(date("Y/m/d"));
-  $cuoingay = $daungay + 60 * 60 * 24 - 1;
-  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai < 2 order by id desc";
+  $batdau = isodatetotime($data->batdau);
+  $ketthuc = isodatetotime($data->ketthuc) + 60 * 60 * 24 - 1;
+  $sql = "select * from pet_". PREFIX ."_hanghoa_donhang where trangthai < 2 or (thoigian between $batdau and $ketthuc) order by id desc";
   $danhsachdonhang = $db->all($sql);
 	$trangthai = [0 => "Chưa xác nhận", "Chờ giao hàng", "Đã giao", "Đã huỷ"];
 

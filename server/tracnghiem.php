@@ -154,7 +154,7 @@ function thongkebaithi() {
   $sql = "select iddethi from pet_tracnghiem_baithi where thoigian between $batdau and $ketthuc group by iddethi";
   $danhsachdethi = $db->all($sql);
 
-  $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where a.chucnang = 'tracnghiem' and a.vaitro > 0 order by a.idnhanvien desc";
+  $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where a.chucnang = 'tracnghiem' and a.vaitro > 0 and a.idchinhanh = $data->idchinhanh order by a.idnhanvien desc";
   $danhsachnhanvien = $db->all($sql);
 
   foreach ($danhsachdethi as $thutu => $dethi) {

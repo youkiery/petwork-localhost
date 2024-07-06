@@ -241,7 +241,7 @@ function statistic() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'his' and vaitro = 2";
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'his' and vaitro = 2 and idchinhanh = $data->idchinhanh";
   $xtra = "";
   if (empty($p = $db->fetch($sql))) $xtra = "a.doctorid = $data->idnguoidung and";
 
@@ -632,7 +632,7 @@ function getlist($id = 0) {
   $filter->end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
   $xtra = array();
 
-  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'his'";
+  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'his' and idchinhanh = $data->idchinhanh";
   $role = $db->fetch($sql);
   
   if ($role['vaitro'] < 2) $xtra []= " (a.doctorid = $data->idnguoidung or a.share = 1 or pos = 1) ";
