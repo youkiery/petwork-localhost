@@ -91,13 +91,13 @@ function danhsachtonghop() {
     $danhsach[$key]["dichvu"] = implode(", ", $db->arr($sql, "tendanhmuc"));
     $danhsach[$key]["iddichvu"] = $db->arr($sql, "id");
 
-    $sql = "select hoten from pet_nhanvien where id = $value[idnhanvien]";
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $value[idnhanvien]";
     if (empty($nhanvien = $db->fetch($sql))) {
         $danhsach[$key]["nhanvien"] = "";
         $danhsach[$key]["idnhanvien"] = 0;
     }
     else {
-        $danhsach[$key]["nhanvien"] = $nhanvien["hoten"];
+        $danhsach[$key]["nhanvien"] = $nhanvien["fullname"];
     }
   }
 
@@ -179,13 +179,13 @@ function danhsachdatlich() {
     $sql = "select a.id, a.tendanhmuc from pet_". PREFIX ."_danhmuc a inner join pet_". PREFIX ."_datlichchitiet b on a.id = b.iddanhmuc where b.iddatlich = $value[id]";
     $danhsach[$key]["dichvu"] = implode(", ", $db->arr($sql, "tendanhmuc"));
     $danhsach[$key]["iddichvu"] = $db->arr($sql, "id");
-    $sql = "select hoten from pet_nhanvien where id = $value[idnhanvien]";
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $value[idnhanvien]";
     if (empty($nhanvien = $db->fetch($sql))) {
         $danhsach[$key]["nhanvien"] = "";
         $danhsach[$key]["idnhanvien"] = 0;
     }
     else {
-        $danhsach[$key]["nhanvien"] = $nhanvien["hoten"];
+        $danhsach[$key]["nhanvien"] = $nhanvien["fullname"];
     }
   }
 
@@ -214,9 +214,9 @@ function xuatfile() {
     $sql = "select * from pet_". PREFIX ."_customer where id = $datlich[idkhachdat]";
     if (empty($khachhang = $db->fetch($sql))) $khachhang = ["name" => "", "phone" => ""];
 
-    $sql = "select * from pet_nhanvien where id = $datlich[idnhanvien]";
+    $sql = "select * from pet_". PREFIX ."_users where userid = $datlich[idnhanvien]";
     if (empty($nhanvien = $db->fetch($sql))) $nhanvien = "";
-    else $nhanvien = $nhanvien['hoten'];
+    else $nhanvien = $nhanvien['fullname'];
 
     $sql = "select b.tendanhmuc from pet_". PREFIX ."_datlichchitiet a inner join pet_". PREFIX ."_danhmuc b on a.iddanhmuc = b.id and iddatlich = $datlich[id]";
     if (empty($dichvu = $db->arr($sql, "tendanhmuc"))) $dichvu = "";
@@ -258,8 +258,8 @@ function khoitaochuyenmon() {
 function themchuyenmonnhanvien() {
   global $data, $db, $result;
   
-  if ($data->loai) $sql = "delete from pet_". PREFIX ."_chuyenmon where idnhanvien = $data->idnguoidung and iddanhmuc = $data->idchuyenmon";
-  else $sql = "insert into pet_". PREFIX ."_chuyenmon (idnhanvien, iddanhmuc) values($data->idnguoidung, $data->idchuyenmon)";
+  if ($data->loai) $sql = "delete from pet_". PREFIX ."_chuyenmon where idnhanvien = $data->idnhanvien and iddanhmuc = $data->idchuyenmon";
+  else $sql = "insert into pet_". PREFIX ."_chuyenmon (idnhanvien, iddanhmuc) values($data->idnhanvien, $data->idchuyenmon)";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -311,13 +311,13 @@ function xoachuyenmon() {
 function danhsachnhanvien() {
   global $data, $db, $result;
   
-  $sql = "select hoten, id from pet_nhanvien where kichhoat = 1 order by id";
+  $sql = "select fullname as tennhanvien, userid from pet_". PREFIX ."_users where active = 1 order by userid";
   $danhsachnhanvien = $db->all($sql);
 
   foreach ($danhsachnhanvien as $key => $nhanvien) {
     $danhsachnhanvien[$key]["chuyenmon"] = [];
     $chuyenmon = [];
-    $sql = "select b.id, b.tendanhmuc from pet_". PREFIX ."_chuyenmon a inner join pet_". PREFIX ."_danhmuc b on a.iddanhmuc = b.id and a.idnhanvien = $nhanvien[id]";
+    $sql = "select b.id, b.tendanhmuc from pet_". PREFIX ."_chuyenmon a inner join pet_". PREFIX ."_danhmuc b on a.iddanhmuc = b.id and a.idnhanvien = $nhanvien[userid]";
     $danhsachchuyenmon = $db->all($sql);
     foreach ($danhsachchuyenmon as $chuyenmon) {
       $chuyenmon []= $chuyenmon["tendanhmuc"];
@@ -735,7 +735,7 @@ function khoitaothongke() {
     ],
   ];
 
-  $sql = "select * from pet_". PREFIX ."_danhgia a inner join pet_nhanvien b on a.idnhanvien = b.id and (a.thoigian between $batdau and $ketthuc)";
+  $sql = "select * from pet_". PREFIX ."_danhgia a inner join pet_". PREFIX ."_users b on a.idnhanvien = b.userid and (a.thoigian between $batdau and $ketthuc)";
   $danhsach = $db->all($sql);
 
   $chuyendoi = [];
@@ -745,7 +745,7 @@ function khoitaothongke() {
     $dulieu["danhgia"]["datasets"][0]["data"][$danhgia["muchailong"] - 1] ++;
     if (!isset($chuyendoi[$danhgia["idnhanvien"]])) {
       $chuyendoi[$danhgia["idnhanvien"]] = count($dulieu["nhanvien"]["datasets"][0]["data"]);
-      $dulieu["nhanvien"]["labels"][]= $danhgia["hoten"];
+      $dulieu["nhanvien"]["labels"][]= $danhgia["fullname"];
       $dulieu["nhanvien"]["datasets"][0]["data"][]= 0;
       $bodem[] = 0;
     }

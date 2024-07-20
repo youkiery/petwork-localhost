@@ -275,8 +275,8 @@ function dulieuthongke() {
 
   // echo json_encode($ketquachamcong);die();
 
-  $sql = "select id, hoten from pet_nhanvien";
-  $danhsachnhanvien = $db->obj($sql, "id", "hoten");
+  $sql = "select userid, fullname from pet_". PREFIX ."_users";
+  $danhsachnhanvien = $db->obj($sql, "userid", "fullname");
 
   // chuyển đổi kết quả chấm công thành dạng có thể đọc được
   // kiểm tra ngày đó có bao 
@@ -377,6 +377,7 @@ function tailen() {
 
   $sql = "select * from pet_". PREFIX ."_users where idvantay > 0";
   $nhanvien = $db->obj($sql, "idvantay", "userid");
+  
   
   if ($handle) {
     while (($line = fgets($handle)) !== false) {

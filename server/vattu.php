@@ -241,8 +241,9 @@ function dulieucophan() {
     'danhsach' => []
   ];
 
-  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vattu' and type = '2' and userid = $data->idnguoidung";
-  if (empty($db->fetch($sql)) && $data->idnguoidung != 1) $kiemtra = 0;
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'vattu' and type = '2' and userid = $userid";
+  if (empty($db->fetch($sql)) && $userid != 1) $kiemtra = 0;
   else {
     $kiemtra = 1;
     $sql = "select sum(giatri) as tong from pet_". PREFIX ."_cophan";
@@ -257,13 +258,13 @@ function dulieucophan() {
   $tongtien = tongtien();
 
   foreach ($danhsachtam as $thutu => $giaodich) {
-    if ($kiemtra || (!$kiemtra && $data->idnguoidung == $giaodich['idnhanvien'])) {
+    if ($kiemtra || (!$kiemtra && $userid == $giaodich['idnhanvien'])) {
       if (empty($danhsach[$giaodich['idnhanvien']])) {
-        $sql = "select hoten from pet_nhanvien where id = $giaodich[idnhanvien]";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $giaodich[idnhanvien]";
         $nhanvien = $db->fetch($sql);
         $danhsach[$giaodich['idnhanvien']] = [
           'idnhanvien' => $giaodich['idnhanvien'],
-          'nguoimua' => (empty($nhanvien['hoten']) ? '' : $nhanvien['hoten']),
+          'nguoimua' => (empty($nhanvien['fullname']) ? '' : $nhanvien['fullname']),
           'tile' => 0,
           'hientai' => 0,
           'giatri' => 0,
@@ -356,7 +357,7 @@ function dulieuvattu() {
 function danhsachnhanvien() {
   global $db, $data;
 
-  $sql = "select id, hoten as name from pet_nhanvien where kichhoat = 1 order by hoten asc";
+  $sql = "select userid, fullname as name from pet_". PREFIX ."_users where active = 1 order by fullname asc";
   return $db->all($sql);
 }
 

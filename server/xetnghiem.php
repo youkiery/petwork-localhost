@@ -70,9 +70,9 @@ function download() {
       );
     }
     
-    $sql = "select * from pet_nhanvien where id = $prof[idnhanvien]";
+    $sql = "select * from pet_". PREFIX ."_users where userid = $prof[idnhanvien]";
     $doctor = $db->fetch($sql);
-    $prof['doctor'] = $doctor['hoten'];
+    $prof['doctor'] = $doctor['fullname'];
 
     $sql = "select * from pet_". PREFIX ."_customer where id = $prof[idkhach]";
     $khachhang = $db->fetch($sql);
@@ -193,9 +193,9 @@ function printword() {
     );
   }
   
-  $sql = "select * from pet_nhanvien where id = $prof[idnhanvien]";
+  $sql = "select * from pet_". PREFIX ."_users where userid = $prof[idnhanvien]";
   $doctor = $db->fetch($sql);
-  $prof['doctor'] = $doctor['hoten'];
+  $prof['doctor'] = $doctor['fullname'];
 
   $sql = "select * from pet_". PREFIX ."_customer where id = $prof[idkhach]";
   $khachhang = $db->fetch($sql);
@@ -298,6 +298,71 @@ function printword() {
   return $result;
 }
 
+// function get() {
+//   global $data, $db, $result;
+    
+//   $sql = "select * from pet_". PREFIX ."_xetnghiem where id = $id";
+//   $query = $db->query($sql);
+//   $data = $query->fetch_assoc();
+//   $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_xetnghiem_dulieu a inner join pet_". PREFIX ."_xetnghiem_chitieu b on a.pid = $id and a.tid = b.id and b.module = 'profile' order by vitri asc";
+//   $query = $db->query($sql);
+//   $data['target'] = array();
+//   $i = 1;
+//   while ($row = $query->fetch_assoc()) {
+//     $flag = explode(' - ', $row['flag']);
+//     $value = floatval($row['value']);
+//     if (count($flag) == 2) {
+//       $s = floatval($flag[0]);
+//       $e = floatval($flag[1]);
+//     }
+//     else {
+//       $s = 0; $e = 1;
+//     }
+//     $tick = '';
+//     $tar = '';
+//     if ($value < $s) {
+//       $tick = 'v';
+//       $tar = '<b>'. $i . '. '. $row['name'] .' giảm:</b> '. $row['down'];
+//       $i ++;
+//     }
+//     else if ($value > $e) {
+//       $tick = '^'; 
+//       $tar = '<b>'. $i . '. '. $row['name'] .' tăng:</b> '. $row['up'];
+//       $i ++;
+//     }
+  
+//     $data['target'] []= array(
+//       'name' => $row['name'],
+//       'value' => $row['value'],
+//       'unit' => $row['unit'],
+//       'flag' => $row['flag'],
+//       'tar' => $tar,
+//       'tick' => $tick
+//     );
+//   }
+  
+//   $sql = "select value from pet_". PREFIX ."_config where name = 'type' limit 1 offset $data[type]";
+//   $query = $db->query($sql);
+//   $row = $query->fetch_assoc();
+//   $data['type'] = $row['value'];
+  
+//   $sql = "select value from pet_". PREFIX ."_config where name = 'sampletype' limit 1 offset $data[sampletype]";
+//   $query = $db->query($sql);
+//   $row = $query->fetch_assoc();
+//   $data['sampletype'] = $row['value'];
+  
+//   $sql = "select * from pet_". PREFIX ."_users where userid = $data[doctor]";
+//   $query = $db->query($sql);
+//   $doctor = $query->fetch_assoc();
+  
+//   $data['doctor'] = $doctor['fullname'];
+  
+//   $result['status'] = 1;
+//   $result['data'] = $data;
+
+//   return $result;
+// }
+
 function xoacan() {
   global $data, $db, $result;
 
@@ -336,6 +401,7 @@ function capnhatxetnghiem() {
   global $data, $db, $result;
 
   $idkhach = kiemtrakhachhang();
+  $idnhanvien = checkuserid();
   $hinhanh = implode(',', $data->hinhanh);
   $thoigian = time();
   if (isset($data->id) && !empty($data->id)) {
@@ -344,7 +410,7 @@ function capnhatxetnghiem() {
   }
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, idgiong, trieuchung, idnhanvien, thoigian, hinhanh, xetnghiem) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->idgiong', '$data->trieuchung', $data->idnguoidung, $thoigian, '$hinhanh', $data->xetnghiem)";
+    $sql = "insert into pet_". PREFIX ."_xetnghiem (idkhach, tenthucung, cannang, tuoi, gioitinh, idgiong, trieuchung, idnhanvien, thoigian, hinhanh, xetnghiem) values ($idkhach, '$data->tenthucung', '$data->cannang', '$data->tuoi', '$data->gioitinh', '$data->idgiong', '$data->trieuchung', $idnhanvien, $thoigian, '$hinhanh', $data->xetnghiem)";
     $data->id = $db->insertid($sql);
   }
 
@@ -405,7 +471,7 @@ function danhsachxetnghiem() {
     $xtra = " and a.xetnghiem = $timkiem->loai ";
   }
 
-  $sql = "select a.*, b.name as khachhang, b.phone as dienthoai, b.address as diachi, c.hoten as nhanvien from pet_". PREFIX ."_xetnghiem a inner join pet_". PREFIX ."_customer b on a.idkhach = b.id inner join pet_nhanvien c on a.idnhanvien = c.id where (b.phone like '%$timkiem->tukhoa%' or b.name like '%$timkiem->tukhoa%') and (a.thoigian between $batdau and $ketthuc) $xtra order by a.id desc";
+  $sql = "select a.*, b.name as khachhang, b.phone as dienthoai, b.address as diachi, c.fullname as nhanvien from pet_". PREFIX ."_xetnghiem a inner join pet_". PREFIX ."_customer b on a.idkhach = b.id inner join pet_". PREFIX ."_users c on a.idnhanvien = c.userid where (b.phone like '%$timkiem->tukhoa%' or b.name like '%$timkiem->tukhoa%') and (a.thoigian between $batdau and $ketthuc) $xtra order by a.id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $xetnghiem) {

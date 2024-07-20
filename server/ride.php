@@ -23,9 +23,10 @@ function remove() {
 function cole() {
   global $data, $db, $result;
 
+  $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
-  $sql = "insert into pet_". PREFIX ."_ride (userid, clockf, clocke, money, destination, note, time) values($data->idnguoidung, $data->clockf, $data->clocke, $money, '$data->destination', '$data->note', $time)";
+  $sql = "insert into pet_". PREFIX ."_ride (userid, clockf, clocke, money, destination, note, time) values($userid, $data->clockf, $data->clocke, $money, '$data->destination', '$data->note', $time)";
   $db->query($sql);
 
   $sql = "update pet_". PREFIX ."_config set name = '$data->clocke' where module = 'clock'";
@@ -39,9 +40,10 @@ function cole() {
 function pay() {
   global $data, $db, $result;
 
+  $userid = checkuserid();
   $money = str_replace(',', '', $data->money);
   $time = time();
-  $sql = "insert into pet_". PREFIX ."_import (userid, price, module, note, time) values($data->idnguoidung, $money, 'ride', '$data->note', $time)";
+  $sql = "insert into pet_". PREFIX ."_import (userid, price, module, note, time) values($userid, $money, 'ride', '$data->note', $time)";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -66,8 +68,8 @@ function getlist($today = false) {
 
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end);
-  $ride = "select a.*, b.hoten as user from pet_". PREFIX ."_ride a inner join pet_nhanvien b on a.userid = b.id where (a.time between $data->start and $data->end)";
-  $pay = "select a.*, b.hoten as user from pet_". PREFIX ."_import a inner join pet_nhanvien b on a.userid = b.id where a.module = 'ride' and (a.time between $data->start and $data->end)";
+  $ride = "select a.*, b.fullname as user from pet_". PREFIX ."_ride a inner join pet_". PREFIX ."_users b on a.userid = b.userid where (a.time between $data->start and $data->end)";
+  $pay = "select a.*, b.fullname as user from pet_". PREFIX ."_import a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'ride' and (a.time between $data->start and $data->end)";
 
   return array(
     0 => $db->all($ride),
@@ -81,9 +83,10 @@ function statistic() {
   $data->start = isodatetotime($data->start);
   $data->end = isodatetotime($data->end) + 60 * 60 * 24 - 1;
 
-  $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'ride' and vaitro = 2 and idchinhanh = $data->idchinhanh";
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'ride' and type = 2";
   $xtra = "";
-  if (empty($p = $db->fetch($sql))) $xtra = "a.userid = $data->idnguoidung and";
+  if (empty($p = $db->fetch($sql))) $xtra = "a.userid = $userid and";
 
   $sql = "select * from pet_". PREFIX ."_ride where $xtra (time between $data->start and $data->end) order by id desc";
   $cole = $db->all($sql);
@@ -98,9 +101,9 @@ function statistic() {
     $data['cole'] += $row['money'];
     $data['count'] ++;
     if (empty($temp[$row['userid']])) {
-      $sql = "select hoten from pet_nhanvien where id = $row[userid]";
+      $sql = "select fullname from pet_". PREFIX ."_users where userid = $row[userid]";
       $u = $db->fetch($sql);
-      $temp[$row['userid']] = array('name' => $u['hoten'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
+      $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
     $temp[$row['userid']]['clock'] += $row['clocke'] - $row['clockf'];
     $temp[$row['userid']]['cole'] += $row['money'];
@@ -110,9 +113,9 @@ function statistic() {
   foreach ($pay as $row) {
     $data['pay'] += $row['price'];
     if (empty($temp[$row['userid']])) {
-      $sql = "select hoten from pet_nhanvien where id = $row[userid]";
+      $sql = "select fullname from pet_". PREFIX ."_users where userid = $row[userid]";
       $u = $db->fetch($sql);
-      $temp[$row['userid']] = array('name' => $u['hoten'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
+      $temp[$row['userid']] = array('name' => $u['fullname'], 'clock' => 0, 'cole' => 0, 'pay' => 0, 'count' => 0);
     }
     $temp[$row['userid']]['pay'] = $row['price'];
   }

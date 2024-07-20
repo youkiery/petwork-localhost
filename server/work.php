@@ -4,153 +4,10 @@ function khoitao() {
   global $db, $data, $result;
   
   $result['status'] = 1;
-  $result['danhmuc'] = danhsachdanhmuc();
   $result['danhsach'] = danhsachcongviec();
+  $result['danhmuc'] = danhsachdanhmuc();
   $result['nhanvien'] = danhsachnhanvien();
   return $result;
-}
-
-function danhsachcongviec() {
-  global $db, $data, $result;
-
-  $timkiem = $data->timkiem;
-  $thoigian = strtotime(date('Y/m/d'));
-
-  $xtra = array();
-  if (!empty($timkiem->tukhoa)) $xtra []= "(title like '%$timkiem->tukhoa%' or content like '%$timkiem->tukhoa%')";
-  if (!empty($timkiem->danhmuc)) {
-    $sql = "select * from pet_". PREFIX ."_work_depart where parentid = $timkiem->danhmuc";
-    $danhmuc = $db->arr($sql, 'id');
-    $xtra []= "(departid = $timkiem->danhmuc". (count($danhmuc) ? ' or departid in (' .implode(', ', $danhmuc). ')' : '') . ")";
-  }
-  switch ($timkiem->denhan) {
-    case '0':
-      $xtra []= '1';
-      break;
-    case '1':
-      // gần hạn
-      $gioihan = strtotime(date('Y/m/d')) - 7 * 60 * 60 * 24;
-      $xtra []= "(expiretime > 0 and expiretime < $gioihan)";
-      break;
-    case '2':
-      // quá hạn
-      $xtra []= "expiretime > $thoigian";
-      break;
-  }
-  $hoanthanh = array(0 => 'status = 0', 'status > 0', "1");
-  if ($timkiem->hoanthanh > 0) {
-    $timkiem->batdau = isodatetotime($timkiem->batdau);
-    $timkiem->ketthuc = isodatetotime($timkiem->ketthuc);
-    if ($timkiem->batdau > $timkiem->ketthuc) {
-      $tam = $timkiem->batdau;
-      $timkiem->batdau = $timkiem->ketthuc;
-      $timkiem->ketthuc = $tam;
-    }
-    $timkiem->ketthuc = $timkiem->ketthuc + 60 * 60 * 24 - 1;
-    $xtra []= " (updatetime between $timkiem->batdau and $timkiem->ketthuc) ";
-  }
-  $xtra [] = $hoanthanh[$timkiem->hoanthanh];
-
-  if (!empty($xtra)) $xtra = 'and '. implode(' and ', $xtra);
-  else $xtra = '';
-
-  // lấy danh sách danh mục
-  $danhmuc = danhsachcaydanhmuc();
-  $danhmuc[]= ["id" => 0, "child" => [], "name" => "Chưa phân loại"];
-  foreach ($danhmuc as $thutu => $chitietdanhmuc) {
-    $soluong = 0;
-    if (count($chitietdanhmuc["child"])) {
-      foreach ($chitietdanhmuc["child"] as $tt => $c) {
-        $danhmuc[$thutu]["child"][$tt]["danhsach"] = chitietcongviec($c, $xtra);
-        $danhmuc[$thutu]["child"][$tt]["hienthi"] = 0;
-        $soluong += count($danhmuc[$thutu]["child"][$tt]["danhsach"]);
-        $danhmuc[$thutu]["child"][$tt]["soluong"] = $soluong;
-      }
-    }
-    $danhmuc[$thutu]["danhsach"] = chitietcongviec($chitietdanhmuc, $xtra);
-    $danhmuc[$thutu]["hienthi"] = 0;
-    $danhmuc[$thutu]["soluong"] = $soluong + count($danhmuc[$thutu]["danhsach"]);
-  }
-
-  return $danhmuc;
-}
-
-function chitietcongviec($danhmuc, $xtra) {
-  global $db;
-
-  // kiểm tra nhân viên có phải chủ danh mục hoặc admin không?
-  // nếu có thì hiển thị toàn bộ
-  // kiểm tra nhân viên có trong danh mục hay không
-  // nếu có thì lấy danh sách
-  // nếu không thì kiểm tra phòng ban đó có danh sách công việc hay không
-  $thoigian = time();
-  $idnhanvien = checkuserid();
-  $level = 0;
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $idnhanvien and module = 'work' and type = 2";
-  if (!empty($db->fetch($sql))) $level = 2;
-  else {
-    $sql = "select * from pet_". PREFIX ."_work_depart_user where departid = $danhmuc[id] and userid = $idnhanvien";
-    $thongtindanhmuc = $db->fetch($sql);
-    if (!empty($thongtindanhmuc)) {
-      $level = 1;
-    }
-  }
-
-  if ($level) {
-    $sql = "select * from pet_". PREFIX ."_work where departid = $danhmuc[id] $xtra order by createtime desc";
-    $danhsachcongviec = $db->all($sql);
-  }
-  else {
-    $sql = "select * from pet_". PREFIX ."_work where (userid = $idnhanvien or ((id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $idnhanvien) or id in (select workid as id from pet_". PREFIX ."_work_follow where userid = $idnhanvien)))) and departid = $danhmuc[id] $xtra order by createtime desc";
-    $danhsachcongviec = $db->all($sql);
-  }
-
-  foreach ($danhsachcongviec as $thutu => $congviec) {
-    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
-    $danhsachcongviec[$thutu]['follow'] = $db->obj($sql, 'userid', 'fullname');
-    $danhsachcongviec[$thutu]['followtext'] = implode(', ', $db->arr($sql, 'fullname'));
-    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_assign a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
-    $danhsachcongviec[$thutu]['assign'] = $db->obj($sql, 'userid', 'fullname');
-    $assign = implode(', ', $db->arr($sql, 'fullname'));
-    $danhsachcongviec[$thutu]['assigntext'] = (strlen($assign) ? $assign : "Chưa chỉ định");
-
-    $sql = "select fullname from pet_". PREFIX ."_users where userid = $congviec[userid]";
-    $danhsachcongviec[$thutu]['usertext'] = $db->fetch($sql)['fullname'];
-
-    $danhsachcongviec[$thutu]['time'] = date('d/m/Y', $congviec['time']);
-    $danhsachcongviec[$thutu]['createtime'] = date('d/m/Y', $congviec['createtime']);
-    $danhsachcongviec[$thutu]['file'] = parseimage($congviec['file']);
-    $danhsachcongviec[$thutu]['expiretime'] = date('d/m/Y', $congviec['expiretime']);
-    $danhsachcongviec[$thutu]['expire'] = 0;
-    $danhmuc = '';
-    if ($congviec['departid'] > 0) {
-      $sql = "select * from pet_". PREFIX ."_work_depart where id = $congviec[departid]";
-      if (!empty($depart = $db->fetch($sql))) {
-        $danhmuc = $depart['name'];        
-        if ($depart['parentid']) {
-          $sql = "select * from pet_". PREFIX ."_work_depart where id = $depart[parentid]";
-          if (!empty($depart = $db->fetch($sql))) {
-            $danhmuc = $depart['name'] .'/'. $danhmuc;
-          }
-        }
-      }
-    }
-
-    $danhsachcongviec[$thutu]['danhmuc'] = $danhmuc;
-    // nếu chế độ = 0, kiểm tra userid = $userid, type = 2, nếu không type = 1, còn không type = 0
-    if ($idnhanvien == 1 || $level == 2) $type = 2;
-    else if ($congviec['userid'] == $idnhanvien) $type = 1;
-    else if (!empty($danhsachcongviec[$thutu]['assign'][$idnhanvien])) $type = 1;
-    else $type = 0;
-    $danhsachcongviec[$thutu]['type'] = $type; // 0, chỉ xem, 1, hoàn thành, 2, duyệt
-
-    if (empty($congviec['expiretime'])) {
-      $danhsachcongviec[$thutu]['expiretime'] = '';
-    }
-    else if ($congviec['status'] > 0 && $congviec['updatetime'] > $congviec['expiretime']) $danhsachcongviec[$thutu]['expire'] = 1;
-    else if ($congviec['status'] == 0 && $thoigian > $congviec['expiretime']) $danhsachcongviec[$thutu]['expire'] = 1;
-  }
-  return $danhsachcongviec;
 }
 
 function khoitaolaplai() {
@@ -245,7 +102,7 @@ function themcongviec() {
     $data->id = $db->insertid($sql);
   }
   else {
-    $sql = "update pet_". PREFIX ."_work set departid = $data->departid, title = '$data->title', content = '$data->content', file = '$file', time = $time, expiretime = $expiretime where id = $data->id";
+    $sql = "update pet_". PREFIX ."_work set departid = $data->departid, title = '$data->title', content = '$data->content', file = '$file', time = $time, createtime = $createtime, expiretime = $expiretime where id = $data->id";
     $db->query($sql);
   }
 
@@ -356,88 +213,156 @@ function xoadanhmuc() {
   return $result;
 }
 
-function danhsachcaydanhmuc() {
-  global $db, $data, $result;
-
-  $sql = "select id, name from pet_". PREFIX ."_work_depart where active = 1 and parentid = 0 order by name asc";
-  $danhsach = $db->all($sql);
-
-  foreach ($danhsach as $thutu => $danhmuc) {
-    $sql = "select id, name from pet_". PREFIX ."_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
-    $child = $db->all($sql);
-    if (count($child)) {
-      $danhsach[$thutu]['child'] = $child;
-    }
-    else $danhsach[$thutu]['child'] = [];
-  }
-
-  return $danhsach;
-}
-
 function danhsachdanhmuc() {
   global $db, $data, $result;
 
-  $sql = "select id, name, name as route, parentid from pet_". PREFIX ."_work_depart where active = 1 and parentid = 0 order by name asc";
+  $sql = "select * from pet_". PREFIX ."_work_depart where active = 1 and parentid = 0 order by name asc";
   $danhsach = $db->all($sql);
-  $danhsachcon = [];
+  $list = array();
 
   foreach ($danhsach as $thutu => $danhmuc) {
-    $danhsach[$thutu]["child"] = 0;
-    $danhsachcon []= $danhsach[$thutu];
-    $sql = "select id, name, parentid from pet_". PREFIX ."_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_depart_user a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.departid = $danhmuc[id]";
+    $danhsach[$thutu]['list'] = $db->obj($sql, 'userid', 'fullname');
+    $danhsach[$thutu]['text'] = implode(', ', $db->arr($sql, 'fullname'));
+    $sql = "select * from pet_". PREFIX ."_work_depart where active = 1 and parentid = $danhmuc[id] order by name asc";
+
     $child = $db->all($sql);
-    foreach ($child as $tt => $c) {
-      $child[$tt]['child'] = 1;
-      $child[$tt]['route'] = '⊦ '. $c['name'];
-      $danhsachcon []= $child[$tt];
+    if (count($child)) {
+      $danhsach[$thutu]['child'] = $child;
+
+      foreach ($danhsach[$thutu]['child'] as $thutuchild => $c) {
+        $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_depart_user a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.departid = $c[id]";
+        $danhsach[$thutu]['child'][$thutuchild]['list'] = $db->obj($sql, 'userid', 'fullname');
+        $danhsach[$thutu]['child'][$thutuchild]['text'] = implode(', ', $db->arr($sql, 'fullname'));
+      }
     }
-  }
-
-  $sql = "select fullname as name, userid from pet_". PREFIX ."_users where active = 1";
-  $danhsachnhanvien = $db->all($sql);
-
-  foreach ($danhsachcon as $thutu => $danhmuc) {
-    $sql = "select userid from pet_". PREFIX ."_work_depart_user where departid = $danhmuc[id]";
-    $nhanviendanhmuc = $db->arr($sql, "userid");
-    $danhsachcon[$thutu]["nhanvien"] = json_decode(json_encode($danhsachnhanvien));
-    foreach ($danhsachcon[$thutu]["nhanvien"] as $thutunhanvien => $nhanvien) {
-      $danhsachcon[$thutu]["nhanvien"][$thutunhanvien]->value = 0;
-      foreach ($nhanviendanhmuc as $userid) {
-        if ($nhanvien->userid == $userid) {
-          $danhsachcon[$thutu]["nhanvien"][$thutunhanvien]->value = 1;
-        }
+    else $danhsach[$thutu]['child'] = array(array('id' => 0, 'name' => 'Không có danh mục con'));
+    $list []= $danhsach[$thutu];
+    if (count($child)) {
+      foreach ($child as $tt => $c) {
+        $child[$tt]['name'] = '⊦ '. $c['name'];
+        $list []= $child[$tt];
       }
     }
   }
 
-  return $danhsachcon;
+  return $list;
 }
 
-function capnhatdanhmuc() {
+function danhsachcongviec() {
   global $db, $data, $result;
 
-  if (empty($data->id)) {
-    $sql = "insert into pet_". PREFIX ."_work_depart (name, parentid) values('$data->name', $data->parentid)";
-    $data->id = $db->insertid($sql);
-  }
-  else {
-    $sql = "update pet_". PREFIX ."_work_depart set name = '$data->name' where id = $data->id";
-    $db->query($sql);
-  }
+  $filter = $data->filter;
+  $thoigian = strtotime(date('Y/m/d'));
 
-  $sql = "delete from pet_". PREFIX ."_work_depart_user where departid = $data->id";
-  $db->query($sql);
+  $xtra = array();
+  if (!empty($filter->tukhoa)) $xtra []= "(title like '%$filter->tukhoa%' or content like '%$filter->tukhoa%')";
+  if (!empty($filter->danhmuc)) {
+    $sql = "select * from pet_". PREFIX ."_work_depart where parentid = $filter->danhmuc";
+    $danhmuc = $db->arr($sql, 'id');
+    $xtra []= "(departid = $filter->danhmuc". (count($danhmuc) ? ' or departid in (' .implode(', ', $danhmuc). ')' : '') . ")";
+  }
+  switch ($filter->denhan) {
+    case '0':
+      $xtra []= '1';
+      break;
+    case '1':
+      // gần hạn
+      $gioihan = strtotime(date('Y/m/d')) - 7 * 60 * 60 * 24;
+      $xtra []= "(expiretime > 0 and expiretime < $gioihan)";
+      break;
+    case '2':
+      // quá hạn
+      $xtra []= "expiretime > $thoigian";
+      break;
+  }
+  $hoanthanh = array(0 => '1', 'status = 0', 'status > 0');
+  $xtra [] = $hoanthanh[$filter->hoanthanh];
 
-  foreach ($data->list as $nhanvien) {
-    if ($nhanvien->value) {
-      $sql = "insert into pet_". PREFIX ."_work_depart_user (departid, userid) values($data->id, $nhanvien->userid)";
-      $db->query($sql);
+  if (!empty($xtra)) $xtra = 'and '. implode(' and ', $xtra);
+  else $xtra = '';
+  $time = time();
+  $cuserid = checkuserid();
+
+  if ($filter->nhanvien > 0) $userid = $filter->nhanvien;
+  else $userid = checkuserid();
+  $homnay = strtotime(date('Y/m/d')) - 1;
+  switch ($data->chedo) {
+    case '0':
+      // công việc, lấy userid = userid, depart in (user depart), workid in assign
+      $sql = "select a.id from pet_". PREFIX ."_work_depart a inner join pet_". PREFIX ."_work_depart_user b on a.id = b.departid where b.userid = $userid";
+      $chuyenmuc = $db->arr($sql, 'id');
+      if (count($chuyenmuc)) $xtra2 = 'departid in ('. implode(', ', $chuyenmuc) .') or ';
+      else $xtra2 = '';
+      // phân quyền công việc chưa được phân => tất cả thấy
+      // 	công việc đã phân chỉ có người đó thấy
+
+      $sql = "select * from pet_". PREFIX ."_work where userid = $userid or ($xtra2 (id in (select workid as id from pet_". PREFIX ."_work_assign where userid = $userid))) $xtra order by createtime desc limit 50";
+      $danhsachcongviec = $db->all($sql);
+      break;
+    case '1':
+      // workin in follow
+      $sql = "select * from pet_". PREFIX ."_work where id in (select workid as id from pet_". PREFIX ."_work_follow where userid = $userid) $xtra order by createtime desc limit 50";
+      $danhsachcongviec = $db->all($sql);
+      break;
+  }
+  // userid trực thuộc department
+  // tìm xem phòng ban trực thuộc, nếu là nhân viên, chỉ xem công việc, nếu là quản lý, được xem toàn bộ
+  // tìm trong follow
+
+  foreach ($danhsachcongviec as $thutu => $congviec) {
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_follow a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
+    $danhsachcongviec[$thutu]['follow'] = $db->obj($sql, 'userid', 'fullname');
+    $danhsachcongviec[$thutu]['followtext'] = implode(', ', $db->arr($sql, 'fullname'));
+    $sql = "select a.userid, b.fullname from pet_". PREFIX ."_work_assign a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.workid = $congviec[id]";
+    $danhsachcongviec[$thutu]['assign'] = $db->obj($sql, 'userid', 'fullname');
+    $danhsachcongviec[$thutu]['assigntext'] = implode(', ', $db->arr($sql, 'fullname'));
+
+    $sql = "select fullname from pet_". PREFIX ."_users where userid = $congviec[userid]";
+    $danhsachcongviec[$thutu]['usertext'] = $db->fetch($sql)['fullname'];
+
+    $danhsachcongviec[$thutu]['time'] = date('d/m/Y', $congviec['time']);
+    $danhsachcongviec[$thutu]['createtime'] = date('d/m/Y', $congviec['createtime']);
+    $danhsachcongviec[$thutu]['file'] = parseimage($congviec['file']);
+    $danhsachcongviec[$thutu]['expiretime'] = date('d/m/Y', $congviec['expiretime']);
+    $danhsachcongviec[$thutu]['expire'] = 0;
+    $danhmuc = '';
+    if ($congviec['departid'] > 0) {
+      $sql = "select * from pet_". PREFIX ."_work_depart where id = $congviec[departid]";
+      if (!empty($depart = $db->fetch($sql))) {
+        $danhmuc = $depart['name'];        
+        if ($depart['parentid']) {
+          $sql = "select * from pet_". PREFIX ."_work_depart where id = $depart[parentid]";
+          if (!empty($depart = $db->fetch($sql))) {
+            $danhmuc = $depart['name'] .'/'. $danhmuc;
+          }
+        }
+      }
     }
+
+    $danhsachcongviec[$thutu]['danhmuc'] = $danhmuc;
+    // nếu chế độ = 0, kiểm tra userid = $userid, type = 2, nếu không type = 1, còn không type = 0
+    if ($data->chedo == '0') {
+      if ($congviec['userid'] == $userid || $cuserid == 1) $type = 2;
+      else $type = 1;
+    }
+    else $type = 0;
+    $danhsachcongviec[$thutu]['type'] = $type; // 0, chỉ xem, 1, hoàn thành, 2, duyệt
+
+    if (empty($congviec['expiretime'])) {
+      $danhsachcongviec[$thutu]['expiretime'] = '';
+    }
+    else if ($congviec['status'] > 0 && $congviec['updatetime'] > $congviec['expiretime']) $danhsachcongviec[$thutu]['expire'] = 1;
+    else if ($congviec['status'] == 0 && $time > $congviec['expiretime']) $danhsachcongviec[$thutu]['expire'] = 1;
   }
 
-  $result["status"] = 1;
-  $result["danhmuc"] = danhsachdanhmuc();
-  return $result;
+  $danhsachtam = array(0 => array(), array());
+  foreach ($danhsachcongviec as $key => $value) {
+    if ($value['status'] == 0) $danhsachtam[0] []= $value;
+    else $danhsachtam[1] []= $value;
+  }
+
+  return $danhsachtam;
 }
 
 function chuyentrangthai() {

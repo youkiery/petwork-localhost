@@ -14,7 +14,7 @@ function getlist() {
 
   $start = isodatetotime($data->start);
   $end = isodatetotime($data->end) + 60 * 60 * 24 -1;
-  $sql = "select a.*, b.name, b.phone, b.address, c.hoten as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.time between $start and $end and a.status = 1 order by a.time desc";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.time between $start and $end and a.status = 1 order by a.time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -40,7 +40,7 @@ function removeneed() {
 function getneed() {
   global $data, $db, $result;
     
-  $sql = "select a.*, b.name, b.phone, b.address, c.hoten as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.status = 0 order by a.time desc";
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.status = 0 order by a.time desc";
   $list = $db->all($sql);
 
   foreach ($list as $key => $row) {
@@ -64,11 +64,12 @@ function gettypelist() {
 function insert() {
   global $data, $db, $result, $userid;
   
+  $userid = checkuserid();
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
   $time = time();
   
-  $sql = "insert into pet_". PREFIX ."_exam (userid, customerid, treatid, typeid, image, note, time, status) values($data->idnguoidung, $customerid, 0, $data->typeid, '$image', '$data->note', $time, 1)";
+  $sql = "insert into pet_". PREFIX ."_exam (userid, customerid, treatid, typeid, image, note, time, status) values($userid, $customerid, 0, $data->typeid, '$image', '$data->note', $time, 1)";
 
   $result['status'] = 1;
   $result['list'] = getlist();
@@ -79,6 +80,7 @@ function insert() {
 function update() {
   global $data, $db, $result, $userid;
   
+  $userid = checkuserid();
   $customerid = checkcustomer();
   $image = implode(',', $data->image);
   $time = time();
@@ -105,7 +107,8 @@ function remove() {
 function getinfo() {
   global $data, $db, $result, $userid;
   
-  $sql = "select a.*, b.name, b.phone, b.address, c.hoten as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.userid = c.id inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.id = $data->id";
+  
+  $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user, d.name as exam from pet_". PREFIX ."_exam a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_exam_type d on a.typeid = d.id where a.id = $data->id";
   $data = $db->fetch($sql);
   $data['time'] = date('d/m/Y', $data['time']);
   $data['image'] = parseimage($data['image']);

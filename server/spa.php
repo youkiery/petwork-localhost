@@ -11,37 +11,16 @@ function filter() {
 function init() {
   global $data, $db, $result;
 
-  $sql = "select a.id, a.hoten as name from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien where b.chucnang = 'spa' and b.vaitro > 0 and idchinhanh = $data->idchinhanh";
+  $userid = checkuserid();
+
+  $sql = "select a.userid, a.fullname as name from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_user_per b on a.userid = b.userid where b.module = 'spa' and b.type > 0";
   $result['nhanvien'] = $db->all($sql);
 
   $result['status'] = 1;
   $result['time'] = time();
   $result['list'] = getList();
   $result['style'] = getstyle();
-  $result['nhanvien'] = laydanhsachnhanvien();
-  $result['macdinh'] = layspamacdinh();
-  $result['dichvu'] = laydanhsachdichvu();
   return $result;
-}
-
-function laydanhsachdichvu() {
-  global $db;
-
-  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
-  return $db->all($sql);
-}
-
-function layspamacdinh() {
-  global $db;
-
-  $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0 and kichhoat = 1 order by vitri asc";
-  $danhsachspa = $db->all($sql);
-  $ds = [];
-
-  foreach ($danhsachspa as $key => $spa) {
-    if ($spa['macdinh']) $ds []= $spa['id'];
-  }
-  return $ds;
 }
 
 function getstyle() {
@@ -213,7 +192,8 @@ function remove() {
 function done() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->idnguoidung, status = 1 where id = $data->id";
+  $userid = checkuserid();
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $userid, status = 1 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -226,7 +206,8 @@ function done() {
 function pick() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_spa set duser = $data->idnguoidung where id = $data->id";
+  $userid = checkuserid();
+  $sql = "update pet_". PREFIX ."_spa set duser = $userid where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -237,6 +218,7 @@ function pick() {
 function picktrans() {
   global $data, $db, $result;
 
+  $userid = checkuserid();
   $sql = "update pet_". PREFIX ."_spa set duser = $data->uid where id = $data->id";
   $db->query($sql);
   
@@ -248,7 +230,8 @@ function picktrans() {
 function called() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $data->idnguoidung, status = 2 where id = $data->id";
+  $userid = checkuserid();
+  $sql = "update pet_". PREFIX ."_spa set utime = ". time() .", duser = $userid, status = 2 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 2;
@@ -261,6 +244,7 @@ function called() {
 function returned() {
   global $data, $db, $result;
 
+  $userid = checkuserid();
   $sql = "select * from pet_". PREFIX ."_spa where id = $data->id";
   $spa = $db->fetch($sql);
   if (empty($spa['duser'])) $xtra = " duser = doctorid,";
@@ -296,7 +280,7 @@ function coverData($data) {
     $sql = "select b.tendanhmuc from pet_". PREFIX ."_spa_row a inner join pet_". PREFIX ."_danhmuc b on a.spaid = $row[id] and a.typeid = b.id";
     $service = $db->arr($sql, 'tendanhmuc');
   
-    $sql = "select hoten as name from pet_nhanvien where id = $row[duser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
   
     $image = parseimage($row['image']);
@@ -322,7 +306,7 @@ function coverData($data) {
 function search() {
   global $data, $db, $result;
 
-  $sql = "select a.*, b.name, b.phone, c.hoten as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -336,7 +320,7 @@ function rate() {
   $sql = "update pet_". PREFIX ."_spa set rate = $data->rate where id = $data->id";
   $db->query($sql);
 
-  $sql = "select a.*, b.name, b.phone, c.hoten as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') order by time desc limit 30";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -353,7 +337,7 @@ function statrate() {
   $data->start = totime($data->start);
   $data->end = totime($data->end) + 60 * 60 * 24 - 1;
   
-  $sql = "select a.*, b.name, b.phone, c.hoten as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $data->start and $data->end) order by time desc";
   
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
@@ -366,7 +350,7 @@ function statistic() {
 
   $start = isodatetotime($data->filter->start);
   $end = isodatetotime($data->filter->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.hoten as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $start and $end) order by time desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (b.name like '%$data->keyword%' or b.phone like '%$data->keyword%') and (a.time between $start and $end) order by time desc";
   $result['status'] = 1;
   $result['list'] = coverData($db->all($sql));
 
@@ -471,14 +455,15 @@ function chuyenngaunhienspa() {
 }
 
 function chuyenngaunhien($duser = 0) {
-  global $db, $data;
+  global $db;
   $daungay = strtotime(date('Y/m/d'));
   $cuoingay = $daungay + 60 * 60 * 24 - 1;
   $hientai = time();
+  $userid = checkuserid();
 
   // lấy danh sách nhân viên nghỉ hôm đó loại trừ khỏi danh sách
-  $sql = "select id from pet_nhanvien where kichhoat = 1 and id in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'spa' and vaitro > 0 and idchinhanh = $data->idchinhanh) and id not in (select idnhanvien as id from pet_nhanvien_phanquyen where chucnang = 'manager' and vaitro > 0 and idchinhanh = $data->idchinhanh) and id not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
-  $danhsachnhanvien = $db->arr($sql, 'id');
+  $sql = "select userid from pet_". PREFIX ."_users where active = 1 and userid in (select userid from pet_". PREFIX ."_user_per where module = 'spa' and type > 0) and userid not in (select userid from pet_". PREFIX ."_user_per where module = 'manager' and type > 0) and userid not in (select user_id from pet_". PREFIX ."_row where (time between $daungay and $cuoingay) and type > 1)";
+  $danhsachnhanvien = $db->arr($sql, 'userid');
 
   // lấy danh sách nhân viên bận loại trừ khỏi danh sách
   $sql = "select idnhanvien from pet_". PREFIX ."_lichban where batdau <= $hientai and ketthuc >= $hientai";
@@ -501,7 +486,7 @@ function chuyenngaunhien($duser = 0) {
   $nhonhat = 0;
   $khoitao = 0;
   foreach ($danhsachnhanspa as $idnhanvien => $socanhan) {
-    if ($idnhanvien == $data->idnguoidung) continue; // bỏ qua người nhấn chuyển
+    if ($idnhanvien == $userid) continue; // bỏ qua người nhấn chuyển
     if ($duser > 0 && $duser == $idnhanvien) continue; // bỏ qua người đang làm hiện tại
     if (empty($khoitao)) {
       $nhonhat = $socanhan;
@@ -522,16 +507,17 @@ function insert() {
   $customerid = checkcustomer($data->phone, $data->name);
   $customer2id = checkcustomer($data->phone2, $data->name2);
   
+  $userid = checkuserid();
   $data->treat = intval($data->treat);
   if ($data->khonglam) {
     $duser = chuyenngaunhien();
   }
   else if (isset($data->duser) && $data->duser > 0) $duser = $data->duser;
-  else if ($data->did) $duser = $data->idnguoidung;
+  else if ($data->did) $duser = $userid;
   else $duser = 0;
   if (empty($data->style)) $data->style = 0;
   
-  $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number, style) values($customerid, $customer2id, $data->idnguoidung, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number, $data->style)";
+  $sql = "insert into pet_". PREFIX ."_spa (customerid, customerid2, doctorid, note, time, utime, weight, image, treat, duser, number, style) values($customerid, $customer2id, $userid, '$data->note', '" . time() . "', '" . time() . "', $data->weight, '". implode(',', $data->image)."', 0, $duser, $data->number, $data->style)";
   $id = $db->insertid($sql);
 
   if (!$data->treat) {
@@ -835,10 +821,11 @@ function update() {
     }
   }
   
+  $userid = checkuserid();
   $data->treat = intval($data->treat);
   if (empty($data->style)) $data->style = 0;
   
-  $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $data->idnguoidung, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, style = '$data->style', utime = ". time() .", luser = $data->idnguoidung, ltime = ". time() .", number = $data->number where id = $data->id";
+  $sql = "update pet_". PREFIX ."_spa set customerid = $customer[id], customerid2 = $customer2[id], doctorid = $userid, note = '$data->note', image = '". implode(',', $data->image)."', weight = $data->weight, style = '$data->style', utime = ". time() .", luser = $userid, ltime = ". time() .", number = $data->number where id = $data->id";
   $db->query($sql);  
   
   $sql = "delete from pet_". PREFIX ."_spa_row where spaid = $data->id";
@@ -897,7 +884,7 @@ function work() {
 function getuserobj() {
   global $db;
 
-  $sql = "select a.id, a.hoten from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'doctor' and idchinhanh = $data->idchinhanh";
+  $sql = "select a.userid, a.fullname as name from pet_". PREFIX ."_users a inner join pet_". PREFIX ."_user_per b on a.userid = b.userid and b.module = 'doctor'";
   $list = $db->all($sql);
 
   $data = array();
@@ -909,8 +896,8 @@ function getuserobj() {
   );
   foreach ($list as $key => $value) {
     $data[$value['userid']] = array(
-      'userid' => $value['id'],
-      'name' => $value['hoten'],
+      'userid' => $value['userid'],
+      'name' => $value['name'],
       'total' => 0,
       'list' => array()
     );
@@ -924,10 +911,10 @@ function getList() {
   $filter = $data->filter;
   $start = isodatetotime($filter->start);
   $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, b.name, b.phone, c.hoten as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (time between $start and $end) and status < 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status < 3 order by utime desc";
   $spa = $db->all($sql);
   
-  $sql = "select a.*, b.name, b.phone, c.hoten as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_nhanvien c on a.doctorid = c.id where (time between $start and $end) and status = 3 order by utime desc";
+  $sql = "select a.*, b.name, b.phone, c.fullname as user, b.tinhcach from pet_". PREFIX ."_spa a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.doctorid = c.userid where (time between $start and $end) and status = 3 order by utime desc";
   $spa = array_merge($spa, $db->all($sql));
 
   $sql = "select * from pet_". PREFIX ."_danhmuc where loaidanhmuc = 0";
@@ -946,10 +933,10 @@ function getList() {
     $sql = "select name, phone from pet_". PREFIX ."_customer where id = $row[customerid2]";
     $c = $db->fetch($sql);
 
-    $sql = "select hoten as name from pet_nhanvien where id = $row[luser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[luser]";
     $u = $db->fetch($sql);
 
-    $sql = "select hoten as name from pet_nhanvien where id = $row[duser]";
+    $sql = "select fullname as name from pet_". PREFIX ."_users where userid = $row[duser]";
     $d = $db->fetch($sql);
 
     $sql = "select * from pet_". PREFIX ."_spa_style where id = $row[style]";
@@ -983,8 +970,7 @@ function getList() {
       'time' => date('H:i', $row['time']),
       'option' => $option,
       'dtime' => intval($row['time']) * 1000,
-      'service' => (count($service) ? implode(',', $service) : '-'),
-      'hinhanh' => []
+      'service' => (count($service) ? implode(',', $service) : '-')
     );
   }
 

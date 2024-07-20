@@ -5,7 +5,6 @@ function init() {
   $result['status'] = 1;
   $result['cat'] = getcatlist();
   $result['list'] = getlist();
-  $result['nhanvien'] = laydanhsachnhanvien();
   return $result;
 }
 
@@ -31,9 +30,9 @@ function getlist() {
 
     foreach ($list[$key] as $k => $r) {
       if ($r['status']) {
-        $sql = "select hoten from pet_nhanvien where id = $r[returnuserid]";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $r[returnuserid]";
         $u = $db->fetch($sql);
-        $list[$key][$k]['fullname'] = $u['hoten'];
+        $list[$key][$k]['fullname'] = $u['fullname'];
       }
       else $list[$key][$k]['fullname'] = '';
 
@@ -156,6 +155,20 @@ function insertcat() {
   $result['list'] = getcatlist();
   return $result;
 }
+
+// function getinfo() {
+//   global $data, $db, $result, $userid;
+  
+//   $sql = "select a.*, b.name, b.phone, b.address, c.fullname as user from pet_". PREFIX ."_hotel a inner join pet_". PREFIX ."_customer b on a.customerid = b.id inner join pet_". PREFIX ."_users c on a.userid = c.userid where a.id = $data->id";
+//   $data = $db->fetch($sql);
+//   $data['time'] = date('d/m/Y', $data['time']);
+//   $data['image'] = explode(',', $data['image']);
+//   if (count($data['image']) == 1 && $data['image'][0] == '') $data['image'] = array();
+
+//   $result['status'] = 1;
+//   $result['data'] = $data;
+//   return $result;
+// }
 
 function catlist() {
   global $data, $db, $result, $userid;

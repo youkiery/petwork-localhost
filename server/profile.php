@@ -5,17 +5,17 @@ function download() {
   $zip = new ZipArchive;
   
   $fileToModify = 'word/document.xml';
-  $wordDoc = DIR. "/include/template2.docx";
+  $wordDoc = DIR. "/include/template.docx";
   $name = "analysis-". time() .".docx";
   $exportDoc = DIR. "/include/export/". $name;
   
   copy($wordDoc, $exportDoc);
   if ($zip->open($exportDoc) === TRUE) {
-    $sql = "select * from pet_". PREFIX ."_physical where id = $data->id";
+    $sql = "select * from pet_". PREFIX ."_profile where id = $data->id";
     $query = $db->query($sql);
     $prof = $query->fetch_assoc();
     
-    $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_physical_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'physical' order by pos";
+    $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile' order by pos";
     $query = $db->query($sql);
     $prof['target'] = array();
     while ($row = $query->fetch_assoc()) {
@@ -82,24 +82,24 @@ function download() {
   
     for ($i = 1; $i <= 18; $i++) { 
       if (!empty($prof['target'][$i - 1])) {
-        $physical = $prof['target'][$i - 1];
-        $newContents = str_replace('{target'. $i .'}', $physical['name'] ,$newContents);
-        $newContents = str_replace('{unit'. $i .'}', $physical['unit'], $newContents);
-        $newContents = str_replace('{range'. $i .'}', $physical['flag'], $newContents);
-        $newContents = str_replace('{restar'. $i .'}', $physical['tar'], $newContents);
+        $profile = $prof['target'][$i - 1];
+        $newContents = str_replace('{target'. $i .'}', $profile['name'] ,$newContents);
+        $newContents = str_replace('{unit'. $i .'}', $profile['unit'], $newContents);
+        $newContents = str_replace('{range'. $i .'}', $profile['flag'], $newContents);
+        $newContents = str_replace('{restar'. $i .'}', $profile['tar'], $newContents);
   
-        if ($physical['tick'] == '<') {
-          $newContents = str_replace('{rg'. $i .'}', $physical['value'], $newContents);
+        if ($profile['tick'] == '<') {
+          $newContents = str_replace('{rg'. $i .'}', $profile['value'], $newContents);
           $newContents = str_replace('{rn'. $i .'}', '', $newContents);
           $newContents = str_replace('{rt'. $i .'}', '', $newContents);
         }
-        else if ($physical['tick'] == '>') {
-          $newContents = str_replace('{rt'. $i .'}', $physical['value'], $newContents);
+        else if ($profile['tick'] == '>') {
+          $newContents = str_replace('{rt'. $i .'}', $profile['value'], $newContents);
           $newContents = str_replace('{rn'. $i .'}', '', $newContents);
           $newContents = str_replace('{rg'. $i .'}', '', $newContents);
         }
         else {
-          $newContents = str_replace('{rn'. $i .'}', $physical['value'], $newContents);
+          $newContents = str_replace('{rn'. $i .'}', $profile['value'], $newContents);
           $newContents = str_replace('{rt'. $i .'}', '', $newContents);
           $newContents = str_replace('{rg'. $i .'}', '', $newContents);
         }
@@ -133,10 +133,10 @@ function download() {
 function get() {
   global $data, $db, $result;
     
-  $sql = "select * from pet_". PREFIX ."_physical where id = $id";
+  $sql = "select * from pet_". PREFIX ."_profile where id = $id";
   $query = $db->query($sql);
   $data = $query->fetch_assoc();
-  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_physical_data a inner join pet_". PREFIX ."_target b on a.pid = $id and a.tid = b.id and b.module = 'physical' order by pos";
+  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $id and a.tid = b.id and b.module = 'profile' order by pos asc";
   $query = $db->query($sql);
   $data['target'] = array();
   $i = 1;
@@ -198,17 +198,16 @@ function get() {
 function init() {
   global $data, $db, $result;
     
-  $sql = "select * from pet_". PREFIX ."_config where module = 'physical' and name = 'serial' limit 1";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'profile' and name = 'serial' limit 1";
   if (empty($serial = $db->fetch($sql))) {
     $serial = 1;
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('physical', 'serial', 1, 0)";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('profile', 'serial', 1, 0)";
     $db->query($sql);
   }
   else $serial = intval($serial['value']) + 1;
 
   $result['status'] = 1;
   $result['list'] = getlist();
-  $result['import'] = getImport();
   $result['serial'] = $serial;
   $result['type'] = typelist();
   $result['species'] = specieslist();
@@ -218,33 +217,10 @@ function init() {
   return $result;
 }
 
-function getneed() {
-  global $data, $db, $result;
-    
-  $sql = "select id, xrayid, image from pet_". PREFIX ."_xray_row where sinhly < 0 order by time desc";
-  $list = $db->all($sql);
-
-  foreach ($list as $key => $row) {
-    $sql = "select a.petname, a.weight, a.age, a.gender, a.species, c.name, c.phone, c.address from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $row[xrayid]";
-    $info = $db->fetch($sql);
-    $list[$key]['petname'] = (isset($info['petname']) ? $info['petname'] : '');
-    $list[$key]['age'] = (isset($info['age']) ? $info['age'] : '');
-    $list[$key]['weight'] = (isset($info['weight']) ? $info['weight'] : '');
-    $list[$key]['gender'] = (isset($info['gender']) ? $info['gender'] : '');
-    $list[$key]['species'] = (isset($info['species']) ? $info['species'] : '');
-    $list[$key]['name'] = (isset($info['name']) ? $info['name'] : '');
-    $list[$key]['phone'] = (isset($info['phone']) ? $info['phone'] : '');
-    $list[$key]['address'] = (isset($info['address']) ? $info['address'] : '');
-    $list[$key]['image'] = parseimage($row['image']);
-  }
-
-  return $list;
-}
-
 function removeneed() {
   global $data, $db, $result;
 
-  $sql = "update pet_". PREFIX ."_xray_row set sinhly = 0 where id = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_row set sinhhoa = 0 where id = $data->id";
   $db->query($sql);
   
   $result['status'] = 1;
@@ -252,60 +228,28 @@ function removeneed() {
   return $result;
 }
 
-function import() {
+
+function getneed() {
   global $data, $db, $result;
+    
+  $sql = "select id, xrayid, image from pet_". PREFIX ."_xray_row where sinhhoa < 0 order by time desc";
+  $list = $db->all($sql);
 
-  $userid = checkuserid();
-  $data->name = str_replace(',', '', $data->name);
-  $sql = "insert into pet_". PREFIX ."_import (price, module, userid, note, time) values($data->name, 'physical', $userid, '$data->note', ". time() .")";
-  $db->query($sql);
+  foreach ($list as $key => $row) {
+    $sql = "select petname, weight, age, gender, species, c.name, c.phone, c.address from pet_". PREFIX ."_xray a inner join pet_". PREFIX ."_customer c on a.customerid = c.id where a.id = $row[xrayid]";
+    $info = $db->fetch($sql);
+    $list[$key]['petname'] = $info['petname'];
+    $list[$key]['age'] = $info['age'];
+    $list[$key]['weight'] = $info['weight'];
+    $list[$key]['gender'] = $info['gender'];
+    $list[$key]['species'] = $info['species'];
+    $list[$key]['name'] = $info['name'];
+    $list[$key]['phone'] = $info['phone'];
+    $list[$key]['address'] = $info['address'];
+    $list[$key]['image'] = parseimage($row['image']);
+  }
 
-  $result['status'] = 1;
-  $result['import'] = getImport();
-  return $result;
-}
-
-function statistic() {
-  global $data, $db, $result;
-
-  $data->start = strtotime(str_replace('-', '/', $data->start));
-  $data->end = strtotime(str_replace('-', '/', $data->end)) + 60 * 60 * 24 - 1;
-
-  $statis = array(
-    'total' => 0,
-    'price' => 0,
-    'last' => '',
-    'cycle' => ''
-  );
-
-  $sql = "select id from pet_". PREFIX ."_physical where time between $data->start and $data->end";
-  $statis['total'] = $db->count($sql);
-
-  $sql = "select sum(price) as price from pet_". PREFIX ."_import where module = 'physical' and (time between $data->start and $data->end)";
-  $i = $db->fetch($sql);
-  $statis['price'] = $i['price'];
-
-  $sql = "select * from pet_". PREFIX ."_import where module = 'physical' order by time desc limit 2";
-  $l = $db->all($sql);
-  $c = count($l);
-
-  switch ($c) {
-    case 1:
-      $statis['last'] = number_format($l[0]['price'], 0, '', ',') ." vào ngày ". date('d/m/Y', $l[0]['time']);
-      $statis['cycle'] = intval((time() - $l[0]['time']) / 60 / 60 / 24) . " ngày";
-      break;
-    case 2:
-      $statis['last'] = number_format($l[0]['price'], 0, '', ',') ." vào ngày ". date('d/m/Y', $l[0]['time']);
-      $statis['cycle'] = intval(($l[0]['time'] - $l[1]['time']) / 60 / 60 / 24) . " ngày";
-      break;
-    default:
-    $statis['last'] = "";
-    $statis['cycle'] = "";
-}
-
-  $result['status'] = 1;
-  $result['data'] = $statis;
-  return $result;
+  return $list;
 }
 
 function auto() {
@@ -316,21 +260,21 @@ function auto() {
   return $result;
 }
 
-function updatephysical() {
+function updateprofile() {
   global $data, $db, $result;
 
   $userid = checkuserid();
   $image = implode(',', $data->image);
 
   $time = time();
-  $sql = "update pet_". PREFIX ."_physical set customer = '$data->name', phone = '$data->phone', address = '$data->address', name = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species', serial = '$data->serial', sampletype = '$data->sampletype', samplenumber = '$data->samplenumber', samplesymbol = '$data->samplesymbol', samplestatus = '$data->samplestatus', symptom = '$data->symptom', image = '$image' where id = $data->id";
+  $sql = "update pet_". PREFIX ."_profile set customer = '$data->name', phone = '$data->phone', address = '$data->address', name = '$data->petname', weight = '$data->weight', age = '$data->age', gender = $data->gender, species = '$data->species', serial = '$data->serial', sampletype = '$data->sampletype', samplenumber = '$data->samplenumber', samplesymbol = '$data->samplesymbol', samplestatus = '$data->samplestatus', symptom = '$data->symptom', image = '$image' where id = $data->id";
   $db->query($sql);
 
   foreach ($data->target as $tid => $target) {
-    $sql = "select * from pet_". PREFIX ."_physical_data where pid = $data->id and tid = $tid";
     if (strlen($target) == 0) $target = 0;
-    if (empty($d = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_physical_data (pid, tid, value) values ($data->id, $tid, '$target')";
-    else $sql = "update pet_". PREFIX ."_physical_data set value = $target where id = $d[id]";
+    $sql = "select * from pet_". PREFIX ."_profile_data where pid = $data->id and tid = $tid";
+    if (empty($d = $db->fetch($sql))) $sql = "insert into pet_". PREFIX ."_profile_data (pid, tid, value) values ($data->id, $tid, '$target')";
+    else $sql = "update pet_". PREFIX ."_profile_data set value = $target where id = $d[id]";
     $db->query($sql);
   }
 
@@ -343,24 +287,24 @@ function updatephysical() {
 function insert() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'physical' order by pos asc";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos";
   $query = $db->query($sql);
   $list = $db->all($sql);
   $userid = checkuserid();
   $image = implode(',', $data->image);
 
   $time = time();
-  $sql = "insert into pet_". PREFIX ."_physical (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time, image) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', '$data->species', '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time, '$image')";
+  $sql = "insert into pet_". PREFIX ."_profile (customer, phone, address, name, weight, age, gender, species, serial, sampletype, samplenumber, samplesymbol, samplestatus, symptom, doctor, time, image) values ('$data->name', '$data->phone', '$data->address', '$data->petname', '$data->weight', '$data->age', '$data->gender', '$data->species', '$data->serial', $data->sampletype, '$data->samplenumber', '$data->samplesymbol', '$data->samplestatus', '$data->symptom', $userid, $time, '$image')";
   $id = $db->insertid($sql);
   // $id = 18;
   if (isset($data->xrayid)) {
-    $sql = "update pet_". PREFIX ."_xray_row set sinhly = $id where id = $data->xrayid";
+    $sql = "update pet_". PREFIX ."_xray_row set sinhhoa = $id where id = $data->xrayid";
     $db->query($sql);
   }
 
   foreach ($list as $target) {
     if (isset($data->target->{$target['id']}) && strlen($data->target->{$target['id']})) {
-      $sql = "insert into pet_". PREFIX ."_physical_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
+      $sql = "insert into pet_". PREFIX ."_profile_data (pid, tid, value) values ($id, $target[id], '". $data->target->{$target['id']} ."')";
       $db->query($sql);
     }
   }
@@ -369,8 +313,8 @@ function insert() {
   $sql = "select * from pet_". PREFIX ."_config where name = 'serial'";
   $query = $db->query($sql);
   $config = $query->fetch_assoc();
-  if (empty($config)) $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('physical', 'serial', '$serial')";
-  else $sql = "update pet_". PREFIX ."_config set value = '$serial' where module = 'physical' and name = 'serial'";
+  if (empty($config)) $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('profile', 'serial', '$serial')";
+  else $sql = "update pet_". PREFIX ."_config set value = '$serial' where module = 'profile' and name = 'serial'";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -385,10 +329,10 @@ function insert() {
 function printword() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_physical where id = $data->id";
+  $sql = "select * from pet_". PREFIX ."_profile where id = $data->id";
   $prof = $db->fetch($sql);
 
-  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_physical_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'physical' order by pos";
+  $sql = "select a.value, b.name, b.unit, b.flag, b.up, b.down from pet_". PREFIX ."_profile_data a inner join pet_". PREFIX ."_target b on a.pid = $data->id and a.tid = b.id and b.module = 'profile' order by pos";
   $l = $db->all($sql);
   $prof['target'] = array();
   $i = 1;
@@ -423,7 +367,7 @@ function printword() {
       'tick' => $tick
     );
   }
-
+  
   $sql = "select value from pet_". PREFIX ."_config where name = 'sampletype' limit 1";
   $row = $db->fetch($sql);
   $prof['sampletype'] = $row['value'];
@@ -433,8 +377,8 @@ function printword() {
 
   $prof['doctor'] = $doctor['fullname'];
 
-  // $html = file_get_contents ( DIR. 'include/template2.php');
-  $sql = "select * from pet_". PREFIX ."_form where name = 'phys'";
+  // $html = file_get_contents ( DIR. 'include/template.php');
+  $sql = "select * from pet_". PREFIX ."_form where name = 'prof'";
   $html = $db->fetch($sql)['value'];
 
   $sex = array(0 => '', 'Đực', 'Cái');
@@ -452,11 +396,10 @@ function printword() {
   $html = str_replace('{samplesymbol}', $prof['samplesymbol'], $html);
   $html = str_replace('{samplestatus}', ($prof['samplestatus'] ? 'Đạt yêu cầu' : 'Không đạt yêu cầu'), $html);
   $html = str_replace('{doctor}', $prof['doctor'], $html);
-  $time = $prof['time'];
-  $html = str_replace('{time}', date('d/m/Y', $time), $html);
-  $html = str_replace('{DD}', date('d', $time), $html);
-  $html = str_replace('{MM}', date('m', $time), $html);
-  $html = str_replace('{YYYY}', date('Y', $time), $html);
+  $html = str_replace('{time}', date('d/m/Y', $prof['time']), $html);
+  $html = str_replace('{DD}', date('d', $prof['time']), $html);
+  $html = str_replace('{MM}', date('m', $prof['time']), $html);
+  $html = str_replace('{YYYY}', date('Y', $prof['time']), $html);
 
   $h1 = '';
   $h2 = '';
@@ -517,7 +460,7 @@ function printword() {
         </tr>";
       $h2 .= "<div>$restar</div>";
     }
-  }
+  }  
   $html = str_replace('{target}', $h1, $html);
   $html = str_replace('{restar}', $h2, $html);
 
@@ -530,24 +473,25 @@ function printword() {
 function remove() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_physical where id = $data->id";
+  $sql = "delete from pet_". PREFIX ."_profile where id = $data->id";
   $query = $db->query($sql);
-  $sql = "delete from pet_". PREFIX ."_physical_data where pid = $data->id";
+  $sql = "delete from pet_". PREFIX ."_profile_data where pid = $data->id";
   $query = $db->query($sql);
-  $sql = "update pet_". PREFIX ."_xray_row set sinhly = 0 where sinhly = $data->id";
+  $sql = "update pet_". PREFIX ."_xray_row set sinhhoa = 0 where sinhhoa = $data->id";
   $query = $db->query($sql);
 
   $result['status'] = 1;
   $result['list'] = getlist();
+
   return $result;
 }
 
 function insertselect() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_config where module = 'physical' and name = '$data->typename' and value = '$data->typevalue'";
+  $sql = "select * from pet_". PREFIX ."_config where module = 'profile' and name = '$data->typename' and value = '$data->typevalue'";
   if (empty($c = $db->fetch($sql))) {
-    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('physical', '$data->typename', '$data->typevalue')";
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('profile', '$data->typename', '$data->typevalue')";
     $db->query($sql);
   }
 
@@ -573,30 +517,18 @@ function checkcustomer() {
   return $c['id'];
 }
 
-function getImport() {
-  global $db, $data;
-
-  $sql = "select a.id, a.price, a.time, a.note, b.fullname as name from pet_". PREFIX ."_import a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'physical' order by id desc limit 20";
-  $l = $db->all($sql);
-
-  foreach ($l as $i => $row) {
-    $l[$i]['time'] = date('d/m/Y', $row['time']);
-  }
-  return $l;
-}
-
 function getlist() {
   global $db, $data;
 
   $filter = $data->filter;
   $start = isodatetotime($filter->start);
   $end = isodatetotime($filter->end) + 60 * 60 * 24 - 1;
-  $sql = "select a.*, c.fullname as doctor from pet_". PREFIX ."_physical a inner join pet_". PREFIX ."_users c on a.doctor = c.userid where (a.phone like '%$filter->key%' or a.customer like '%$filter->key%') and (time between $start and $end) order by id desc";
+  $sql = "select a.*, c.fullname as doctor from pet_". PREFIX ."_profile a inner join pet_". PREFIX ."_users c on a.doctor = c.userid where (a.phone like '%$filter->key%' or a.customer like '%$filter->key%') and (time between $start and $end) order by id desc";
   $query = $db->query($sql);
   $list = array();
   
   while ($row = $query->fetch_assoc()) {
-    $sql = "select tid, value from pet_". PREFIX ."_physical_data where pid = $row[id]";
+    $sql = "select tid, value from pet_". PREFIX ."_profile_data where pid = $row[id]";
     $row['target'] = $db->obj($sql, 'tid', 'value');
     $row['image'] = parseimage($row['image']);
     $row['time'] = date('d/m/Y', $row['time']);
@@ -608,22 +540,22 @@ function getlist() {
 function typelist() {
   global $db;
 
-  $sql = "select id, value as name from pet_". PREFIX ."_config where module = 'physical' and name = 'sampletype' order by value asc";
+  $sql = "select id, value as name from pet_". PREFIX ."_config where module = 'profile' and name = 'sampletype' order by value asc";
   return $db->all($sql);
 }
 
 function specieslist() {
   global $db;
 
-  $sql = "select id, value as name from pet_". PREFIX ."_config where module = 'physical' and name = 'species' order by value asc";
+  $sql = "select id, value as name from pet_". PREFIX ."_config where module = 'profile' and name = 'species' order by value asc";
   return $db->all($sql);
 }
 
 function initsample() {
   global $db, $data, $result;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'physical' order by pos asc";
-  $sql2 = "select id, value as name from pet_". PREFIX ."_config where module = 'physical' and name = 'sampletype' order by value asc";
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos asc";
+  $sql2 = "select id, value as name from pet_". PREFIX ."_config where module = 'profile' and name = 'sampletype' order by value asc";
 
   $result['status'] = 1;
   $result['target'] = $db->all($sql);
@@ -634,7 +566,6 @@ function initsample() {
 function targetlist() {
   global $db;
 
-  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'physical' order by pos asc";
-
+  $sql = "select * from pet_". PREFIX ."_target where active = 1 and module = 'profile' order by pos asc";
   return $db->all($sql);
 }

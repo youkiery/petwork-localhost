@@ -150,6 +150,8 @@ function docdulieufile($file) {
     'Tên hàng' => '',
     'Giá bán' => '',
     'Tồn kho' => '',
+    'ĐVT' => '',
+    'Hình ảnh (url1,url2...)' => ''
   );
 
   for ($j = 0; $j <= $x[$highestColumn]; $j ++) {
@@ -196,6 +198,8 @@ function excel() {
     // 1 => 'Tên hàng'
     // 2 => 'Giá bán'
     // 3 => 'Tồn kho'
+    // 4 => 'Đơn vị'
+    // 5 => 'Hình ảnh'
     $sql = "select * from pet_". PREFIX ."_hanghoathanhphan";
     $danhsachchuyendoi = $db->all($sql);
     $danhsachmahang = [];

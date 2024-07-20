@@ -26,7 +26,7 @@ define('DIR', str_replace('/server', '/', ROOTDIR));
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 $inputJSON = file_get_contents('php://input');
 $data = json_decode($inputJSON);
-if (!empty($_POST['action']) && !empty($_POST['type']) && !empty($_POST['phiendangnhap'])) $data = (object) $_POST;
+if (!empty($_POST['action']) && !empty($_POST['type'])) $data = (object) $_POST;
 
 $result = array(
   'status' => 0
@@ -36,36 +36,23 @@ else {
   include_once('../include/config.php');
   include_once(DIR. '/include/db.php');
   include_once(DIR. '/include/global.php');
+  define('PREFIX', $data->tiento);
+  define('BRANCH', $config['branch']);
 
   $db = new database($config['servername'], $config['username'], $config['password'], $config['database']);
-  $allow = array('kiemtradangnhap');
+  $allow = array('session', 'login');
 
   include_once(ROOTDIR. "/$data->type.php");
-  $tiento = laytiento();
-  define("PREFIX", $tiento);
-  
   if (in_array($data->action, $allow) == false) {
     if ($data->type !== 'user') include_once(ROOTDIR. "/user.php");
-    // if (check()) {
-    //   $result['nogin'] = true;
-    //   echo json_encode($result);
-    //   die();
-    // }
   }
 
-  // $sql = "select * from pet_". PREFIX ."_config where module = 'version'";
-  // if (empty($v = $db->fetch($sql))) {
-  //   $sql = "insert into pet_". PREFIX ."_config (module, name, value) values('version', '$data->version', '')";
-  //   $db->query($sql);
-  //   $v = array('name' => $data->version);
-  // }
-
-  // if ($v['name'] != $data->version) {
-  //   $result['outdate'] = true;
-  //   $result['link'] = $v['name'];
-  //   echo json_encode($result);
-  //   die();
-  // }  
+  if (isset($data->version) && $data->version !== 188) {
+    $result['outdate'] = true;
+    $result['link'] = "188";
+    echo json_encode($result);
+    die();
+  }  
 
   $action = $data->action;
   if (function_exists($action)) $result = $action();

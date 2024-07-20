@@ -1,14 +1,10 @@
 <?php
-  function laychotlich() {
-    global $db;
-    $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
-    return $db->fetch($sql)['value'];
-  }
+  $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+  $chotlich = $db->fetch($sql)['value'];
 
   function init() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
 
-    $chotlich = laychotlich();
     $result['status'] = 1;
     $result['chedochotlich'] = $chotlich;
     $result['data'] = getList($data);
@@ -56,13 +52,14 @@
     $thoigian = isodatetotime($data->time);
     $dangky = ['dangkythem' => '0', 'huydangky' => 0];
 
+    $userid = checkuserid();
     $dauthang = strtotime(date('Y/m/1', $thoigian));
     $cuoithang = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
 
-    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 0 and userid = $data->idnguoidung group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 0 and userid = $userid group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
     $dangky['dangkythem'] = $db->count($sql);
 
-    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 1 and userid = $data->idnguoidung group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
+    $sql = "select * from pet_". PREFIX ."_thaydoilich where (ngaythaydoi between $dauthang and $cuoithang) and loaithaydoi = 1 and userid = $userid group by userid, ngaythaydoi, buoithaydoi, loaithaydoi";
     $dangky['huydangky'] = $db->count($sql);
     return $dangky;
   }
@@ -70,6 +67,7 @@
   function nghichunhat() {
     global $db, $data;
 
+    $userid = checkuserid();
     $thoigian = isodatetotime($data->time);;
     $motngay = 60 * 60 * 24;
     $mottuan = 7 * $motngay;
@@ -77,10 +75,10 @@
     $cuoithangnay = strtotime(date('Y/m', $thoigian) .'/'. date('t', $thoigian));
     $ngaychunhat = $dauthangnay + (7 - date('w', $dauthangnay)) * $motngay;
 
-    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'manager' and b.vaitro > 0 and a.idchinhanh = $data->idchinhanh";
+    $sql = "select count(*) as soluong from pet_". PREFIX."_users a inner join pet_". PREFIX."_user_per b on a.userid = b.userid and b.module = 'manager' and b.type > 0";
     $songoaile = $db->fetch($sql)['soluong'];
 
-    $sql = "select count(a.id) as soluong from pet_nhanvien a inner join pet_nhanvien_phanquyen b on a.id = b.idnhanvien and b.chucnang = 'schedule' and b.vaitro > 0 and a.idchinhanh = $data->idchinhanh";
+    $sql = "select count(*) as soluong from pet_". PREFIX."_users a inner join pet_". PREFIX."_user_per b on a.userid = b.userid and b.module = 'schedule' and b.type > 0";
     $sonhanvien = $db->fetch($sql)['soluong'] - $songoaile;
 
     // danhsach: [ {ngay: {sang: chophep = true, chieu: khongchophep = false}} ]
@@ -97,7 +95,7 @@
         $xtra []= "time = ". ($ngaychunhat + $i * $mottuan);
       }
 
-      $sql = "select * from pet_". PREFIX ."_row where user_id = $data->idnguoidung and (". implode(' or ', $xtra) .") and type >= 2";
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (". implode(' or ', $xtra) .") and type >= 2";
       $songaynghi += $db->count($sql);
 
       $nghichunhat[date('d/m', $ngaychunhat)] = $songaynghi;
@@ -107,15 +105,15 @@
   }
 
   function kiemtradadangky() {
-    global $data, $db, $result;
-    
-    $chotlich = laychotlich();
+    global $data, $db, $result, $chotlich;
+
     if ($chotlich == 1) {
       $thoigian = isodatetotime($data->time);
       $batdau = strtotime(date('Y/m/1', $thoigian));
       $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+      $userid = checkuserid();
       // từ $time lấy dữ liệu tháng này
-      $sql = "select * from pet_". PREFIX ."_row where user_id = $data->idnguoidung and (time between $batdau and $ketthuc) and type > 1";
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
       $danhsach = $db->all($sql);
   
       return 8 - count($danhsach);
@@ -133,7 +131,7 @@
 
     $start = isodatetotime($data->start);
     $end = isodatetotime($data->end);
-    $sql = "select a.time, a.reg_time, a.reg_type, a.type, b.hoten from pet_". PREFIX ."_row_log a inner join pet_nhanvien b on a.userid = b.id where time between $start and $end order by a.id desc";
+    $sql = "select a.time, a.reg_time, a.reg_type, a.type, b.fullname from pet_". PREFIX ."_row_log a inner join pet_". PREFIX ."_users b on a.userid = b.userid where time between $start and $end order by id desc";
     $danhsachdangky = $db->all($sql);
     $danhsach = [];
     $rev = [0 => 'đăng ký', 'hủy đăng ký'];
@@ -144,7 +142,7 @@
       $reg2 = $rev2[$dangky['type']];
       $regtime = date('d/m/Y H:i:s', $dangky['reg_time']);
       $time = date('d/m/Y', $dangky['time']);
-      $danhsach []= "$dangky[hoten] $reg $reg2 ngày $time lúc $regtime";
+      $danhsach []= "$dangky[fullname] $reg $reg2 ngày $time lúc $regtime";
     }
 
     $result['status'] = 1;
@@ -211,7 +209,7 @@
   }
 
   function userreg() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
 
     $starttime = strtotime(date('Y/m/1', isodatetotime($data->time)));
     $aday = 60 * 60 * 24;
@@ -243,9 +241,8 @@
   }
 
   function managerreg() {
-    global $data, $db, $result;
+    global $data, $db, $result, $chotlich;
     
-    $chotlich = laychotlich();
     $starttime = strtotime(date('Y/m/1', isodatetotime($data->time)));
     $aday = 60 * 60 * 24;
     
@@ -258,6 +255,9 @@
         insert($v->uid, $time, $data->state * 2 + $v->type, $v->action);
       }
 
+      $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'chotlich'";
+      $chotlich = $db->fetch($sql)['value'];
+
       $result['status'] = 1;
       $result['messenger'] = 'Đã đăng ký lịch';
       $result['data'] = getList($data);
@@ -269,25 +269,25 @@
   }
 
   function getRole() {
-    global $db, $data;
+    global $db;
 
-    $sql = "select * from pet_nhanvien_phanquyen where idnhanvien = $data->idnguoidung and chucnang = 'schedule' and idchinhanh = $data->idchinhanh";
+    $userid = checkuserid();
+    $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'schedule'";
     $role = $db->fetch($sql);
-    return $role['vaitro'];
+    return $role['type'];
   }
 
   function getList($data) {
-    global $db, $data;
-    
+    global $db, $chotlich;
+
     if (getRole() > 1) return managerData();
     return userData();
   }
 
   function userData() {
-    global $db, $data;
+    global $db, $data, $chotlich;
     $ngaymai = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
-    $chotlich = laychotlich();
     $thoigian = isodatetotime($data->time);
     if ($chotlich == '1') {
       $starttime = strtotime(date('Y/m/1', $thoigian));
@@ -304,10 +304,11 @@
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
     }
 
-    $sql = "select b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
-    $danhsachngoaile = $db->arr($sql, 'hoten');
+    $sql = "select b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $danhsachngoaile = $db->arr($sql, 'fullname');
 
-    $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'manager' and idnhanvien = $data->idnguoidung and idchinhanh = $data->idchinhanh";
+    $userid = checkuserid();
+    $sql = "select * from pet_". PREFIX ."_user_per where module = 'manager' and userid = $userid";
     if (empty($p = $db->fetch($sql))) $p = array('type' => '0');
     $sql = "select * from pet_". PREFIX ."_config where module = 'config' and name = 'schedule-config'";
     if (empty($cauhinh = $db->fetch($sql))) {
@@ -335,7 +336,7 @@
       );
       for ($j = 0; $j < 4; $j++) {
         // lấy danh sách nhân viên đăng ký
-        $sql = "select b.hoten from pet_". PREFIX ."_row a inner join pet_nhanvien b on a.user_id = b.id where (a.time between $ct and $ce) and type = $j";
+        $sql = "select b.fullname from pet_". PREFIX ."_row a inner join pet_". PREFIX ."_users b on a.user_id = b.userid where (a.time between $ct and $ce) and type = $j";
         $nhanviendangky = $db->arr($sql, 'fullname');
         // foreach ($l as $key => $u) {
         //   $hoten = explode(' ', $u);
@@ -374,10 +375,9 @@
   }
 
   function managerData() {
-    global $db, $data;
+    global $db, $data, $chotlich;
     
     $thoigian = isodatetotime($data->time);
-    $chotlich = laychotlich();
     if ($chotlich == '1') {
       $batdau = strtotime(date('Y/m/1', $thoigian));
       $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
@@ -400,7 +400,7 @@
       'dangky' => array()
     );
     
-    $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
+    $sql = "select b.userid, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
     $danhsachnhanvien = $db->all($sql);
 
     $convert = ['', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -423,10 +423,10 @@
     $y = $data->state * 2 + 1;
 
     foreach ($danhsachnhanvien as $nhanvien) {
-      $hoten = explode(' ', $nhanvien['hoten']);
+      $hoten = explode(' ', $nhanvien['fullname']);
       $tam = array(
         'nhanvien' => count($hoten) ? $hoten[count($hoten) - 1] : '',
-        'uid' => $nhanvien['id'],
+        'uid' => $nhanvien['userid'],
         'danhsach' => array()
       );
       for ($i = 1; $i <= $ngaytrongthang; $i++) { 
@@ -434,7 +434,7 @@
         $tam['danhsach'] []= 'green';
       }
 
-      $sql = "select * from pet_". PREFIX ."_row where user_id = $nhanvien[id] and (type = $x or type = $y) and (time between $batdau and $ketthuc)";
+      $sql = "select * from pet_". PREFIX ."_row where user_id = $nhanvien[userid] and (type = $x or type = $y) and (time between $batdau and $ketthuc)";
       $danhsachdangky = $db->all($sql);
 
       foreach ($danhsachdangky as $dangky) {
@@ -479,23 +479,23 @@
   }
 
   function getScheduleUser() {
-    global $db, $data;
+    global $db;
 
-    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idchinhanh = $data->idchinhanh and a.idnhanvien <> 1";
+    $sql = "select b.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'doctor' and type = 1";
     return $db->arr($sql, 'name');
   }
 
   function getExcept() {
     global $db;
 
-    $sql = "select b.id, b.hoten as name from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'except' and vaitro = 1 and idchinhanh = $data->idchinhanh";
+    $sql = "select b.userid, b.fullname as name from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'except' and type = 1";
     return $db->arr($sql, 'name');
   }
 
   function xemchotlich() {
     global $db, $data, $result;
 
-    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and a.idnhanvien <> 1 and idchinhanh = $data->idchinhanh";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0 and a.userid <> 1";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $dulieu = array();
@@ -505,8 +505,8 @@
     $config = $db->fetch($sql);
     $config = json_decode($config['value']);  
 
-    $sql = "select b.id from idnhanvien a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'manager' and vaitro = 1";
-    $danhsachngoaile = $db->arr($sql, 'id');
+    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
     $tongngaynghi = [];
@@ -591,10 +591,9 @@
   }
   
   function getoverload() {
-    global $data, $db;
+    global $data, $db, $chotlich;
 
     $thoigian = isodatetotime($data->time);
-    $chotlich = laychotlich();
     if ($chotlich == '1') {
       $batdau = strtotime(date('Y/m/1', $thoigian));
       $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
@@ -610,7 +609,7 @@
       $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
     }
 
-    $sql = "select b.hoten, a.idnhanvien from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'schedule' and vaitro > 0 and idchinhanh = $data->idchinhanh";
+    $sql = "select b.fullname, a.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'schedule' and type > 0";
     $danhsachnhanvien = $db->all($sql);
     $danhsach = array();
     $danhsachchuasapxep = array();
@@ -619,13 +618,13 @@
     $config = $db->fetch($sql);
     $config = json_decode($config['value']);  
 
-    $sql = "select b.id from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where chucnang = 'manager' and vaitro = 1 and idchinhanh = $data->idchinhanh";
-    $danhsachngoaile = $db->arr($sql, 'id');
+    $sql = "select b.userid from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
+    $danhsachngoaile = $db->arr($sql, 'userid');
     if (empty($danhsachngoaile)) $ngoaile = '0';
     else $ngoaile = implode(', ', $danhsachngoaile);
 
-    $sql = "select * from pet_nhanvien";
-    $nguoidung = $db->obj($sql, 'id', 'hoten');
+    $sql = "select * from pet_". PREFIX ."_users";
+    $nguoidung = $db->obj($sql, 'userid', 'fullname');
 
     $sql = "select type, user_id as userid, time, reg_time from pet_". PREFIX ."_row where user_id not in ($ngoaile) and type > 1 and (time between $batdau and $ketthuc) order by reg_time asc";
     $danhsachdangky = $db->all($sql);
@@ -684,9 +683,9 @@
     foreach ($dulieu as $userid => $ngaynghi) {
       if ($ngaynghi > 12) {
         $quangay = ($ngaynghi - 12) / 2;
-        $sql = "select hoten from pet_nhanvien where id = $userid";
+        $sql = "select fullname from pet_". PREFIX ."_users where userid = $userid";
         $nhanvien = $db->fetch($sql);
-        $danhsach []= "$nhanvien[hoten] nghỉ quá $quangay ngày"; 
+        $danhsach []= "$nhanvien[fullname] nghỉ quá $quangay ngày"; 
       }
     }
 

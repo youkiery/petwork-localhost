@@ -21,10 +21,11 @@ function xoa() {
 function them() {
   global $data, $db, $result;
   
+  $idnhanvien = checkuserid();
   $batdau = isodatetotimev2($data->batdau);
   $ketthuc = isodatetotimev2($data->ketthuc);
   if (empty($data->id)) {
-    $sql = "insert into pet_". PREFIX ."_lichban (idnhanvien, lydo, batdau, ketthuc) values($data->idnguoidung, '$data->lydo', $batdau, $ketthuc)";
+    $sql = "insert into pet_". PREFIX ."_lichban (idnhanvien, lydo, batdau, ketthuc) values($idnhanvien, '$data->lydo', $batdau, $ketthuc)";
   }
   else {
     $sql = "update pet_". PREFIX ."_lichban set lydo = '$data->lydo', batdau = $batdau, ketthuc = $ketthuc where id = $data->id";
@@ -39,11 +40,12 @@ function them() {
 function danhsachlichban() {
   global $data, $db, $result;
   
+  $idnhanvien = checkuserid();
   $daungay = strtotime(date("Y/m/d"));
-  $sql = "select * from pet_". PREFIX ."_lichban where idnhanvien = $data->idnguoidung and (batdau >= $daungay or ketthuc >= $daungay)";
+  $sql = "select * from pet_". PREFIX ."_lichban where idnhanvien = $idnhanvien and (batdau >= $daungay or ketthuc >= $daungay)";
   $danhsach = $db->all($sql);
 
-  $sql = "select 0 as id, 'Khách đặt' as lydo, ngaydat as batdau, (ngaydat + thoigiandukien) as ketthuc  from pet_". PREFIX ."_datlich where idnhanvien = $data->idnguoidung and (ngaydat >= $daungay)";
+  $sql = "select 0 as id, 'Khách đặt' as lydo, ngaydat as batdau, (ngaydat + thoigiandukien) as ketthuc  from pet_". PREFIX ."_datlich where idnhanvien = $idnhanvien and (ngaydat >= $daungay)";
   $danhsach = array_merge($danhsach, $db->all($sql));
 
   usort($danhsach, "ngaytuthaptoicao");

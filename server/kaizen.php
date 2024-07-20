@@ -65,10 +65,11 @@ function initList() {
     'undone' => array(),
   );
   $xtra = array();
+  $userid = checkuserid();
   $role = checkRole();
 
   if (!empty($filter->keyword)) $xtra []= '((result like "%'. $filter->keyword .'%") or (solution like "%'. $filter->keyword .'%") or (problem like "%'. $filter->keyword .'%") or (noidungtugiac like "%'. $filter->keyword .'%") or (noidungdongdoi like "%'. $filter->keyword .'%"))';
-  if ($role < 2) $xtra []= 'userid = ' . $data->idnguoidung;
+  if ($role < 2) $xtra []= 'userid = ' . $userid;
   if (count($xtra)) $xtra = ' and ' . implode(' and ', $xtra);
   else $xtra = '';
   
@@ -76,13 +77,13 @@ function initList() {
   $danhsach = $db->all($sql);
   
   foreach ($danhsach as $row) {
-    $user = laydulieunhanvien($row['userid']);
+    $user = checkUserById($row['userid']);
     $image = parseimage($row['image']);
     $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
     $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
-      'name' => $user['hoten'],
+      'name' => $user['name'],
       'done' => intval($row['done']),
       'problem' => $row['problem'],
       'solution' => $row['solution'],
@@ -101,13 +102,13 @@ function initList() {
   $query = $db->query($sql);
   
   while ($row = $query->fetch_assoc()) {
-    $user = laydulieunhanvien($row['userid']);
+    $user = checkUserById($row['userid']);
     $image = parseimage($row['image']);
     $hinhanhdongdoi = parseimage($row['hinhanhdongdoi']);
     $hinhanhtugiac = parseimage($row['hinhanhtugiac']);
     $data = array(
       'id' => $row['id'],
-      'name' => $user['hoten'],
+      'name' => $user['name'],
       'done' => intval($row['done']),
       'problem' => $row['problem'],
       'solution' => $row['solution'],
@@ -134,12 +135,13 @@ function getKaizenById($id) {
 function insertData() {
   global $db, $data;
 
+  $userid = checkuserid();
   $time = time();
   $image = implode(',', $data->image);
   $hinhanhtugiac = implode(',', $data->hinhanhtugiac);
   $hinhanhdongdoi = implode(',', $data->hinhanhdongdoi);
 
-  $sql = "insert into pet_". PREFIX ."_kaizen (userid, problem, solution, result, post_time, edit_time, image, noidungdongdoi, hinhanhdongdoi, noidungtugiac, hinhanhtugiac) values($data->idnguoidung, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image', '$data->noidungdongdoi', '$hinhanhdongdoi', '$data->noidungtugiac', '$hinhanhtugiac')";
+  $sql = "insert into pet_". PREFIX ."_kaizen (userid, problem, solution, result, post_time, edit_time, image, noidungdongdoi, hinhanhdongdoi, noidungtugiac, hinhanhtugiac) values($userid, '$data->problem', '$data->solution', '$data->result', $time, $time, '$image', '$data->noidungdongdoi', '$hinhanhdongdoi', '$data->noidungtugiac', '$hinhanhtugiac')";
   $db->query($sql);
 }
 
@@ -169,9 +171,10 @@ function checkData() {
 }
 
 function checkRole() {
-  global $db, $data;
+  global $db;
 
-  $sql = "select * from pet_nhanvien_phanquyen where chucnang = 'kaizen' and idnhanvien = $data->idnguoidung and idchinhanh = $data->idchinhanh";
-  if (!empty($p = $db->fetch($sql))) return $p['vaitro'];
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_user_per where module = 'kaizen' and userid = $userid";
+  if (!empty($p = $db->fetch($sql))) return $p['type'];
   return 0;
 }

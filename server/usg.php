@@ -43,15 +43,21 @@ function filter() {
 
 function gettemplist() {
   global $db, $data;
+  $userid = checkuserid();
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
-  else if (!empty($data->chonnhanvien)) {
-    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  else if (!empty($data->docs)) {
+    $xtra []= " a.userid in ($docs) ";
   }
+  $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
+  $db->query($sql);
   if (!empty($data->time)) {
     $data->time = isodatetotime($data->time) + 60 * 60 * 24 - 1;
     $xtra []= " a.time < $data->time ";
@@ -105,14 +111,27 @@ function tempdatacover($data) {
 function getlist($today = false) {
   global $db, $data, $userid;
 
-  $sql = "select * from pet_". PREFIX ."_user_per where userid = $data->idnguoidung and module = 'vaccine'";
+  $userid = checkuserid();
+  $sql = "select * from pet_". PREFIX ."_user_per where userid = $userid and module = 'vaccine'";
   $role = $db->fetch($sql);
+  $docs = implode(',', $data->docs);
 
   $xtra = array();
-  if ($role['type'] < 2) $xtra []= " a.userid = $data->idnguoidung ";
-  else if (!empty($data->chonnhanvien)) {
-    $xtra []= " a.userid in (". implode(',', $data->chonnhanvien) .") ";
+  if ($role['type'] < 2) $xtra []= " a.userid = $userid ";
+  else if (!empty($data->docs)) {
+    $xtra []= " a.userid in ($docs) ";
+    if (!isset($data->{'docscover'})) $data->docscover = '';
+
+    $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
+    $db->query($sql);
+    $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
+    $db->query($sql);
   }
+
+  $sql = "update pet_". PREFIX ."_config set value = '$docs' where module = 'docs' and name = '$userid'";
+  $db->query($sql);
+  $sql = "update pet_". PREFIX ."_config set value = '$data->docscover' where module = 'docscover' and name = '$userid'";
+  $db->query($sql);
 
   if (count($xtra)) $xtra = "and".  implode(" and ", $xtra);
   else $xtra = "";
@@ -205,8 +224,9 @@ function insert() {
   
   $data->cometime = isodatetotime($data->cometime);
   $data->calltime = isodatetotime($data->calltime);
+  $userid = checkuserid();
 
-  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $data->idnguoidung, $data->cometime, $data->calltime, $data->calltime, $data->number, 3, '$data->note', ". time() .", 0)";
+  $sql = "insert into pet_". PREFIX ."_usg (customerid, userid, cometime, calltime, recall, number, status, note, time, called) values ($customerid, $userid, $data->cometime, $data->calltime, $data->calltime, $data->number, 3, '$data->note', ". time() .", 0)";
   $result['status'] = 1;
   $result['vid'] = $db->insertid($sql);
   $result['list'] = getlist();
@@ -424,6 +444,7 @@ function removeall() {
 function doneall() {
   global $data, $db, $result;
 
+  $userid = checkuserid();
   $time = time();
   foreach ($data->list as $id) {
     $sql = "select a.number, a.calltime, a.cometime, b.* from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_pet b on a.customerid = b.id where a.id = $id";
@@ -471,6 +492,8 @@ function confirm() {
 
   $sql = "select a.*, c.fullname as doctor, b.name, b.phone, b.address from pet_". PREFIX ."_usg a inner join pet_". PREFIX ."_users c on a.userid = c.userid inner join pet_". PREFIX ."_customer b on a.customerid = b.id where a.id = $data->id";
   $c = $db->fetch($sql);
+
+  $userid = checkuserid();
 
   $sql = "update pet_". PREFIX ."_usg set status = 3, utemp = 1, time = ". time() ." where id = $data->id";
   $db->query($sql);

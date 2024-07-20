@@ -3,7 +3,8 @@ function khoitao()
 {
   global $data, $db, $result;
 
-  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $data->idnguoidung and nopbai = 0 order by thoigian desc limit 1";
+  $idnhanvien = checkuserid();
+  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $idnhanvien and nopbai = 0 order by thoigian desc limit 1";
   if (empty($baithi = $db->fetch($sql)))
     $result['baithicuoi'] = 0;
   else
@@ -54,6 +55,7 @@ function danhsachdethi()
 {
   global $data, $db;
 
+  $userid = checkuserid();
   $sql = "select * from pet_tracnghiem_dethi where hienthi = 1 order by id desc";
   $danhsachdethi = $db->all($sql);
 
@@ -70,14 +72,15 @@ function batdauthi()
 {
   global $data, $db, $result;
 
+  $idnhanvien = checkuserid();
   $thoigian = time();
 
   // nộp tất cả bài chưa hoàn thành
-  $sql = "update pet_tracnghiem_baithi set nopbai = 1 where idnhanvien = $data->idnguoidung";
+  $sql = "update pet_tracnghiem_baithi set nopbai = 1 where idnhanvien = $idnhanvien";
   $db->query($sql);
 
   // thêm bài thi mới
-  $sql = "insert into pet_tracnghiem_baithi (idnhanvien, iddethi, thoigian) values($data->idnguoidung, $data->iddethi, $thoigian)";
+  $sql = "insert into pet_tracnghiem_baithi (idnhanvien, iddethi, thoigian) values($idnhanvien, $data->iddethi, $thoigian)";
   $idbaithi = $db->insertid($sql);
 
   // lấy danh sách câu hỏi từ đề thi
@@ -129,7 +132,7 @@ function batdauthi()
     }
   }
 
-  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $data->idnguoidung and nopbai = 0 order by thoigian desc limit 1";
+  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $idnhanvien and nopbai = 0 order by thoigian desc limit 1";
   if (empty($baithi = $db->fetch($sql)))
     $result['baithicuoi'] = 0;
   else
@@ -154,7 +157,7 @@ function thongkebaithi() {
   $sql = "select iddethi from pet_tracnghiem_baithi where thoigian between $batdau and $ketthuc group by iddethi";
   $danhsachdethi = $db->all($sql);
 
-  $sql = "select b.id, b.hoten from pet_nhanvien_phanquyen a inner join pet_nhanvien b on a.idnhanvien = b.id where a.chucnang = 'tracnghiem' and a.vaitro > 0 and a.idchinhanh = $data->idchinhanh order by a.idnhanvien desc";
+  $sql = "select b.userid, b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where a.module = 'tracnghiem' and a.type > 0 order by a.userid desc";
   $danhsachnhanvien = $db->all($sql);
 
   foreach ($danhsachdethi as $thutu => $dethi) {
@@ -166,14 +169,14 @@ function thongkebaithi() {
     
     foreach ($danhsachnhanvien as $nhanvien) {
       $danhsachdethi[$thutu]["nhanvien"][] = [
-        "idnhanvien" => $nhanvien["id"],
-        "nhanvien" => $nhanvien["hoten"],
+        "idnhanvien" => $nhanvien["userid"],
+        "nhanvien" => $nhanvien["fullname"],
         "idbaithi" => 0,
         "diemthi" => "-",
         "ngaythi" => "-",
         "trangthai" => 0, // 0: chưa thi, 1: rớt, 2: đậu
       ];
-      $sql = "select * from pet_tracnghiem_baithi where (thoigian between $batdau and $ketthuc) and idnhanvien = $nhanvien[id] order by thoigian desc";
+      $sql = "select * from pet_tracnghiem_baithi where (thoigian between $batdau and $ketthuc) and idnhanvien = $nhanvien[userid] order by thoigian desc";
       
       if (!empty($baithi = $db->fetch($sql))) {
         $tongcau = 0;
@@ -269,7 +272,9 @@ function xacnhanthitiep()
 {
   global $data, $db, $result;
 
-  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $data->idnguoidung order by thoigian desc limit 1";
+  $idnhanvien = checkuserid();
+
+  $sql = "select * from pet_tracnghiem_baithi where idnhanvien = $idnhanvien order by thoigian desc limit 1";
   $baithi = $db->fetch($sql);
 
   $sql = "select * from pet_tracnghiem_bailam where idbaithi = $baithi[id] order by id asc";
@@ -324,10 +329,11 @@ function ketquathi()
 {
   global $data, $db, $result;
 
-  if ($data->idnguoidung == 1 || $data->idnguoidung == 5) {
-    $sql = "select a.*, hoten as nguoithi from pet_tracnghiem_baithi a inner join pet_nhanvien b on a.idnhanvien = b.id where nopbai = 1 order by a.id desc limit 10 offset " . ($data->trang - 1) * 10;
+  $idnhanvien = checkuserid();
+  if ($idnhanvien == 1 || $idnhanvien == 5) {
+    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_" . PREFIX . "_users b on a.idnhanvien = b.userid where nopbai = 1 order by id desc limit 10 offset " . ($data->trang - 1) * 10;
   } else {
-    $sql = "select a.*, hoten as nguoithi from pet_tracnghiem_baithi a inner join pet_nhanvien b on a.idnhanvien = b.id where idnhanvien = $data->idnguoidung and nopbai = 1 order by a.id desc limit 10 offset " . ($data->trang - 1) * 10;
+    $sql = "select a.*, fullname as nguoithi from pet_tracnghiem_baithi a inner join pet_" . PREFIX . "_users b on a.idnhanvien = b.userid where idnhanvien = $idnhanvien and nopbai = 1 order by id desc limit 10 offset " . ($data->trang - 1) * 10;
   }
   $danhsachbaithi = $db->all($sql);
 
@@ -359,7 +365,8 @@ function chitiet()
 {
   global $data, $db, $result;
 
-  $sql = "select * from pet_tracnghiem_baithi where nopbai = 1 and idnhanvien = $data->idnguoidung and idchuyenmuc = $data->idchuyenmuc order by id desc";
+  $idnhanvien = checkuserid();
+  $sql = "select * from pet_tracnghiem_baithi where nopbai = 1 and idnhanvien = $idnhanvien and idchuyenmuc = $data->idchuyenmuc order by id desc";
   $danhsachbaithi = $db->all($sql);
 
   foreach ($danhsachbaithi as $thutu => $baithi) {
