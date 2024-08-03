@@ -11,7 +11,7 @@ function khoitao() {
 function laycauhinh() {
   global $data, $db, $result;
   
-  $cauhinh = ["chuongtrinh" => "", "luotdatlich" => 0];
+  $cauhinh = ["chuongtrinh" => "", "luotdatlich" => 0, "chuongtrinhdichvu" => "", "thoigian" => ""];
   $sql = "select * from pet_". PREFIX ."_config where name = 'luotdatlich' and module = 'khachhang'";
   if (!empty($luotdatlich = $db->fetch($sql))) {
     $cauhinh["luotdatlich"] = $luotdatlich["value"];
@@ -29,6 +29,12 @@ function laycauhinh() {
     $cauhinh["chuongtrinhdichvu"] = $chuongtrinh["value"];
   }
   else $cauhinh["chuongtrinhdichvu"] = "";
+
+	$sql = "select * from pet_". PREFIX ."_config where module = 'datlichdichvu' and name = 'thoigian'";
+  if (!empty($chuongtrinh = $db->fetch($sql))) {
+    $cauhinh["thoigian"] = $chuongtrinh["value"];
+  }
+  else $cauhinh["thoigian"] = date("Y-m-d");
 
   return $cauhinh;
 }
@@ -466,7 +472,7 @@ function khoitaotintuc() {
 function laydichvu() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_dichvu where loai = 0 order by id desc";
+  $sql = "select * from pet_dichvu where loai = 0 order by id desc";
   $danhsachdichvu = $db->all($sql);
 
   foreach ($danhsachdichvu as $thutu => $dichvu) {
@@ -479,7 +485,7 @@ function laydichvu() {
 function laythietbi() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_dichvu where loai = 1 order by id desc";
+  $sql = "select * from pet_dichvu where loai = 1 order by id desc";
   $danhsachdichvu = $db->all($sql);
 
   foreach ($danhsachdichvu as $thutu => $dichvu) {
@@ -493,10 +499,10 @@ function themdichvu() {
   global $data, $db, $result;
 
   if ($data->id) {
-    $sql = "update pet_". PREFIX ."_dichvu set tendichvu = '$data->tendichvu', noidung = '$data->noidung', loai = '$data->loai', hinhanh = '$data->image' where id = $data->id"; 
+    $sql = "update pet_dichvu set tendichvu = '$data->tendichvu', noidung = '$data->noidung', loai = '$data->loai', hinhanh = '$data->image' where id = $data->id"; 
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_dichvu (tendichvu, noidung, loai, hinhanh) values('$data->tendichvu', '$data->noidung', '$data->loai', '$data->image')";
+    $sql = "insert into pet_dichvu (tendichvu, noidung, loai, hinhanh) values('$data->tendichvu', '$data->noidung', '$data->loai', '$data->image')";
   }
   $db->query($sql);
 
@@ -509,7 +515,7 @@ function themdichvu() {
 function xoadichvu() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_dichvu where id = $data->id";
+  $sql = "delete from pet_dichvu where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -521,7 +527,7 @@ function xoadichvu() {
 function laydaotao() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_daotao order by id desc";
+  $sql = "select * from pet_daotao order by id desc";
   return $db->all($sql);
 }
 
@@ -529,10 +535,10 @@ function themdaotao() {
   global $data, $db, $result;
 
   if ($data->id) {
-    $sql = "update pet_". PREFIX ."_daotao set hocvien = '$data->hocvien', khoahoc = '$data->khoahoc', hinhanh = '$data->image' where id = $data->id"; 
+    $sql = "update pet_daotao set hocvien = '$data->hocvien', khoahoc = '$data->khoahoc', hinhanh = '$data->image' where id = $data->id"; 
   }
   else {
-    $sql = "insert into pet_". PREFIX ."_daotao (hocvien, khoahoc, hinhanh) values('$data->hocvien', '$data->khoahoc', '$data->image')";
+    $sql = "insert into pet_daotao (hocvien, khoahoc, hinhanh) values('$data->hocvien', '$data->khoahoc', '$data->image')";
   }
   $db->query($sql);
 
@@ -544,7 +550,7 @@ function themdaotao() {
 function xoadaotao() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_daotao where id = $data->id";
+  $sql = "delete from pet_daotao where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;
@@ -555,7 +561,7 @@ function xoadaotao() {
 function laytintuc() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_chuongtrinh order by id desc";
+  $sql = "select * from pet_chuongtrinh order by id desc";
   return $db->all($sql);
 }
 
@@ -563,11 +569,11 @@ function themtintuc() {
   global $data, $db, $result;
 
   if ($data->id) {
-    $sql = "update pet_". PREFIX ."_chuongtrinh set tieude = '$data->tieude', mota = '$data->mota', noidung = '$data->noidung', hinhanh = '$data->image' where id = $data->id"; 
+    $sql = "update pet_chuongtrinh set tieude = '$data->tieude', mota = '$data->mota', noidung = '$data->noidung', hinhanh = '$data->image' where id = $data->id"; 
   }
   else {
     $thoigian = time();
-    $sql = "insert into pet_". PREFIX ."_chuongtrinh (tieude, mota, noidung, hinhanh, thoigian) values('$data->tieude', '$data->mota', '$data->noidung', '$data->image', $thoigian)";
+    $sql = "insert into pet_chuongtrinh (tieude, mota, noidung, hinhanh, thoigian) values('$data->tieude', '$data->mota', '$data->noidung', '$data->image', $thoigian)";
   }
   $db->query($sql);
 
@@ -579,7 +585,7 @@ function themtintuc() {
 function xoatintuc() {
   global $data, $db, $result;
 
-  $sql = "delete from pet_". PREFIX ."_daotao where id = $data->id";
+  $sql = "delete from pet_daotao where id = $data->id";
   $db->query($sql);
 
   $result['status'] = 1;

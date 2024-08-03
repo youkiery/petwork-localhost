@@ -76,8 +76,10 @@ function capnhat() {
  
   $data->image = implode(",", $data->image);
   if (empty($data->id)) {
-    $sql = "insert into pet_". PREFIX ."_hanghoa (tenhang, loaihang, giaban, gianhap, gioihan soluong, hinhanh, gioithieu, donvi) values('', '$data->tenhang', 0, '$data->giaban', 0, $data->gioihan, 0, '$data->image', '$data->gioithieu', '$data->donvi')";
-    $data->id = $data->insertid($sql);
+    if (count($data->chuyendoi)) $mahang = $data->chuyendoi[0]->mahang;
+    else $mahang = "";
+    $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, gioihan, soluong, hinhanh, gioithieu, donvi) values('$mahang', '$data->tenhang', 0, '$data->giaban', 0, $data->gioihan, 0, '$data->image', '$data->gioithieu', '$data->donvi')";
+    $data->id = $db->insertid($sql);
   }
   else {
     $sql = "update pet_". PREFIX ."_hanghoa set tenhang = '$data->tenhang', giaban = '$data->giaban', hinhanh = '$data->image', gioithieu = '$data->gioithieu', donvi = '$data->donvi' where id = $data->id";
@@ -191,50 +193,78 @@ function excel() {
 
   if (!$dulieubenhvien || !$dulieukho) $result["messenger"] = "Định dạng file không chứa các trường 'Mã hàng', 'Tên hàng', 'Giá bán', 'Bệnh viện', 'Tồn kho'";
   else {
-    // gộp số lượng 2 bên
-    // chuyển đổi số lượng nếu cần
-
-    // 0 => 'Mã hàng'
-    // 1 => 'Tên hàng'
-    // 2 => 'Giá bán'
-    // 3 => 'Tồn kho'
-    // 4 => 'Đơn vị'
-    // 5 => 'Hình ảnh'
-    $sql = "select * from pet_". PREFIX ."_hanghoathanhphan";
-    $danhsachchuyendoi = $db->all($sql);
-    $danhsachmahang = [];
-    $danhsachhanghoa = [];
-
-    foreach ($danhsachchuyendoi as $chuyendoi) {
-      if (empty($danhsachmahang[$chuyendoi["mahang"]])) $danhsachmahang[$chuyendoi["mahang"]] = [];
-      $danhsachmahang[$chuyendoi["mahang"]] []= ["idhang" => $chuyendoi["idhang"], "chuyendoi" => $chuyendoi["chuyendoi"]];
-    }
-
+    // 0 => 'Mã hàng',  1 => 'Tên hàng',  2 => 'Giá bán',  3 => 'Tồn kho',  4 => 'Đơn vị',  5 => 'Hình ảnh'
     $danhsachdulieu = array_merge($dulieubenhvien, $dulieukho);
-
-    foreach ($danhsachdulieu as $hanghoa) {
-      if (!empty($danhsachmahang[$hanghoa[0]])) {
-        foreach ($danhsachmahang[$hanghoa[0]] as $chuyendoi) {
-          if (empty($danhsachhanghoa[$chuyendoi["idhang"]])) $danhsachhanghoa[$chuyendoi["idhang"]] = ["soluong" => 0, "giaban" => 0];
-          if ($danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] < $hanghoa[2]) $danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] = $hanghoa[2];
-          $danhsachhanghoa[$chuyendoi["idhang"]]["soluong"] += $hanghoa[3] * $chuyendoi["chuyendoi"];
-        }
-      }
+    $dulieuhanghoa = [];
+    foreach ($danhsachdulieu as $dulieu) {
+      if (empty($dulieuhanghoa[$dulieu[0]])) $dulieuhanghoa[$dulieu[0]] = [
+        "soluong" => 0,
+        "tenhang" => $dulieu[1],
+        "giaban" => $dulieu[2],
+        "donvi" => $dulieu[4],
+        "hinhanh" => $dulieu[5]
+      ];
+      $dulieuhanghoa[$dulieu[0]]["soluong"] += $dulieu[3];
     }
-    
-    $thoigian = time();
-    foreach ($danhsachhanghoa as $idhang => $thongtin) {
-      // lấy dữ liệu hàng hoá, kiểm tra nếu thay đổi giá bán thì thêm vào bản
-      // cập nhật giá bán, số lượng
-      $sql = "select * from pet_". PREFIX ."_hanghoa where id = $idhang";
-      $dulieuhanghoa = $db->fetch($sql);
-      if ($dulieuhanghoa['giaban'] != $thongtin["giaban"]) {
-        $sql = "insert into pet_". PREFIX ."_hanghoathaydoi (idhang, giadau, giacuoi, thoigian) values($idhang, $dulieuhanghoa[giaban], $thongtin[giaban], $thoigian)";
+
+    foreach ($dulieuhanghoa as $mahang => $dulieu) {
+      $sql = "select * from pet_". PREFIX ."_hanghoa where mahang = '$mahang'";
+      if (empty($hanghoa = $db->fetch($sql))) {
+        $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, gioihan, soluong, hinhanh, gioithieu, donvi) values('$mahang', '$dulieu[tenhang]', 0, $dulieu[giaban], 0, $dulieu[soluong], '$dulieu[hinhanh]')
+        ";
+        $idhang = $db->query($sql);
+        $sql = "insert into pet_". PREFIX ."_hanghoathanhphan (idhang, mahang, chuyendoi) values($idhang, '$mahang', 1)
+        ";
         $db->query($sql);
       }
-      $sql = "update pet_". PREFIX ."_hanghoa set soluong = $thongtin[soluong], giaban = $thongtin[giaban] where id = $idhang";
-      $db->query($sql);
+      else {
+        $sql = "select * from pet_". PREFIX ."_hanghoathanhphan where idhang = $hanghoa[id]";
+        $thanhphan = $db->all($sql);
+
+        $soluong = 0;
+        foreach ($thanhphan as $dulieuthanhphan) {
+          $soluong += $dulieuhanghoa[$dulieuthanhphan["mahang"]]["soluong"] * $dulieuthanhphan["chuyendoi"];
+        }
+
+        $sql = "update pet_". PREFIX ."_hanghoa set giaban = $dulieu[giaban], soluong = $soluong where id = $hanghoa[id]";
+        $db->query($sql);
+      }
     }
+
+    // $sql = "select * from pet_". PREFIX ."_hanghoathanhphan";
+    // $danhsachchuyendoi = $db->all($sql);
+    // $danhsachmahang = [];
+    // $danhsachhanghoa = [];
+
+    // foreach ($danhsachchuyendoi as $chuyendoi) {
+    //   if (empty($danhsachmahang[$chuyendoi["mahang"]])) $danhsachmahang[$chuyendoi["mahang"]] = [];
+    //   $danhsachmahang[$chuyendoi["mahang"]] []= ["idhang" => $chuyendoi["idhang"], "chuyendoi" => $chuyendoi["chuyendoi"]];
+    // }
+
+
+    // foreach ($danhsachdulieu as $hanghoa) {
+    //   if (!empty($danhsachmahang[$hanghoa[0]])) {
+    //     foreach ($danhsachmahang[$hanghoa[0]] as $chuyendoi) {
+    //       if (empty($danhsachhanghoa[$chuyendoi["idhang"]])) $danhsachhanghoa[$chuyendoi["idhang"]] = ["soluong" => 0, "giaban" => 0];
+    //       if ($danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] < $hanghoa[2]) $danhsachhanghoa[$chuyendoi["idhang"]]["giaban"] = $hanghoa[2];
+    //       $danhsachhanghoa[$chuyendoi["idhang"]]["soluong"] += $hanghoa[3] * $chuyendoi["chuyendoi"];
+    //     }
+    //   }
+    // }
+    
+    // $thoigian = time();
+    // foreach ($danhsachhanghoa as $idhang => $thongtin) {
+    //   // lấy dữ liệu hàng hoá, kiểm tra nếu thay đổi giá bán thì thêm vào bản
+    //   // cập nhật giá bán, số lượng
+    //   $sql = "select * from pet_". PREFIX ."_hanghoa where id = $idhang";
+    //   $dulieuhanghoa = $db->fetch($sql);
+    //   if ($dulieuhanghoa['giaban'] != $thongtin["giaban"]) {
+    //     $sql = "insert into pet_". PREFIX ."_hanghoathaydoi (idhang, giadau, giacuoi, thoigian) values($idhang, $dulieuhanghoa[giaban], $thongtin[giaban], $thoigian)";
+    //     $db->query($sql);
+    //   }
+    //   $sql = "update pet_". PREFIX ."_hanghoa set soluong = $thongtin[soluong], giaban = $thongtin[giaban] where id = $idhang";
+    //   $db->query($sql);
+    // }
   
     $result['status'] = 1;
     $result['messenger'] = "Đã cập nhật số lượng kho";
