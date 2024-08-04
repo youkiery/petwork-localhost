@@ -32,9 +32,15 @@ function laycauhinh() {
 
 	$sql = "select * from pet_". PREFIX ."_config where module = 'datlichdichvu' and name = 'thoigian'";
   if (!empty($chuongtrinh = $db->fetch($sql))) {
-    $cauhinh["thoigian"] = $chuongtrinh["value"];
+    $cauhinh["thoigian"] = date("Y-m-d", $chuongtrinh["value"]);
   }
   else $cauhinh["thoigian"] = date("Y-m-d");
+
+	$sql = "select * from pet_". PREFIX ."_config where module = 'datlichdichvu' and name = 'luotdat'";
+  if (!empty($chuongtrinh = $db->fetch($sql))) {
+    $cauhinh["luotdat"] = date("Y-m-d", $chuongtrinh["value"]);
+  }
+  else $cauhinh["luotdat"] = date("Y-m-d");
 
   return $cauhinh;
 }
@@ -66,6 +72,26 @@ function luucauhinh() {
   }
   else {
     $sql = "update pet_". PREFIX ."_config set value = '$data->chuongtrinhdichvu' where id = $chuongtrinh[id]";
+  }
+  $db->query($sql);
+
+  $data->thoigian = isodatetotime($data->thoigian);
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'datlichdichvu' and module = 'thoigian'";
+  if (empty($chuongtrinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('datlichdichvu', 'thoigian', '$data->thoigian', 0)";
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = '$data->thoigian' where id = $chuongtrinh[id]";
+  }
+  $db->query($sql);
+
+  $sql = "select * from pet_". PREFIX ."_config where name = 'datlichdichvu' and module = 'luotdat'";
+  if (empty($chuongtrinh = $db->fetch($sql))) {
+    $sql = "insert into pet_". PREFIX ."_config (module, name, value, alt) values('datlichdichvu', 'luotdat', '$data->luotdat', 0)";
+  }
+  else {
+    $sql = "update pet_". PREFIX ."_config set value = '$data->luotdat' where id = $chuongtrinh[id]";
   }
   $db->query($sql);
 

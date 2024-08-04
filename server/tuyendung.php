@@ -2,7 +2,16 @@
 function khoitao() {
   global $data, $db, $result;
   
+  $cauhinh = ["thongbao" => [], "camon" => "", "phongvan" => "", "hopdong" => 0];
+  $sql = "select * from pet_cauhinh where tenbien = 'camontuyendung'";
+  if (!empty($camontuyendung = $db->fetch($sql))) $cauhinh["camon"] = $camontuyendung["giatri"];
+
+  $sql = "select * from pet_cauhinh where tenbien = 'thoigianhopdong'";
+  if (!empty($thoigianhopdong = $db->fetch($sql))) $cauhinh["hopdong"] = $thoigianhopdong["giatri"];
+
   $result['status'] = 1;
+  $result['tuyendung'] = danhsachcauhinhtuyendung();
+  $result['cauhinh'] = $cauhinh;  
   $result['danhsach'] = danhsachtuyendung();
   $result['chinhanh'] = danhsachchinhanh();
   return $result;
@@ -11,8 +20,14 @@ function khoitao() {
 function danhsachtuyendung() {
   global $data, $db, $result;
 
+  $xtra = [];
+  if ($data->chinhanh) $xtra []= "idchinhanh = ". ($data->chinhanh - 1);
+  if ($data->vitri) $xtra []= "idtuyendung = ". $data->vitri;
+  if (count($xtra)) $xtra = "and ". implode(", ", $xtra);
+  else $xtra = "";
+
   $danhsach = [[], [], [], []];
-  $sql = "select * from pet_tuyendung_hoso where trangthai < 4 order by id desc";
+  $sql = "select * from pet_tuyendung_hoso where trangthai < 4 $xtra order by id asc";
   $danhsachtuyendung = $db->all($sql);
 
   $sql = "select * from pet_cauhinh where tenbien = 'thoigianhopdong'";
@@ -90,22 +105,6 @@ function danhsachchinhanh() {
 
   $sql = "select * from pet_chinhanh where tiento <> '' order by id";
   return $db->all($sql);
-}
-
-function khoitaocauhinh() {
-  global $data, $db, $result;
-  
-  $cauhinh = ["thongbao" => [], "camon" => "", "phongvan" => "", "hopdong" => 0];
-  $sql = "select * from pet_cauhinh where tenbien = 'camontuyendung'";
-  if (!empty($camontuyendung = $db->fetch($sql))) $cauhinh["camon"] = $camontuyendung["giatri"];
-
-  $sql = "select * from pet_cauhinh where tenbien = 'thoigianhopdong'";
-  if (!empty($thoigianhopdong = $db->fetch($sql))) $cauhinh["hopdong"] = $thoigianhopdong["giatri"];
-
-  $result['status'] = 1;
-  $result['danhsach'] = danhsachcauhinhtuyendung();
-  $result['cauhinh'] = $cauhinh;
-  return $result;
 }
 
 function danhsachcauhinhtuyendung() {
@@ -276,5 +275,31 @@ function xoahoso() {
 
   $result['status'] = 1;
   $result['danhsach'] = danhsachtuyendung();
+  return $result;
+}
+
+function nophoso() {
+	global $result, $db, $data, $tiento;
+
+	$dulieu = $data;
+	if ($dulieu->id) {
+		$sql = "update pet_tuyendung_hoso set hoten = '$dulieu->hoten', dienthoai = '$dulieu->dienthoai', diachi = '$dulieu->diachi', ghichu = '$dulieu->ghichu', chinhanh = $dulieu->chinhanh where id = $data->id";
+		$db->query($sql);
+	}
+	else {
+		$thoigian = time();
+		$sql = "insert into pet_tuyendung_hoso (idtuyendung, token, hoten, diachi, dienthoai, thoigian, trangthai, chinhanh, ghichu) values($dulieu->idtuyendung, '$data->token', '$dulieu->hoten', '$dulieu->diachi', '$dulieu->dienthoai', $thoigian, 0, $dulieu->chinhanh, '$dulieu->ghichu')";
+		$dulieu->id = $db->insertid($sql);
+	}
+
+	$sql = "delete from pet_tuyendung_tailieu where idhoso = $dulieu->id";
+	$db->query($sql);
+
+	foreach ($dulieu->tailieu as $tailieu) {
+		$sql = "insert into pet_tuyendung_tailieu (idhoso, duongdan, ten) values($dulieu->id, '$tailieu->file', '$tailieu->ten')";
+		$db->query($sql);
+	}
+	$result["status"] = 1;
+	$result["danhsach"] = danhsachtuyendung();
   return $result;
 }
