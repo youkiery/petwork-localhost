@@ -55,7 +55,7 @@ function danhsachhanghoa() {
   global $data, $db, $result;
 
   $tukhoa = $data->tukhoa;
-  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$tukhoa%' order by id desc";
+  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$tukhoa%' and kichhoat = 1 order by id desc";
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $hanghoa) {
@@ -210,8 +210,7 @@ function excel() {
     foreach ($dulieuhanghoa as $mahang => $dulieu) {
       $sql = "select * from pet_". PREFIX ."_hanghoa where mahang = '$mahang'";
       if (empty($hanghoa = $db->fetch($sql))) {
-        $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, gioihan, soluong, hinhanh, gioithieu, donvi) values('$mahang', '$dulieu[tenhang]', 0, $dulieu[giaban], 0, $dulieu[soluong], '$dulieu[hinhanh]')
-        ";
+        $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, gioihan, soluong, hinhanh, gioithieu, donvi) values('$mahang', '$dulieu[tenhang]', 0, $dulieu[giaban], 0, 0, $dulieu[soluong], '$dulieu[hinhanh]', '', '$dulieu[donvi]')";
         $idhang = $db->query($sql);
         $sql = "insert into pet_". PREFIX ."_hanghoathanhphan (idhang, mahang, chuyendoi) values($idhang, '$mahang', 1)
         ";

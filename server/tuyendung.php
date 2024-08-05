@@ -21,10 +21,13 @@ function danhsachtuyendung() {
   global $data, $db, $result;
 
   $xtra = [];
-  if ($data->chinhanh) $xtra []= "idchinhanh = ". ($data->chinhanh - 1);
+  if ($data->chinhanh) $xtra []= "chinhanh = ". $data->chinhanh;
   if ($data->vitri) $xtra []= "idtuyendung = ". $data->vitri;
   if (count($xtra)) $xtra = "and ". implode(", ", $xtra);
   else $xtra = "";
+
+  $sql = "select * from pet_chinhanh where tiento <> ''";
+  $dulieuchinhanh = $db->obj($sql, "id", "tenchinhanh");
 
   $danhsach = [[], [], [], []];
   $sql = "select * from pet_tuyendung_hoso where trangthai < 4 $xtra order by id asc";
@@ -37,6 +40,7 @@ function danhsachtuyendung() {
 
   foreach ($danhsachtuyendung as $thutu => $tuyendung) {
     $danhsachtuyendung[$thutu]["hethopdong"] = 0;
+    $danhsachtuyendung[$thutu]["chinhanh"] = $dulieuchinhanh[$tuyendung["chinhanh"]];
 
     $sql = "select * from pet_tuyendung where id = $tuyendung[idtuyendung]";
     $dulieutuyendung = $db->fetch($sql);

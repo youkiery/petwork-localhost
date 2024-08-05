@@ -29,7 +29,7 @@ function khoitaohanghoa() {
 function danhsachhanghoa() {
   global $data, $db, $result;
 
-  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$data->tukhoa%' order by id desc limit 10 offset ". ($data->trang - 1) * 10;
+  $sql = "select * from pet_". PREFIX ."_hanghoa where tenhang like '%$data->tukhoa%' and kichhoat = 1 order by id desc limit 10 offset ". ($data->trang - 1) * 10;
   $danhsach = $db->all($sql);
 
   foreach ($danhsach as $thutu => $hanghoa) {

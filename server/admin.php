@@ -401,7 +401,7 @@ function getList() {
     'voucher' => 0,
   ];
 
-  $sql = "select name, username, fullname, userid, idvantay, placeid, birthday, photo, zalouid from pet_". PREFIX ."_users where active = 1";
+  $sql = "select name, username, fullname, userid, idvantay, faceid, placeid, birthday, photo, zalouid from pet_". PREFIX ."_users where active = 1";
   $list = $db->all($sql);
   
   foreach ($list as $index => $row) {
@@ -463,7 +463,7 @@ function signup() {
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, faceid, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->faceid, '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -475,14 +475,15 @@ function signup() {
 function updateuser() {
   global $data, $db, $result;
   
-  $password = $data->password;
+  if (strlen($data->password)) $xtra = ", password = '". $crypt->hash_password($data->password) ."', ";
+  else $xtra = ",";
 
   include_once(DIR . '/include/Encryption.php');
   $sitekey = 'e3e052c73ae5aa678141d0b3084b9da4';
   $crypt = new NukeViet\Core\Encryption($sitekey);
   $birthday = isodatetotime($data->birthday);
   
-  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image', password = '". $crypt->hash_password($data->password) ."', birthday = $birthday where userid = $data->idnhanvien";
+  $sql = "update pet_". PREFIX ."_users set username = '$data->username', idvantay = '$data->idvantay', faceid = '$data->faceid', name = '$data->fullname', fullname = '$data->fullname', photo = '$data->image' $xtra birthday = $birthday where userid = $data->idnhanvien";
   $userid = $db->insertid($sql);
     
   $result['status'] = 1;
