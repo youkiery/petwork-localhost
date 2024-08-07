@@ -20,9 +20,10 @@ function khoitao() {
 function danhsachtuyendung() {
   global $data, $db, $result;
 
+  $loc = $data->loc;
   $xtra = [];
-  if ($data->chinhanh) $xtra []= "chinhanh = ". $data->chinhanh;
-  if ($data->vitri) $xtra []= "idtuyendung = ". $data->vitri;
+  if ($loc->chinhanh) $xtra []= "chinhanh = ". $loc->chinhanh;
+  if ($loc->vitri) $xtra []= "idtuyendung = ". $loc->vitri;
   if (count($xtra)) $xtra = "and ". implode(", ", $xtra);
   else $xtra = "";
 
@@ -196,6 +197,17 @@ function hopdong() {
   return $result;
 }
 
+function choduyet() {
+  global $data, $db, $result;
+
+  $sql = "update pet_tuyendung_hoso set trangthai = 0 where id = $data->id";
+  $db->query($sql);
+  
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachtuyendung();
+  return $result;
+}
+
 function luutru() {
   global $data, $db, $result;
 
@@ -224,14 +236,16 @@ function chuyenvephongvan() {
 function kyhopdong() {
   global $data, $db, $result;
 
+  $danhsach = [0 => "hợp đồng", "cam kết nội quy", "cam kết đào tạo"];
   if ($data->idnhanvien) {
     $thoigian = isodatetotime($data->thoigian);
     $sql = "update pet_tuyendung_hoso set thoigian = $thoigian where id = $data->id";
     $db->query($sql);
 
-    foreach ($data->hinhanh as $duongdan) {
+    foreach ($danhsach as $thutu => $ten) {
       $nam = date("Y");
-      $sql = "insert into pet_tuyendung_tailieu (idhoso, duongdan, ten, loai) values($data->id, '$duongdan', 'Hợp đồng $nam', 1)";
+      $duongdan = $data->tailieu[$thutu];
+      $sql = "insert into pet_tuyendung_tailieu (idhoso, duongdan, ten, loai) values($data->id, '$duongdan', '$ten $nam', 1)";
       $db->query($sql);
     }
   }
@@ -251,15 +265,15 @@ function kyhopdong() {
       $time = time();
       $sql = "insert into pet_". $chinhanh["tiento"] ."_users (username, idvantay, name, fullname, password, photo, regdate, birthday, active) values ('$data->taikhoan', 0, '$data->hoten', '$data->hoten', '". $crypt->hash_password($data->matkhau) ."', '', $time, $birthday, 1)";
       $idnhanvien = $db->insertid($sql);
-      // $idnhanvien = 5;
   
       $thoigian = isodatetotime($data->thoigian);
       $sql = "update pet_tuyendung_hoso set trangthai = 3, idnhanvien = $idnhanvien, idchinhanh = $data->idchinhanh, thoigian = $thoigian where id = $data->id";
       $db->query($sql);
   
-      foreach ($data->hinhanh as $duongdan) {
-        $nam = date("m/Y");
-        $sql = "insert into pet_tuyendung_tailieu (idhoso, duongdan, ten, loai) values($data->id, '$duongdan', 'Hợp đồng $nam', 1)";
+      foreach ($danhsach as $thutu => $ten) {
+        $nam = date("Y");
+        $duongdan = $data->tailieu[$thutu];
+        $sql = "insert into pet_tuyendung_tailieu (idhoso, duongdan, ten, loai) values($data->id, '$duongdan', '$ten $nam', 1)";
         $db->query($sql);
       }
       
