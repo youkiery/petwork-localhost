@@ -47,7 +47,7 @@ else {
     if ($data->type !== 'user') include_once(ROOTDIR. "/user.php");
   }
 
-  $version = 191;
+  $version = 195;
   if (isset($data->version) && $data->version != $version) {
     $result['outdate'] = true;
     $result['link'] = $version;

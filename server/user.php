@@ -259,6 +259,7 @@ function permission($userid, $tiento) {
     'luong' => 0,
     'accounting' => 0,
     'vattu' => 0,
+    'giamsat' => 0,
     'donhang' => 0,
     'tuyendung' => 0,
     'xetnghiem' => 0,

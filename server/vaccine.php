@@ -570,7 +570,9 @@ function excel() {
     'Ghi chú' => '', // 5
     'Tên hàng' => '', // 6
     'Số lượng' => '', // 7
-    'Thành tiền' => '' // 8
+    'Thành tiền' => '', // 8
+    'Mã hóa đơn' => '', // 9
+    'Khách cần trả' => '' // 10
   );
 
   for ($j = 0; $j <= $x[$highestColumn]; $j ++) {
@@ -594,6 +596,7 @@ function excel() {
     $res['total'] ++;
     $row[4] = chuyenthoigian($row[4]);
     kiemtraspa($row, $danhsachspa);
+    kiemtrahoadon($row);
     if (empty($row[2])) { }
     else {
       kiemtrakhachvip($row, $danhsachspa);
@@ -610,6 +613,30 @@ function excel() {
   $result['messenger'] = "Đã chuyển dữ liệu Excel thành phiếu nhắc";
   $result['data'] = $res;
   return $result;
+}
+
+function kiemtrahoadon($dulieu) {
+  global $db;
+
+  // 'Mã hàng' => '', // 0
+  // 'Người bán' => '', // 1
+  // 'Điện thoại' => '', // 2
+  // 'Tên khách hàng' => '', // 3
+  // 'Thời gian' => '', // 4 01/10/2021 18:58:47
+  // 'Ghi chú' => '', // 5
+  // 'Tên hàng' => '', // 6
+  // 'Số lượng' => '', // 7
+  // 'Thành tiền' => '' // 8
+  // 'Mã hóa đơn' => '' // 9
+  // 'Khách cần trả' => '' // 10
+
+  // nếu không có hóa đơn thì thêm vào
+  $sql = "select * from hanet_hoadon where mahoadon = '$dulieu[9]'";
+  if (empty($db->fetch($sql))) {
+    $thoigian = chuyendoithoigian($dulieu[4]);
+    $sql = "insert into hanet_hoadon (mahoadon, khachhang, dienthoai, thanhtoan, thoigian) values('$dulieu[9]', '$dulieu[3]', '$dulieu[2]', '$dulieu[10]', $thoigian)";
+    $db->query($sql);
+  }
 }
 
 function kiemtradatlich($dienthoai) {
@@ -756,7 +783,7 @@ function kiemtravaccine($dulieu, $dulieuvaccine, $danhsachloaitru, $danhsachbacs
                 
         if ($db->query($sql)) {
           // nếu có mũi tiêm cùng ngày nhưng khác ngày nhắc thì đánh dấu chỉ nhắc 1 lần
-          $sql = "update from pet_". PREFIX ."_vaccine set onetime = 1 where cometime = $ngayden and calltime <> $thongtin[ngaynhac]";
+          $sql = "update pet_". PREFIX ."_vaccine set onetime = 1 where cometime = $ngayden and calltime <> $thongtin[ngaynhac]";
           $db->query($sql);
 
           $res['vaccine'] ++;
