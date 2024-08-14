@@ -474,7 +474,7 @@ function signup() {
 }
 
 function updateuser() {
-  global $data, $db, $result;
+  global $data, $db, $result, $crypt;
   
   if (strlen($data->password)) $xtra = ", password = '". $crypt->hash_password($data->password) ."', ";
   else $xtra = ",";
@@ -983,12 +983,12 @@ function danhsachnhantin() {
   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   // nhắn tin tái khám
-  $sql = "select a.id, a.thoigianden as cometime, a.thoigian as calltime, a.idkhach as customerid, '' as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_dieutritaikham a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 2 and a.trangthai = 0 and b.kichhoat = 1 and (a.thoigian between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
-  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
+//   $sql = "select a.id, a.thoigianden as cometime, a.thoigian as calltime, a.idkhach as customerid, '' as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_dieutritaikham a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 2 and a.trangthai = 0 and b.kichhoat = 1 and (a.thoigian between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+//   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   // nhắn tin đặt lịch
-  $sql = "select a.id, a.thoigian as cometime, a.ngaydat as calltime, a.idkhachhang as customerid, ghichu as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 3 and a.trangthai = 0 and b.kichhoat = 1 and (a.ngaydat between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
-  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
+//   $sql = "select a.id, a.thoigian as cometime, a.ngaydat as calltime, a.idkhachhang as customerid, ghichu as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 3 and a.trangthai = 0 and b.kichhoat = 1 and (a.ngaydat between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+//   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
   $danhsach = [];

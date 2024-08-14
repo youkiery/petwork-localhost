@@ -107,23 +107,15 @@
   function kiemtradadangky() {
     global $data, $db, $result, $chotlich;
 
-    if ($chotlich == 1) {
-      $thoigian = isodatetotime($data->time);
-      $batdau = strtotime(date('Y/m/1', $thoigian));
-      $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-      $userid = checkuserid();
-      // từ $time lấy dữ liệu tháng này
-      $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
-      $danhsach = $db->all($sql);
+    $thoigian = isodatetotime($data->time);
+    $batdau = strtotime(date('Y/m/1', $thoigian));
+    $ketthuc = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+    $userid = checkuserid();
+    // từ $time lấy dữ liệu tháng này
+    $sql = "select * from pet_". PREFIX ."_row where user_id = $userid and (time between $batdau and $ketthuc) and type > 1";
+    $danhsach = $db->all($sql);
   
-      return 8 - count($danhsach);
-    }
-    else {
-      // $date = date('N', $data->time) - 1;
-      // $batdau = strtotime(date('Y/m/d', $data->time - $date * 60 * 60 * 24));
-      // $ketthuc = $batdau + 60 * 60 * 24 - 1;
-      return 14;
-    }
+    return count($danhsach);
   }
 
   function thongkedangky() {
@@ -289,20 +281,11 @@
     $ngaymai = strtotime(date('Y/m/d')) + 60 * 60 * 24 - 1;
 
     $thoigian = isodatetotime($data->time);
-    if ($chotlich == '1') {
-      $starttime = strtotime(date('Y/m/1', $thoigian));
-      $endtime = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
-      $daysofmonth = date('t', $thoigian);
-      $time = strtotime(date('Y/m/t'));
-    }
-    else {
-      // xem 
-      $date = date('N', $thoigian) - 1;
-      $starttime = strtotime(date('Y/m/d', $thoigian - $date * 60 * 60 * 24));
-      $endtime = $starttime + 60 * 60 * 24 - 1;
-      $daysofmonth = 7;
-      $time = strtotime(date('Y/m/d', time() + (7 - date('N')) * 60 * 60 * 24));
-    }
+    $starttime = strtotime(date('Y/m/1', $thoigian));
+    $endtime = strtotime(date('Y/m/t', $thoigian)) + 60 * 60 * 24 - 1;
+    $daysofmonth = date('t', $thoigian);
+    $time = strtotime(date('Y/m/t'));
+    $homnay = strtotime(date("Y/m/d"));
 
     $sql = "select b.fullname from pet_". PREFIX ."_user_per a inner join pet_". PREFIX ."_users b on a.userid = b.userid where module = 'manager' and type = 1";
     $danhsachngoaile = $db->arr($sql, 'fullname');
@@ -347,26 +330,18 @@
           'color' =>  'green',
         );
 
-        if ($ct <= $time) {
-          if ($ct >= $starttime && $j < 2) $temp['list'][$j]['color'] = 'green';
-          else $temp['list'][$j]['color'] = 'gray'; // nếu thời gian quá tuần, chặn đăng ký
+        // $homnay = hôm nay
+        // $ct = đầu ngày
+        // $starttime = đầu tháng
+
+        if ($ct > $homnay) {
           if (strpos($temp['list'][$j]['name'], $data->name) !== false) {
-            if ($ct >= $starttime && $j < 2) $temp['list'][$j]['color'] = 'orange'; // hiển thị đã đăng ký 
-            else $temp['list'][$j]['color'] = 'cyan'; // hiển thị đã đăng ký
+            $temp['list'][$j]['color'] = 'orange'; // hiển thị đã đăng ký 
           }
         } 
-        else if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'orange'; // nếu có tên người dùng, cho hủy đăng ký
         else {
-          // kiểm tra nếu nhân viên thuộc diện cá biệt, bỏ qua
-          if ($p['type'] == '0' && $j > 1) {
-            // số lượng nhân viên trừ nhân viên bán hàng
-            $nhanvientrubanhang = 0;
-            foreach ($nhanviendangky as $tennhanvien) {
-              if (in_array($tennhanvien, $danhsachngoaile) == false) $nhanvientrubanhang ++;
-            }
-
-            if ($cauhinh[date('N', $ct)]->gioihan <= $nhanvientrubanhang) $temp['list'][$j]['color'] = 'gray';
-          }
+          if (strpos($temp['list'][$j]['name'], $data->name) !== false) $temp['list'][$j]['color'] = 'blue'; // hiển thị đã đăng ký 
+          else $temp['list'][$j]['color'] = 'gray';
         }
       }
       $dat []= $temp;

@@ -1,7 +1,4 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 $thietbi = [1 => "20832", "20832", "20832", "20832", "20832"];
 
 function khoitao() {
@@ -16,10 +13,38 @@ function khoitao() {
     $data->idchinhanh = $chinhanh["id"];
   }
 
+  foreach ($danhsachchinhanh as $thutu => $chinhanh) {
+    $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$chinhanh[id]'";
+    if (empty($cauhinh = $db->fetch($sql))) $cauhinh = ["giatri" => ""];
+    $danhsachchinhanh[$thutu]["cauhinh"] = $cauhinh["giatri"];
+  }
+
   $result['status'] = 1;
   $result['danhsachgiamsat'] = danhsachgiamsat($data->idchinhanh);
   $result['danhsachchinhanh'] = $danhsachchinhanh;
   $result['chinhanh'] = $data->idchinhanh;
+  return $result;
+}
+
+function luucauhinh() {
+  global $data, $db, $result;
+  
+  foreach ($data->chinhanh as $chinhanh) {
+    $idchinhanh = $chinhanh->id;
+    $giatri = $chinhanh->cauhinh;
+    $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$idchinhanh'";
+    if (empty($cauhinh = $db->fetch($sql))) {
+      $sql = "insert into pet_cauhinh (tenbien, giatri) values('cauhinhgiamsat-$idchinhanh', '$giatri')";
+      $db->query($sql);
+    }
+    else {
+      $sql = "update pet_cauhinh set giatri = '$giatri' where tenbien = 'cauhinhgiamsat-$idchinhanh'";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  $result['messenger'] = "Đã lưu cấu hình";
   return $result;
 }
 
@@ -77,15 +102,17 @@ function danhsachgiamsat($idchinhanh) {
       $thoigiandau = $hoadon["thoigian"] - floor($danhsachkhachhang[$dau]["time"] / 1000);
       $thoigiancuoi = $hoadon["thoigian"] - floor($danhsachkhachhang[$cuoi]["time"] / 1000);
       if (($thoigiandau < 0 && $thoigiancuoi < 0) || ($thoigiandau * $thoigiancuoi <= 0)) {
-        if (abs($thoigiandau) < abs($thoigiancuoi)) $dasudung[$dau] = 1;
-        else $dasudung[$cuoi] = 1;
+        $thutusudung = $cuoi;
+        if (abs($thoigiandau) < abs($thoigiancuoi)) $thutusudung = $dau;
+        $danhsachkhachhang[$thutusudung]["lienket"] = $thutu;
+        $danhsachhoadon[$thutu]["lienket"] = $thutusudung;
         $kiemtra = true;
       }
       $dau ++;
       $cuoi ++;
     }
   }
-  
+
   $dulieu = [];
   foreach ($danhsachkhachhang as $thutu => $khachhang) {
     $thoigian = floor($khachhang["time"] / 1000);
@@ -96,8 +123,9 @@ function danhsachgiamsat($idchinhanh) {
     $checkin = [
       "avatar" => $khachhang["avatar"],
       "thoigiancheckin" => date("d/m/Y H:i", $thoigian),
+      "khachhangcheckin" => $khachhang["personName"],
       "thoigianhoadon" => (empty($hoadon) ? "" : date("d/m/Y H:i", $hoadon["thoigian"])),
-      "khachhang" => (empty($hoadon) ? "" : date("d/m/Y H:i", $hoadon["thoigian"])),
+      "khachhang" => (empty($hoadon) ? "" : $hoadon["khachhang"]),
     ];
 
     $dulieu []= $checkin;
