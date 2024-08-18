@@ -68,7 +68,7 @@ function danhsachdonhang() {
     $sql = "select a.*, b.tenhang from pet_". PREFIX ."_hanghoa_donhang_chitiet a inner join pet_". PREFIX ."_hanghoa b on a.idhang = b.id where a.iddonhang = $donhang[id]";
     $danhsachhanghoa = $db->all($sql);
     foreach ($danhsachhanghoa as $hanghoa) {
-      $chitietdonhang []= $hanghoa["soluong"] . " x ". $hanghoa["tenhang"] ." = ".  number_format($hanghoa["giaban"]) ."đ";
+      $chitietdonhang []= $hanghoa["soluong"] . " x ". $hanghoa["tenhang"] ." = ".  number_format($hanghoa["giaban"] * $hanghoa["soluong"]) ."đ";
     }
     $danhsachdonhang[$thutu]["hanghoa"] = $chitietdonhang;
     $danhsachdonhang[$thutu]["nhanvien"] = "Chưa chọn";
