@@ -55,13 +55,17 @@ function danhsachgiamsat($idchinhanh) {
   $ketthuc = $batdau + 60 * 60 * 24 - 1;
   $batdau2 = $batdau * 1000;
   $ketthuc2 = $ketthuc * 1000;
-  $idthietbi = $thietbi[$idchinhanh];
 
-  $sql = "select *, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and placeID = $idthietbi order by time";
+  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$idchinhanh'";
+  $thietbi = $db->fetch($sql);
+  if (empty($thietbi)) return [];
+  $idthietbi = $thietbi["giatri"];
+
+  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and placeID = $idthietbi order by time";
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
-  $sql = "select *, -1 as lienket from hanet_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
+  $sql = "select dienthoai, khachhang, thoigian, -1 as lienket from hanet_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
   $danhsachhoadon = $db->all($sql);
   $dasudung = [];
   $dau = 0;
