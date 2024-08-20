@@ -218,8 +218,11 @@ function dulieuthongke() {
 function kiemtrachamcong($faceid, $vao, $ra) {
   global $db;
 
+  $sql = "select * from pet_chinhanh where tiento = '$data->tiento'";
+  $chinhanh = $db->fetch($sql);
+
   $dulieu = ["vao" => 0, "ra" => 0, "chenhlech" => 0, "mau" => "gray"];
-  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$data->idchinhanh'";
+  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$chinhanh[id]'";
   $thietbi = $db->fetch($sql);
   if (empty($thietbi)) return $dulieu;
   $idthietbi = $thietbi["giatri"];
@@ -328,7 +331,10 @@ function dulieuchamcong() {
     "thoigianra" => ""
   ];
 
-  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$data->idchinhanh'";
+  $sql = "select * from pet_chinhanh where tiento = '$data->tiento'";
+  $chinhanh = $db->fetch($sql);
+
+  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$chinhanh[id]'";
   $thietbi = $db->fetch($sql);
   if (empty($thietbi)) return $dulieu;
   $idthietbi = $thietbi["giatri"];
@@ -367,8 +373,11 @@ function khoitaochamcong() {
   
   $daungay = isodatetotime($data->thoigian) * 1000;
   $cuoingay = ($daungay + 60 * 60 * 24 * 1000) - 1;
+
+  $sql = "select * from pet_chinhanh where tiento = '$data->tiento'";
+  $chinhanh = $db->fetch($sql);
   
-  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$data->idchinhanh'";
+  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$chinhanh[id]'";
   $thietbi = $db->fetch($sql);
   if (empty($thietbi)) return ["status" => 1, "danhsach" => [], "dulieu" => []];
   $idthietbi = $thietbi["giatri"];

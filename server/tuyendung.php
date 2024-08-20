@@ -2,7 +2,13 @@
 function khoitao() {
   global $data, $db, $result;
   
-  $cauhinh = ["thongbao" => [], "camon" => "", "phongvan" => "", "hopdong" => 0];
+  $cauhinh = ["thongbao" => [], "camon" => "", "phongvan" => "", "hopdong" => 0, "link" => [0 => "https://firebasestorage.googleapis.com/v0/b/bookshop-2ed35.appspot.com/o/storage%2Fdaklak%2Ftest%2FMAU%20H%C4%90%20LAO%20DONG.docx?alt=media&token=037ad2c3-296e-4a4e-a03f-21f6de73e2ec", "https://firebasestorage.googleapis.com/v0/b/bookshop-2ed35.appspot.com/o/storage%2Fdaklak%2Ftest%2FMAU%20CAM%20KET%20THUC%20HIEN%20NOI%20QUY.docx?alt=media&token=1d32f9dd-3dfe-4448-8c1a-118043197c72", "https://firebasestorage.googleapis.com/v0/b/bookshop-2ed35.appspot.com/o/storage%2Fdaklak%2Ftest%2FMAU%20H%C4%90%20LAO%20DONG.docx?alt=media&token=037ad2c3-296e-4a4e-a03f-21f6de73e2ec"]];
+
+  foreach ($cauhinh["link"] as $thutu => $link) {
+    $sql = "select * from pet_cauhinh where tenbien = 'linkhopdong-$thutu'";
+    if (!empty($linkhopdong = $db->fetch($sql))) $cauhinh["link"][$thutu] = $linkhopdong["giatri"];
+  }
+
   $sql = "select * from pet_cauhinh where tenbien = 'camontuyendung'";
   if (!empty($camontuyendung = $db->fetch($sql))) $cauhinh["camon"] = $camontuyendung["giatri"];
 
@@ -22,7 +28,7 @@ function danhsachtuyendung() {
 
   $loc = $data->loc;
   $xtra = [];
-  if ($loc->chinhanh) $xtra []= "chinhanh = ". $loc->chinhanh;
+  if ($loc->chinhanh) $xtra []= "idchinhanh = ". $loc->chinhanh;
   if ($loc->vitri) $xtra []= "idtuyendung = ". $loc->vitri;
   if (count($xtra)) $xtra = "and ". implode(", ", $xtra);
   else $xtra = "";
@@ -41,7 +47,7 @@ function danhsachtuyendung() {
 
   foreach ($danhsachtuyendung as $thutu => $tuyendung) {
     $danhsachtuyendung[$thutu]["hethopdong"] = 0;
-    $danhsachtuyendung[$thutu]["chinhanh"] = $dulieuchinhanh[$tuyendung["chinhanh"]];
+    $danhsachtuyendung[$thutu]["chinhanh"] = $dulieuchinhanh[$tuyendung["idchinhanh"]];
 
     $sql = "select * from pet_tuyendung where id = $tuyendung[idtuyendung]";
     $dulieutuyendung = $db->fetch($sql);
@@ -301,12 +307,12 @@ function nophoso() {
 
 	$dulieu = $data;
 	if ($dulieu->id) {
-		$sql = "update pet_tuyendung_hoso set hoten = '$dulieu->hoten', dienthoai = '$dulieu->dienthoai', diachi = '$dulieu->diachi', ghichu = '$dulieu->ghichu', chinhanh = $dulieu->chinhanh where id = $data->id";
+		$sql = "update pet_tuyendung_hoso set hoten = '$dulieu->hoten', dienthoai = '$dulieu->dienthoai', diachi = '$dulieu->diachi', ghichu = '$dulieu->ghichu', idchinhanh = $dulieu->chinhanh where id = $data->id";
 		$db->query($sql);
 	}
 	else {
 		$thoigian = time();
-		$sql = "insert into pet_tuyendung_hoso (idtuyendung, token, hoten, diachi, dienthoai, thoigian, trangthai, chinhanh, ghichu) values($dulieu->idtuyendung, '$data->token', '$dulieu->hoten', '$dulieu->diachi', '$dulieu->dienthoai', $thoigian, 0, $dulieu->chinhanh, '$dulieu->ghichu')";
+		$sql = "insert into pet_tuyendung_hoso (idtuyendung, token, hoten, diachi, dienthoai, thoigian, trangthai, idchinhanh, ghichu) values($dulieu->idtuyendung, '$data->token', '$dulieu->hoten', '$dulieu->diachi', '$dulieu->dienthoai', $thoigian, 0, $dulieu->chinhanh, '$dulieu->ghichu')";
 		$dulieu->id = $db->insertid($sql);
 	}
 
@@ -319,5 +325,23 @@ function nophoso() {
 	}
 	$result["status"] = 1;
 	$result["danhsach"] = danhsachtuyendung();
+  return $result;
+}
+
+function capnhathopdong() {
+	global $result, $db, $data, $tiento;
+
+  
+  $sql = "select * from pet_cauhinh where tenbien = 'linkhopdong-$data->hopdong'";
+  if (!empty($linkhopdong = $db->fetch($sql))) {
+    $sql = "update pet_cauhinh set giatri = '$data->url' set id = $linkhopdong[id]";
+  }
+  else {
+    $sql = "insert into pet_cauhinh (tenbien, giatri) values('linkhopdong-$data->hopdong', '$data->url')";
+  }
+  $db->query($sql);
+  
+	$result["status"] = 1;
+	$result["messenger"] = "Đã cập nhật file hợp đồng";
   return $result;
 }
