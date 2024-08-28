@@ -230,10 +230,10 @@ function kiemtrachamcong($faceid, $vao, $ra) {
   // kiểm tra xem nhân viên đó vào ra như thế nào, trả về thời gian lệch gần nhất
   $daungay = strtotime(date("Y/m/d", $vao)) * 1000;
   $cuoingay = $daungay * 24 * 24 * 60 * 1000 - 1;
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personType = 0 and personID = $faceid and (time between $daungay and $vao) order by time desc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personType = 0 and personID = $faceid and (time between $daungay and $vao) order by time desc limit 1";
   $chamvaotruoc = $db->fetch($sql);
 
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personType = 0 and personID = $faceid and (time between $vao and $ra) order by time asc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personType = 0 and personID = $faceid and (time between $vao and $ra) order by time asc limit 1";
   $chamvaosau = $db->fetch($sql);
 
   if (!empty($chamvaotruoc) && ($vao - $chamvaotruoc["time"]) < 60 * 60 * 1000) { // chấm vào trước 1 giờ mới hợp lệ
@@ -245,10 +245,10 @@ function kiemtrachamcong($faceid, $vao, $ra) {
   }
   else $dulieu["vao"] = 0;
 
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personType = 0 and personID = $faceid and (time between $vao and $ra) order by time desc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personType = 0 and personID = $faceid and (time between $vao and $ra) order by time desc limit 1";
   $chamratruoc = $db->fetch($sql);
 
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personType = 0 and personID = $faceid and (time between $ra and $cuoingay) order by time asc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personType = 0 and personID = $faceid and (time between $ra and $cuoingay) order by time asc limit 1";
   $chamrasau = $db->fetch($sql);
 
   if (!empty($chamrasau) && ($chamrasau["time"] - $ra) < 60 * 60 * 1000) { // chấm ra trước 1 giờ mới hợp lệ
@@ -342,7 +342,7 @@ function dulieuchamcong() {
   $sql = "select * from pet_". PREFIX ."_users where userid = $data->userid";
   $nhanvien = $db->fetch($sql);
 
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personId = $nhanvien[faceid] and (time between $daungay and $cuoingay) order by time desc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personId = $nhanvien[faceid] and (time between $daungay and $cuoingay) order by time desc limit 1";
   $chamcongcuoi = $db->fetch($sql);
 
   if (!empty($chamcongcuoi)) {
@@ -350,7 +350,7 @@ function dulieuchamcong() {
     $dulieu["thoigianra"] = date("H:i:s", floor($chamcongcuoi["time"] / 1000));
   }
 
-  $sql = "select * from hanet_khachhang where placeID = $idthietbi and personId = $nhanvien[faceid] and (time between $daungay and $cuoingay) order by time asc limit 1";
+  $sql = "select * from hanet_khachhang where deviceID = $idthietbi and personId = $nhanvien[faceid] and (time between $daungay and $cuoingay) order by time asc limit 1";
   $chamcongcuoi = $db->fetch($sql);
 
   if (!empty($chamcongcuoi)) {

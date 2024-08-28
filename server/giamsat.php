@@ -61,7 +61,7 @@ function danhsachgiamsat($idchinhanh) {
   if (empty($thietbi)) return [];
   $idthietbi = $thietbi["giatri"];
 
-  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and placeID = $idthietbi order by time";
+  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$idthietbi' order by time";
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
@@ -135,5 +135,12 @@ function danhsachgiamsat($idchinhanh) {
     $dulieu []= $checkin;
   }
 
+  usort($dulieu, "sosanh");
+
   return $dulieu;
+}
+
+
+function sosanh($a, $b) {
+  return $a["thoigiancheckin"] < $b["thoigiancheckin"];
 }
