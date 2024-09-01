@@ -1,6 +1,4 @@
 <?php
-$thietbi = [1 => "20832", "20832", "20832", "20832", "20832"];
-
 function khoitao() {
   global $data, $db, $result;
   
@@ -49,7 +47,7 @@ function luucauhinh() {
 }
 
 function danhsachgiamsat($idchinhanh) {
-  global $data, $db, $result, $thietbi;
+  global $data, $db, $result, $tiento;
 
   $batdau = strtotime($data->thoigian);
   $ketthuc = $batdau + 60 * 60 * 24 - 1;
@@ -65,7 +63,7 @@ function danhsachgiamsat($idchinhanh) {
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
-  $sql = "select dienthoai, khachhang, thoigian, -1 as lienket from hanet_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
+  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". PREFIX ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
   $danhsachhoadon = $db->all($sql);
   $dasudung = [];
   $dau = 0;
@@ -124,12 +122,24 @@ function danhsachgiamsat($idchinhanh) {
     if ($khachhang["lienket"] >= 0) {
       $hoadon = $danhsachhoadon[$khachhang["lienket"]];
     }
+    else {
+      $hoadon = [
+        "id" => "0",
+        "trangthai" => "0",
+        "khachhang" => "",
+        "dienthoai" => "",
+        "thoigian" => ""
+      ];
+    }
     $checkin = [
+      "id" => $hoadon["id"],
+      "trangthai" => $hoadon["trangthai"],
       "avatar" => $khachhang["avatar"],
       "thoigiancheckin" => date("d/m/Y H:i", $thoigian),
       "khachhangcheckin" => $khachhang["personName"],
-      "thoigianhoadon" => (empty($hoadon) ? "" : date("d/m/Y H:i", $hoadon["thoigian"])),
+      "thoigianhoadon" => (empty($hoadon["thoigian"]) ? "" : date("d/m/Y H:i", $hoadon["thoigian"])),
       "khachhang" => (empty($hoadon) ? "" : $hoadon["khachhang"]),
+      "dienthoai" => (empty($hoadon) ? "" : $hoadon["dienthoai"]),
     ];
 
     $dulieu []= $checkin;
@@ -140,7 +150,113 @@ function danhsachgiamsat($idchinhanh) {
   return $dulieu;
 }
 
-
 function sosanh($a, $b) {
   return $a["thoigiancheckin"] < $b["thoigiancheckin"];
+}
+
+function themfaceid() {
+  global $data, $db, $result;
+
+  $img = "../include/export/". time() . ".jpg";
+  file_put_contents($img, file_get_contents($data->hinhanh));
+
+  $url = resizeImageWithPadding($img);
+  $diachifile = "../../token.txt";
+  $docfile = fopen($diachifile, "r");
+  $refreshtoken = fgets($docfile);
+  fclose($docfile);
+  
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, "https://oauth.hanet.com/token?refresh_token=$refreshtoken&client_id=fd4614703837312d072b62e11fff663d&grant_type=refresh_token&client_secret=def13afd2297e47a49dc8049814c5b51");
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  
+  $headers = array();
+  $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+  
+  $res = curl_exec($ch);
+  $token = json_decode($res);
+  $accesstoken = $token->access_token;
+  
+  $docfile = fopen($diachifile, "w");
+  fwrite($docfile, $token->refresh_token);
+  fclose($docfile);
+  $name = $data->khachhang ." - ". substr($data->dienthoai, -6);
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, 'https://partner.hanet.ai/person/registerByUrl');
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
+    'token' => $accesstoken,
+    'name' => $name,
+    'url' => $url,
+    'placeID' => '27599',
+    'type' => '1'
+  ]));
+  
+  $headers = [];
+  $headers[] = 'Content-Type: application/x-www-form-urlencoded';
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+  curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+  $res = curl_exec($ch);
+  if ($res->returnCode == 1) {
+    $sql = "select * from pet_". PREFIX ."_hoadon set trangthai = 1 where id = $data->id";
+    $db->query($sql);
+
+    $result['status'] = 1;
+    $result['messenger'] = "Đã thêm faceid";
+    $result['danhsachgiamsat'] = danhsachgiamsat($data->idchinhanh);
+  }
+  else {
+    $result['messenger'] = "Đã có lỗi trong quá trình tải lên";
+  }
+
+  return $result;
+}
+
+function resizeImageWithPadding($sourceImage) {
+  global $_SERVER;
+  // Get original image dimensions
+  list($width, $height) = getimagesize($sourceImage);
+
+  // Calculate the aspect ratio
+  $originalAspect = $width / $height;
+  $targetAspect = 1280 / 736;
+
+  // Determine new dimensions
+  if ($originalAspect >= $targetAspect) {
+      // If the original image is wider
+      $newWidth = 1280;
+      $newHeight = intval(1280 / $originalAspect);
+  } else {
+      // If the original image is taller
+      $newHeight = 736;
+      $newWidth = intval(736 * $originalAspect);
+  }
+
+  // Create the new image canvas with target dimensions
+  $destination = imagecreatetruecolor(1280, 736);
+
+  // Set the background color to white
+  $white = imagecolorallocate($destination, 255, 255, 255);
+  imagefill($destination, 0, 0, $white);
+
+  $source = imagecreatefromjpeg($sourceImage);
+  $thoigian = time();
+  $output = "../include/export/o$thoigian.jpg";
+  // Calculate position to center the image on the canvas
+  $xPos = (1280 - $newWidth) / 2;
+  $yPos = (736 - $newHeight) / 2;
+
+  // Copy and resize the original image into the center of the new canvas
+  imagecopyresampled($destination, $source, $xPos, $yPos, 0, 0, $newWidth, $newHeight, $width, $height);
+  imagejpeg($destination, $output);
+
+  // Free up memory
+  imagedestroy($source);
+  imagedestroy($destination);
+  return "https://". $_SERVER["SERVER_NAME"] . "/include/export/o$thoigian.jpg";
 }

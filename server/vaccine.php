@@ -631,10 +631,10 @@ function kiemtrahoadon($dulieu) {
   // 'Khách cần trả' => '' // 10
 
   // nếu không có hóa đơn thì thêm vào
-  $sql = "select * from hanet_hoadon where mahoadon = '$dulieu[9]'";
+  $sql = "select * from pet_". PREFIX ."_hoadon where mahoadon = '$dulieu[9]'";
   if (empty($db->fetch($sql))) {
     $thoigian = chuyendoithoigian($dulieu[4]);
-    $sql = "insert into hanet_hoadon (mahoadon, khachhang, dienthoai, thanhtoan, thoigian) values('$dulieu[9]', '$dulieu[3]', '$dulieu[2]', '$dulieu[10]', $thoigian)";
+    $sql = "insert into pet_". PREFIX ."_hoadon (mahoadon, khachhang, dienthoai, thanhtoan, thoigian) values('$dulieu[9]', '$dulieu[3]', '$dulieu[2]', '$dulieu[10]', $thoigian)";
     $db->query($sql);
   }
 }
