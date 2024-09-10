@@ -214,6 +214,9 @@ function danhsachgiamsat($idchinhanh) {
   $ketthuc = $batdau + 60 * 60 * 24 - 1;
   $batdau2 = $batdau * 1000;
   $ketthuc2 = $ketthuc * 1000;
+  
+  $sql = "select tiento from pet_chinhanh where id = $idchinhanh";
+  $chinhanh = $db->fetch($sql);
 
   $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$idchinhanh'";
   $thietbi = $db->fetch($sql);
@@ -224,7 +227,7 @@ function danhsachgiamsat($idchinhanh) {
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
-  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". PREFIX ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
+  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". $chinhanh["tiento"] ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
   $danhsachhoadon = $db->all($sql);
   $dasudung = [];
   $dau = 0;
