@@ -11,16 +11,177 @@ function khoitao() {
     $data->idchinhanh = $chinhanh["id"];
   }
 
-  foreach ($danhsachchinhanh as $thutu => $chinhanh) {
-    $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$chinhanh[id]'";
-    if (empty($cauhinh = $db->fetch($sql))) $cauhinh = ["giatri" => ""];
-    $danhsachchinhanh[$thutu]["cauhinh"] = $cauhinh["giatri"];
+  // lấy cấu hình thiết bị
+  $sql = "select * from hanet_thietbi order by id desc";
+  $danhsachthietbi = $db->all($sql);
+
+  foreach ($danhsachthietbi as $thutu => $thietbi) {
+    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
+    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
   }
 
   $result['status'] = 1;
   $result['danhsachgiamsat'] = danhsachgiamsat($data->idchinhanh);
   $result['danhsachchinhanh'] = $danhsachchinhanh;
+  $result['danhsachthietbi'] = $danhsachthietbi;
   $result['chinhanh'] = $data->idchinhanh;
+  return $result;
+}
+
+function xoathietbi() {
+  global $data, $db, $result;
+
+  $sql = "delete from hanet_phanquyenthietbi where idthietbi = $data->idthietbi";
+  $db->query($sql);
+  $sql = "delete from hanet_thietbi where id = $data->idthietbi";
+  $db->query($sql);
+  // lấy cấu hình thiết bị
+  $sql = "select * from hanet_thietbi order by id desc";
+  $danhsachthietbi = $db->all($sql);
+
+  foreach ($danhsachthietbi as $thutu => $thietbi) {
+    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
+    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
+  }
+
+  $result['status'] = 1;
+  $result['danhsachthietbi'] = $danhsachthietbi;
+  return $result;
+}
+
+function thaydoiphanquyen() {
+  global $data, $db, $result;
+
+  $sql = "select * from hanet_phanquyenthietbi where idthietbi = $data->idthietbi and idchinhanh = $data->idchinhanh";
+  if (empty($phanquyen = $db->fetch($sql))) {
+    $sql = "insert into hanet_phanquyenthietbi (idthietbi, idchinhanh) values($data->idthietbi, $data->idchinhanh)";
+  }
+  else {
+    $sql = "delete from hanet_phanquyenthietbi where id = $phanquyen[id]";
+  }
+  $db->query($sql);
+
+  // lấy cấu hình thiết bị
+  $sql = "select * from hanet_thietbi order by id desc";
+  $danhsachthietbi = $db->all($sql);
+
+  foreach ($danhsachthietbi as $thutu => $thietbi) {
+    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
+    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
+  }
+
+  $result['status'] = 1;
+  $result['danhsachthietbi'] = $danhsachthietbi;
+  return $result;
+}
+
+function khoitaoidthietbi() {
+  global $data, $db, $result;
+
+  $sql = "select deviceID, deviceName from hanet_khachhang where data_type = 'device'";
+  $danhsach = $db->all($sql);
+
+  foreach ($danhsach as $thutu => $thietbi) {
+    $sql = "select * from hanet_thietbi where idthietbi = '$thietbi[deviceID]'";
+    if (!empty($db->fetch($sql))) unset($danhsach[$thutu]);
+  }
+
+  sort($danhsach);
+
+  $result['status'] = 1;
+  $result['thietbi'] = $danhsach;
+  return $result;
+}
+
+function khoitaothongke() {
+  global $data, $db, $result;
+  
+  $thongke = [
+    "tongcheckin" => 0,
+    "tongkhachla" => 0,
+    "tongkhachquen" => 0,
+    "tongkhonghoadon" => 0,
+    "tonghoadon" => 0,
+  ];
+
+  $batdau = strtotime($data->batdau);
+  $ketthuc = strtotime($data->ketthuc) + 60 * 60 * 24 - 1;
+  $batdau2 = $batdau * 1000;
+  $ketthuc2 = $ketthuc * 1000;
+  $idchinhanh = $data->idchinhanh;
+
+  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$idchinhanh'";
+  $thietbi = $db->fetch($sql);
+  if (empty($thietbi)) return [];
+  $idthietbi = $thietbi["giatri"];
+
+  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$idthietbi' order by time";
+  $danhsachkhachhang = $db->all($sql);
+  $tongkhachhang = count($danhsachkhachhang);
+  $thongke["tongcheckin"] = $tongkhachhang;
+  
+  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". PREFIX ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
+  $danhsachhoadon = $db->all($sql);
+  $thongke["tonghoadon"] = count($danhsachhoadon);
+  $dasudung = [];
+  $dau = 0;
+  $cuoi = 1;
+
+  // // nếu nhận diện được khách hàng thì gắn vào hóa đơn
+  foreach ($danhsachkhachhang as $thutukhachhang => $khachhang) {
+    if (empty($khachhang["personName"])) {
+      $thongke["tongkhachla"] ++;
+      continue;
+    }
+    if (strlen($khachhang["personName"]) < 5) {
+      $thongke["tongkhachla"] ++;
+      continue;
+    }
+    $dienthoaikhach = substr($khachhang["personName"], -5);
+    $thongke["tongkhachquen"] ++;
+
+    foreach ($danhsachhoadon as $thutuhoadon => $hoadon) {
+      if ($hoadon["lienket"] >= 0) continue;
+      if (empty($hoadon["dienthoai"])) continue;
+      if (strlen($hoadon["dienthoai"]) < 5) continue;
+
+      if (strpos($hoadon["dienthoai"], $dienthoaikhach) != false) {
+        $danhsachkhachhang[$thutukhachhang]["lienket"] = $thutuhoadon;
+        $danhsachhoadon[$thutuhoadon]["lienket"] = $thutukhachhang;
+        break;
+      }
+    }
+  }
+  
+  foreach ($danhsachhoadon as $thutu => $hoadon) {
+    if ($hoadon["lienket"] >= 0) continue;
+    $kiemtra = false;
+    while (!$kiemtra && $cuoi < $tongkhachhang) {
+      if ($danhsachkhachhang[$dau]["lienket"] >= 0) {
+        $dau ++;
+        $cuoi ++;
+        continue;
+      }
+      if ($danhsachkhachhang[$cuoi]["lienket"] >= 0) {
+        $cuoi ++;
+        continue;
+      }
+      $thoigiandau = $hoadon["thoigian"] - floor($danhsachkhachhang[$dau]["time"] / 1000);
+      $thoigiancuoi = $hoadon["thoigian"] - floor($danhsachkhachhang[$cuoi]["time"] / 1000);
+      if (($thoigiandau < 0 && $thoigiancuoi < 0) || ($thoigiandau * $thoigiancuoi <= 0)) {
+        $thutusudung = $cuoi;
+        if (abs($thoigiandau) < abs($thoigiancuoi)) $thutusudung = $dau;
+        $danhsachkhachhang[$thutusudung]["lienket"] = $thutu;
+        $danhsachhoadon[$thutu]["lienket"] = $thutusudung;
+        $kiemtra = true;
+      }
+      $dau ++;
+      $cuoi ++;
+    }
+  }
+
+  $result['status'] = 1;
+  $result['thongke'] = $thongke;
   return $result;
 }
 
@@ -152,6 +313,31 @@ function danhsachgiamsat($idchinhanh) {
 
 function sosanh($a, $b) {
   return $a["thoigiancheckin"] < $b["thoigiancheckin"];
+}
+
+function themthietbi() {
+  global $db, $data, $result;
+  
+  if ($data->id) {
+    $sql = "update hanet_thietbi set idthietbi = '$data->idthietbi', tenthietbi = '$data->tenthietbi' where id = $data->id";
+  }
+  else {
+    $sql = "insert hanet_thietbi (idthietbi, tenthietbi) values('$data->idthietbi', '$data->tenthietbi')";
+  }
+  $db->query($sql);
+  
+  // lấy cấu hình thiết bị
+  $sql = "select * from hanet_thietbi order by id desc";
+  $danhsachthietbi = $db->all($sql);
+
+  foreach ($danhsachthietbi as $thutu => $thietbi) {
+    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
+    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
+  }
+
+  $result["status"] = 1;
+  $result["danhsach"] = $danhsachthietbi;
+  return $result;
 }
 
 function themfaceid() {

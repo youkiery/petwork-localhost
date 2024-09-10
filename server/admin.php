@@ -464,7 +464,7 @@ function signup() {
   if (!empty($user = $db->fetch($sql))) $result['messenger'] = 'Tên người dùng đã tồn tại';
   else {
     $time = time();
-    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, faceid, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->faceid, '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
+    $sql = "insert into pet_". PREFIX ."_users (username, idvantay, faceid, name, fullname, password, photo, regdate, birthday, active) values ('$data->username', '$data->idvantay', '$data->faceid', '$data->fullname', '$data->fullname', '". $crypt->hash_password($data->password) ."', '$data->image', $time, $birthday, 1)";
     $userid = $db->insertid($sql);
     
     $result['status'] = 1;
@@ -987,8 +987,8 @@ function danhsachnhantin() {
 //   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   // nhắn tin đặt lịch
-//   $sql = "select a.id, a.thoigian as cometime, a.ngaydat as calltime, a.idkhachdat as customerid, ghichu as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 3 and a.trangthai = 0 and b.kichhoat = 1 and (a.ngaydat between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
-//   $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
+  $sql = "select a.id, a.thoigian as cometime, a.ngaydat as calltime, a.idkhachdat as customerid, ghichu as note, b.id as idmautin, b.mautin, b.lich, b.loainhac, b.sukien from pet_". PREFIX ."_datlich a inner join pet_". PREFIX ."_vaccinemautin b on b.loainhac = 3 and a.trangthai = 0 and b.kichhoat = 1 and (a.ngaydat between ($homnay + 60 * 60 * 24 * b.lich * -1) and ($homnay + 60 * 60 * 24 * (b.lich * -1 + 1) - 1))";
+  $danhsachmautin = array_merge($danhsachmautin, $db->all($sql));
 
   $danhsachnhantin = [];
   $danhsach = [];

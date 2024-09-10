@@ -333,8 +333,25 @@
         // $homnay = hôm nay
         // $ct = đầu ngày
         // $starttime = đầu tháng
+        if ($ct == $homnay && $j > 1) {
+          // hôm nay
+          // nếu đã đăng ký lịch, kiểm tra thời gian buổi sáng > 7, buổi chiều > 13 thì không cho đăng ký
+          $hientai = time() - $homnay;
+          $gio = $hientai / 60 / 60;
+          $check = false;
 
-        if ($ct > $homnay) {
+          if (strpos($temp['list'][$j]['name'], $data->name) !== false) $check = true;
+
+          if ($j == 2 && $gio < 7) if ($check) $temp['list'][$j]['color'] = 'orange';
+          else $temp['list'][$j]['color'] = 'green';
+          else $temp['list'][$j]['color'] = 'gray';
+
+          if ($j == 3 && $gio < 13) if ($check) $temp['list'][$j]['color'] = 'orange';
+          else $temp['list'][$j]['color'] = 'green';
+          else $temp['list'][$j]['color'] = 'gray';
+        }
+        else if ($ct > $homnay) {
+          // đăng ký lịch từ ngày hôm sau
           if (strpos($temp['list'][$j]['name'], $data->name) !== false) {
             $temp['list'][$j]['color'] = 'orange'; // hiển thị đã đăng ký 
           }
