@@ -2,29 +2,124 @@
 function khoitao() {
   global $data, $db, $result;
   
-  $sql = "select * from pet_chinhanh where tiento <> '' order by id";
-  $danhsachchinhanh = $db->all($sql);
-
-  if (empty($data->idchinhanh)) {
-    $sql = "select * from pet_chinhanh where tiento = '$data->tiento'";
-    $chinhanh = $db->fetch($sql);
-    $data->idchinhanh = $chinhanh["id"];
+  if (!empty($data->idthietbi)) {
+    // nếu đã có, kiểm tra có quyền chưa, chưa có quyền thì unset idthietbi
+    $sql = "select * from hanet_phanquyenthietbi where idnhanvien = $data->userid and tiento = '$data->tiento' and idthietbi = $data->idthietbi";
+    if (empty($db->fetch($sql))) $data->idthietbi = 0;
   }
 
-  // lấy cấu hình thiết bị
-  $sql = "select * from hanet_thietbi order by id desc";
-  $danhsachthietbi = $db->all($sql);
+  if (empty($data->idthietbi)) {
+    // nếu chưa có, chọn cái đầu tiên
+    $sql = "select * from hanet_phanquyenthietbi where idnhanvien = $data->userid and tiento = '$data->tiento' order by idthietbi";
+    $thietbi = $db->fetch($sql);
+    if (empty($thietbi)) {
+      // chưa có phân quyền, thông báo và kết thúc
+      $result['messenger'] = "Chưa được phân quyền, vui lòng liên hệ quản trị viên";
+      return $result;
+    }
+    $data->idthietbi = $thietbi["id"];
+  }
 
-  foreach ($danhsachthietbi as $thutu => $thietbi) {
-    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
-    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
+  $sql = "select * from pet_chinhanh where tiento <> '' order by id asc";
+  $danhsachchinhanh = $db->all($sql);
+
+  $sql = "select * from hanet_phanquyenthietbi where idnhanvien = $data->userid and tiento = '$data->tiento' order by idthietbi asc";
+  $danhsachphanquyen = $db->all($sql);
+
+  foreach ($danhsachphanquyen as $thutu => $chinhanh) {
+    $sql = "select * from hanet_thietbi where id = $chinhanh[idthietbi]";
+    $thietbi = $db->fetch($sql);
+
+    $danhsachphanquyen[$thutu]["tenthietbi"] = $thietbi["tenthietbi"];
   }
 
   $result['status'] = 1;
-  $result['danhsachgiamsat'] = danhsachgiamsat($data->idchinhanh);
+  $result['danhsachgiamsat'] = danhsachgiamsat($data->idthietbi);
   $result['danhsachchinhanh'] = $danhsachchinhanh;
-  $result['danhsachthietbi'] = $danhsachthietbi;
-  $result['chinhanh'] = $data->idchinhanh;
+  $result['danhsachphanquyen'] = $danhsachphanquyen;
+  $result['danhsachthietbi'] = danhsachthietbi();
+  $result['idthietbi'] = $data->idthietbi;
+  return $result;
+}
+
+function danhsachthietbi() {
+  global $db;
+  
+  $sql = "select * from hanet_thietbi order by id desc";
+  $danhsachthietbi = $db->all($sql);
+  $chuyendoi = ["test" => "daklak", "nhatrang" => "nhatrang", "nhatrang3" => "nhatrang 3", "nhatrang4" => "nhatrang 5"];
+
+  foreach ($danhsachthietbi as $thutu => $thietbi) {
+    $danhsachthietbi[$thutu]["chinhanh"] = [];
+    $sql = "select idnhanvien, tiento from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
+    $danhsachnhanvien = $db->all($sql);
+
+    $sql = "select id, tenchinhanh from pet_chinhanh where tiento = '$thietbi[tiento]'";
+    $dulieuchinhanh = $db->fetch($sql);
+
+    $danhsachthietbi[$thutu]["tenchinhanh"] = $dulieuchinhanh["tenchinhanh"];
+
+    foreach ($danhsachnhanvien as $nhanvien) {
+      $bangnhanvien = "pet_". $nhanvien["tiento"] ."_users";
+      $sql = "select fullname, userid from $bangnhanvien where userid = $nhanvien[idnhanvien]";
+      $dulieunhanvien = $db->fetch($sql);
+      $danhsachthietbi[$thutu]["chinhanh"] []= ["idnhanvien" => $dulieunhanvien["userid"], "nhanvien" => $dulieunhanvien["fullname"], "hauto" => $chuyendoi[$nhanvien["tiento"]]];
+    }
+  }
+  return $danhsachthietbi;
+}
+
+function themnhanvienthietbi() {
+  global $data, $db, $result;
+
+  $sql = "select * from pet_chinhanh where tiento <> ''";
+  $danhsachchinhanh = $db->all($sql);
+  $chuyendoi = ["test" => "daklak", "nhatrang" => "nhatrang", "nhatrang3" => "nhatrang 3", "nhatrang4" => "nhatrang 5"];
+  $danhsach = [];
+
+  foreach ($danhsachchinhanh as $chinhanh) {
+    $tiento = $chinhanh["tiento"];
+    $bangnhanvien = "pet_". $tiento . "_users";
+    $sql = "select '$tiento' as tiento, userid, fullname from $bangnhanvien where userid not in (select idnhanvien as userid from hanet_phanquyenthietbi where idthietbi = $data->idthietbi and tiento = '$tiento' and active = 1)";
+    $danhsach = array_merge($danhsach, $db->all($sql));    
+  }
+
+  foreach ($danhsach as $thutu => $nhanvien) {
+    $danhsach[$thutu]["hauto"] = $chuyendoi[$nhanvien["tiento"]];
+    $danhsach[$thutu]["chon"] = 0;
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = $danhsach;
+  return $result;
+}
+
+function themphanquyenthietbi() {
+  global $data, $db, $result;
+
+  foreach ($data->danhsach as $nhanvien) {
+    $idnhanvien = $nhanvien->idnhanvien;
+    $tiento = $nhanvien->tiento;
+    $sql = "select * from hanet_phanquyenthietbi where idnhanvien = $idnhanvien and tiento = '$tiento' and idthietbi = $data->idthietbi";
+    if (empty($db->fetch($sql))) {
+      $sql = "insert into hanet_phanquyenthietbi (idnhanvien, tiento, idthietbi) values($idnhanvien, '$tiento', $data->idthietbi)";
+      $db->query($sql);
+    }
+  }
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachthietbi();
+  return $result;
+}
+
+function xoanhanvienthietbi() {
+  global $data, $db, $result;
+
+  $sql = "delete from hanet_phanquyenthietbi where idnhanvien = $data->idnhanvien and tiento = '$data->tiento' and idthietbi = $data->idthietbi";
+  $db->query($sql);
+
+  $result['status'] = 1;
+  $result['danhsach'] = danhsachthietbi();
   return $result;
 }
 
@@ -207,27 +302,22 @@ function luucauhinh() {
   return $result;
 }
 
-function danhsachgiamsat($idchinhanh) {
+function danhsachgiamsat($idthietbi) {
   global $data, $db, $result, $tiento;
 
   $batdau = strtotime($data->thoigian);
   $ketthuc = $batdau + 60 * 60 * 24 - 1;
   $batdau2 = $batdau * 1000;
   $ketthuc2 = $ketthuc * 1000;
-  
-  $sql = "select tiento from pet_chinhanh where id = $idchinhanh";
-  $chinhanh = $db->fetch($sql);
 
-  $sql = "select * from pet_cauhinh where tenbien = 'cauhinhgiamsat-$idchinhanh'";
+  $sql = "select * from hanet_thietbi where id = $idthietbi";
   $thietbi = $db->fetch($sql);
-  if (empty($thietbi)) return [];
-  $idthietbi = $thietbi["giatri"];
 
-  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$idthietbi' order by time";
+  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$thietbi[idthietbi]' order by time";
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
-  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". $chinhanh["tiento"] ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
+  $sql = "select id, trangthai, dienthoai, khachhang, thoigian, -1 as lienket from pet_". $thietbi["tiento"] ."_hoadon where (thoigian between $batdau and $ketthuc) order by thoigian";
   $danhsachhoadon = $db->all($sql);
   $dasudung = [];
   $dau = 0;
@@ -321,25 +411,17 @@ function sosanh($a, $b) {
 function themthietbi() {
   global $db, $data, $result;
   
-  if ($data->id) {
-    $sql = "update hanet_thietbi set idthietbi = '$data->idthietbi', tenthietbi = '$data->tenthietbi' where id = $data->id";
+  $dulieu = $data->dulieu;
+  if ($dulieu->id) {
+    $sql = "update hanet_thietbi set idthietbi = '$dulieu->idthietbi', tenthietbi = '$dulieu->tenthietbi', tiento = '$dulieu->tiento' where id = $dulieu->id";
   }
   else {
-    $sql = "insert hanet_thietbi (idthietbi, tenthietbi) values('$data->idthietbi', '$data->tenthietbi')";
+    $sql = "insert hanet_thietbi (idthietbi, tenthietbi, tiento) values('$dulieu->idthietbi', '$dulieu->tenthietbi', '$dulieu->tiento')";
   }
   $db->query($sql);
   
-  // lấy cấu hình thiết bị
-  $sql = "select * from hanet_thietbi order by id desc";
-  $danhsachthietbi = $db->all($sql);
-
-  foreach ($danhsachthietbi as $thutu => $thietbi) {
-    $sql = "select idchinhanh, 1 as giatri from hanet_phanquyenthietbi where idthietbi = $thietbi[id]";
-    $danhsachthietbi[$thutu]["chinhanh"] = $db->obj($sql, "idchinhanh", "giatri");
-  }
-
   $result["status"] = 1;
-  $result["danhsach"] = $danhsachthietbi;
+  $result["danhsach"] = danhsachthietbi();
   return $result;
 }
 
