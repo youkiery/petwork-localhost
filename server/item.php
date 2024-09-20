@@ -211,7 +211,7 @@ function excel() {
       $sql = "select * from pet_". PREFIX ."_hanghoa where mahang = '$mahang'";
       if (empty($hanghoa = $db->fetch($sql))) {
         $sql = "insert into pet_". PREFIX ."_hanghoa (mahang, tenhang, loaihang, giaban, gianhap, gioihan, soluong, hinhanh, gioithieu, donvi) values('$mahang', '$dulieu[tenhang]', 0, $dulieu[giaban], 0, 0, $dulieu[soluong], '$dulieu[hinhanh]', '', '$dulieu[donvi]')";
-        $idhang = $db->query($sql);
+        $idhang = $db->insertid($sql);
         $sql = "insert into pet_". PREFIX ."_hanghoathanhphan (idhang, mahang, chuyendoi) values($idhang, '$mahang', 1)
         ";
         $db->query($sql);

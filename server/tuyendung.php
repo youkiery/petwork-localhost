@@ -307,12 +307,12 @@ function nophoso() {
 
 	$dulieu = $data;
 	if ($dulieu->id) {
-		$sql = "update pet_tuyendung_hoso set hoten = '$dulieu->hoten', dienthoai = '$dulieu->dienthoai', diachi = '$dulieu->diachi', ghichu = '$dulieu->ghichu', idchinhanh = $dulieu->chinhanh where id = $data->id";
+		$sql = "update pet_tuyendung_hoso set hoten = '$dulieu->hoten', dienthoai = '$dulieu->dienthoai', diachi = '$dulieu->diachi', ghichu = '$dulieu->ghichu', idchinhanh = $dulieu->idchinhanh where id = $data->id";
 		$db->query($sql);
 	}
 	else {
 		$thoigian = time();
-		$sql = "insert into pet_tuyendung_hoso (idtuyendung, token, hoten, diachi, dienthoai, thoigian, trangthai, idchinhanh, ghichu) values($dulieu->idtuyendung, '$data->token', '$dulieu->hoten', '$dulieu->diachi', '$dulieu->dienthoai', $thoigian, 0, $dulieu->chinhanh, '$dulieu->ghichu')";
+		$sql = "insert into pet_tuyendung_hoso (idtuyendung, token, hoten, diachi, dienthoai, thoigian, trangthai, idchinhanh, ghichu) values($dulieu->idtuyendung, '$data->token', '$dulieu->hoten', '$dulieu->diachi', '$dulieu->dienthoai', $thoigian, 0, $dulieu->idchinhanh, '$dulieu->ghichu')";
 		$dulieu->id = $db->insertid($sql);
 	}
 

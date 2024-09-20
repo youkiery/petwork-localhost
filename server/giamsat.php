@@ -17,7 +17,7 @@ function khoitao() {
       $result['messenger'] = "Chưa được phân quyền, vui lòng liên hệ quản trị viên";
       return $result;
     }
-    $data->idthietbi = $thietbi["id"];
+    $data->idthietbi = $thietbi["idthietbi"];
   }
 
   $sql = "select * from pet_chinhanh where tiento <> '' order by id asc";
@@ -313,7 +313,7 @@ function danhsachgiamsat($idthietbi) {
   $sql = "select * from hanet_thietbi where id = $idthietbi";
   $thietbi = $db->fetch($sql);
 
-  $sql = "select personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$thietbi[idthietbi]' order by time";
+  $sql = "select personId, personName, time, avatar, -1 as lienket from hanet_khachhang where data_type = 'log' and personType > 0 and (time between $batdau2 and $ketthuc2) and deviceID = '$thietbi[idthietbi]' order by time";
   $danhsachkhachhang = $db->all($sql);
   $tongkhachhang = count($danhsachkhachhang);
   
@@ -323,10 +323,17 @@ function danhsachgiamsat($idthietbi) {
   $dau = 0;
   $cuoi = 1;
 
-  // // nếu nhận diện được khách hàng thì gắn vào hóa đơn
+  // nếu nhận diện được khách hàng thì gắn vào hóa đơn
+  // danh sách khách có hóa đơn
+  // danh sách khách xuất hiện cùng thời gian xuất hiện
+  $khachhoadon = [];
+  $khachxuathien = [];
   foreach ($danhsachkhachhang as $thutukhachhang => $khachhang) {
     if (empty($khachhang["personName"])) continue;
     if (strlen($khachhang["personName"]) < 5) continue;
+    if (empty($khachxuathien[$khachhang["personId"]])) $khachxuathien[$khachhang["personId"]] = [];
+    $khachxuathien[$khachhang["personId"]][$thutukhachhang] = $khachhang["time"];
+
     $dienthoaikhach = substr($khachhang["personName"], -5);
 
     foreach ($danhsachhoadon as $thutuhoadon => $hoadon) {
@@ -335,13 +342,31 @@ function danhsachgiamsat($idthietbi) {
       if (strlen($hoadon["dienthoai"]) < 5) continue;
 
       if (strpos($hoadon["dienthoai"], $dienthoaikhach) != false) {
+        $khachhoadon []= $thutukhachhang;
         $danhsachkhachhang[$thutukhachhang]["lienket"] = $thutuhoadon;
         $danhsachhoadon[$thutuhoadon]["lienket"] = $thutukhachhang;
         break;
       }
     }
   }
-  
+
+  // chạy danh sách khách có hóa đơn
+  // chạy trong danh sách khách xuất hiện trong khoảng 30 phút thì loại bỏ
+  $bamuoi = 60 * 60 * 30;
+  foreach ($khachhoadon as $thutukhachhang) {
+    $khachhang = $danhsachkhachhang[$thutukhachhang];
+    $khachhang["time"];
+    foreach ($khachxuathien[$khachhang["personId"]] as $thutu => $thoigian) {
+      if (abs($khachhang["time"] - $thoigian) < $bamuoi) {
+        // khách hàng đến trong khoảng 30 phút
+        // nếu không có liên kết thì xóa
+        $khachhientai = $danhsachkhachhang[$thutu];
+        if (!$khachhientai["lienket"]) unset($danhsachkhachhang[$thutu]);
+      }
+    }
+  }
+
+  // chạy danh sách được đánh dấu
   foreach ($danhsachhoadon as $thutu => $hoadon) {
     if ($hoadon["lienket"] >= 0) continue;
     $kiemtra = false;
